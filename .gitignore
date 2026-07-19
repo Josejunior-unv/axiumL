@@ -1,0 +1,8 @@
+# Saída do Manim (vídeos renderizados e arquivos intermediários)
+media/
+__pycache__/
+*.pyc
+
+# Ambiente virtual
+.venv/
+venv/
