@@ -96,6 +96,10 @@ Datas que ele entende: `hoje`, `amanhã`, `depois de amanhã`, `sexta`, `segunda
 
 ## Deixando ligado o tempo todo
 
+> Para hospedar na nuvem de graça (VM grátis, container ou VPS), o passo a passo
+> está em [DEPLOY.md](DEPLOY.md) — inclusive um script que instala tudo em um
+> comando.
+
 Os lembretes só saem com o processo rodando. Em um servidor Linux, o jeito mais
 simples é um serviço do systemd (`/etc/systemd/system/assistente.service`):
 
@@ -159,6 +163,8 @@ ou o esforço no `.env` (`BOT_MODELO`, `BOT_ESFORCO`).
 ```
 telegram_bot/
 ├── run.py                    # sobe o bot
+├── Dockerfile                # para rodar em container
+├── deploy/instalar.sh        # instala como serviço em um servidor novo
 ├── assistente/
 │   ├── config.py             # variáveis de ambiente / .env
 │   ├── db.py                 # esquema SQLite e conversão de datas UTC
