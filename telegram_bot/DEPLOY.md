@@ -10,10 +10,70 @@ Duas coisas precisam ser verdade, ou o assistente não funciona direito:
 
 Abaixo, as opções que atendem aos dois pontos.
 
-## Opção A — VM grátis (recomendada)
+## Opção A — Render (plano grátis)
 
-Uma máquina virtual pequena, grátis "para sempre", com disco de verdade. O código
-roda sem adaptação nenhuma e sobe sozinho quando a máquina liga.
+Funciona, mas **não do jeito óbvio**. O plano grátis do Render:
+
+- não aceita disco persistente — o `assistente.db` seria apagado a cada deploy;
+- só tem *web service*, que dorme depois de 15 minutos sem receber requisição;
+- dá 750 horas de instância por mês, por workspace;
+- o Postgres grátis **do próprio Render expira em 30 dias**.
+
+Então a receita é: banco em um Postgres externo (também grátis) e um monitor
+externo cutucando a URL para o serviço não dormir. O código já está preparado
+para os dois — só configurar.
+
+### Passo a passo
+
+**1. Crie o banco.** Em [neon.tech](https://neon.tech) (ou [supabase.com](https://supabase.com)),
+crie um projeto grátis e copie a *connection string*, algo como
+`postgresql://usuario:senha@ep-algo.neon.tech/neondb`. Diferente do Postgres do
+Render, esse não expira.
+
+**2. Crie o serviço.** No Render: **New → Blueprint**, aponte para este
+repositório. Ele lê o `render.yaml` da raiz e já vem com tudo configurado
+(pasta, comandos, health check).
+
+> Preferindo na mão: **New → Web Service**, Root Directory `telegram_bot`,
+> Build `pip install -r requirements.txt`, Start `python run.py`.
+
+**3. Preencha as variáveis** (aba *Environment*):
+
+| Variável | O quê |
+|---|---|
+| `TELEGRAM_TOKEN` | token do @BotFather |
+| `DATABASE_URL` | a URL do passo 1 |
+| `ANTHROPIC_API_KEY` | opcional — liga a conversa com IA |
+
+**4. Deploy e teste.** Quando terminar, abra `https://SEU-APP.onrender.com/saude`
+no navegador. Tem que responder algo como `{"status": "ok", ...}`.
+
+**5. Impeça o serviço de dormir.** Sem isso, o lembrete das 7h só chega quando
+alguém falar com o bot. Em [cron-job.org](https://cron-job.org) (grátis, sem
+cartão) ou no UptimeRobot, crie um monitor que acesse
+`https://SEU-APP.onrender.com/saude` **a cada 5 minutos**.
+
+**6. Mande `/start`** para o bot no Telegram. Essa primeira mensagem tranca o bot
+em quem enviou.
+
+### O que vigiar
+
+- **As 750 horas são por workspace.** Um serviço acordado o mês inteiro consome
+  ~730 h. Ou seja: dá para manter **um** bot sempre ligado de graça. Se você já
+  tem outro bot sempre no ar na mesma conta, os dois juntos estouram o limite —
+  nesse caso, use outra conta/workspace para este.
+- **Cold start:** se o ping falhar, a próxima mensagem demora ~1 minuto para
+  acordar o serviço.
+- **Nunca aponte `DATABASE_URL` para o Postgres grátis do Render** — em 30 dias
+  ele some, e a agenda vai junto.
+- O plano grátis roda com 512 MB de RAM, folgado para este bot.
+
+## Opção B — VM grátis (mais simples de manter)
+
+Uma máquina virtual pequena, grátis "para sempre", com disco de verdade. Aqui não
+precisa de banco externo nem de monitor mantendo acordado: o SQLite fica no disco
+e o serviço sobe sozinho quando a máquina liga. Em compensação, os dois provedores
+pedem cartão para verificar identidade.
 
 | | Google Cloud (e2-micro) | Oracle Cloud (Always Free) |
 |---|---|---|
@@ -53,7 +113,7 @@ sudo systemctl restart assistente   # reiniciar
 bash ~/axiumL/telegram_bot/deploy/instalar.sh   # atualizar para a versão nova
 ```
 
-## Opção B — container
+## Opção C — container
 
 Serve para Railway, Fly.io, Koyeb, Render ou qualquer VPS com docker. Use o
 `Dockerfile` da pasta:
@@ -75,7 +135,7 @@ requisições HTTP — o bot não é um site, ninguém vai "acessar" ele. Nos pl
 gratuitos atuais de Render e Railway isso normalmente **não** vale para processos
 de fundo.
 
-## Opção C — sites de hospedagem grátis para bots
+## Opção D — sites de hospedagem grátis para bots
 
 Existem serviços que hospedam bot de Telegram de graça e sem cartão. São rápidos de
 usar, mas pense duas vezes antes:
@@ -89,7 +149,10 @@ Se for testar, use um bot separado e sem a chave da Anthropic.
 
 ## Cuidados que valem para qualquer opção
 
-- **Backup:** `dados/assistente.db` é o arquivo com tudo. Copie de vez em quando.
+- **Backup:** no SQLite, `dados/assistente.db` é o arquivo com tudo — copie de vez
+  em quando. No Postgres, use o backup do próprio provedor.
+- **Trocar de banco depois:** é só mudar `DATABASE_URL`/`BOT_DB`. O esquema é
+  criado sozinho na primeira execução (os dados antigos não migram junto).
 - **Fuso:** não importa o fuso da máquina; o bot guarda tudo em UTC e mostra no fuso
   configurado no `/fuso`.
 - **Custo da IA:** hospedagem grátis não deixa a API da Anthropic grátis. Cada

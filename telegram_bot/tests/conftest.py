@@ -1,5 +1,6 @@
 """Deixa o pacote `assistente` visível para os testes e cria um banco temporário."""
 
+import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -15,9 +16,27 @@ from assistente.config import Config  # noqa: E402
 SP = ZoneInfo("America/Sao_Paulo")
 
 
-@pytest.fixture()
-def conn(tmp_path):
-    conexao = db.conectar(tmp_path / "teste.db")
+TABELAS = ("usuarios", "compromissos", "lembretes", "notas", "mensagens", "configuracao")
+
+
+def bancos_para_testar():
+    """SQLite sempre; Postgres também, se DATABASE_URL_TESTE apontar para um."""
+    bancos = ["sqlite"]
+    if os.environ.get("DATABASE_URL_TESTE"):
+        bancos.append("postgres")
+    return bancos
+
+
+@pytest.fixture(params=bancos_para_testar())
+def conn(request, tmp_path):
+    """A mesma bateria roda nos dois bancos — é o que garante que dá na mesma."""
+    if request.param == "sqlite":
+        conexao = db.conectar(tmp_path / "teste.db")
+    else:
+        conexao = db.conectar(os.environ["DATABASE_URL_TESTE"])
+        conexao.execute(
+            f"TRUNCATE {', '.join(TABELAS)} RESTART IDENTITY CASCADE"
+        )
     yield conexao
     conexao.close()
 
@@ -44,7 +63,7 @@ def config_falsa(tmp_path):
     def _config(**extras):
         base = dict(
             token="123456:TESTE",
-            caminho_db=tmp_path / "bot.db",
+            banco=str(tmp_path / "bot.db"),
             fuso_padrao="America/Sao_Paulo",
             chats_permitidos=frozenset(),
             aberto=False,
@@ -57,6 +76,7 @@ def config_falsa(tmp_path):
             max_tokens=16000,
             usar_fallback=True,
             historico_max=20,
+            porta=None,
         )
         base.update(extras)
         return Config(**base)

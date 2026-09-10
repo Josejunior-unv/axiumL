@@ -1,0 +1,24 @@
+# Blueprint do Render para o assistente de Telegram (telegram_bot/).
+# Documentação: https://render.com/docs/blueprint-spec
+#
+# ATENÇÃO: no plano grátis o disco é apagado a cada deploy, então o banco NÃO
+# pode ficar aqui dentro. Crie um Postgres externo de graça (Neon ou Supabase) e
+# cole a URL em DATABASE_URL. O passo a passo está em telegram_bot/DEPLOY.md.
+services:
+  - type: web
+    name: assistente-telegram
+    runtime: python
+    plan: free
+    rootDir: telegram_bot
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run.py
+    healthCheckPath: /saude
+    envVars:
+      - key: TELEGRAM_TOKEN        # token do @BotFather
+        sync: false
+      - key: DATABASE_URL          # Postgres externo (Neon/Supabase)
+        sync: false
+      - key: ANTHROPIC_API_KEY     # opcional: liga a conversa com IA
+        sync: false
+      - key: BOT_FUSO
+        value: America/Sao_Paulo

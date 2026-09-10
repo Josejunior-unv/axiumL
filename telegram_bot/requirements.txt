@@ -1,2 +1,4 @@
 python-telegram-bot[job-queue]>=22.0,<23
 anthropic>=1.5,<2
+# Só é usado quando o banco é Postgres (DATABASE_URL); em SQLite fica parado.
+psycopg[binary]>=3.2,<4

@@ -8,7 +8,6 @@ dados no banco.
 
 from __future__ import annotations
 
-import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -80,7 +79,7 @@ def zona_valida(nome: str) -> ZoneInfo:
 # --------------------------------------------------------------------------- #
 
 def garantir_usuario(
-    conn: sqlite3.Connection,
+    conn: db.Conexao,
     chat_id: int,
     nome: str | None = None,
     fuso_padrao: str = "America/Sao_Paulo",
@@ -100,13 +99,13 @@ def garantir_usuario(
     return _para_usuario(linha)
 
 
-def obter_usuario(conn: sqlite3.Connection, chat_id: int) -> Usuario | None:
+def obter_usuario(conn: db.Conexao, chat_id: int) -> Usuario | None:
     linha = conn.execute("SELECT * FROM usuarios WHERE chat_id = ?", (chat_id,)).fetchone()
     return _para_usuario(linha) if linha else None
 
 
 def atualizar_preferencias(
-    conn: sqlite3.Connection,
+    conn: db.Conexao,
     chat_id: int,
     *,
     nome: str | None = None,
@@ -143,7 +142,7 @@ def _hora_valida(bruto: str) -> str:
     return f"{time(hora, minuto):%H:%M}"
 
 
-def _para_usuario(linha: sqlite3.Row) -> Usuario:
+def _para_usuario(linha) -> Usuario:
     return Usuario(
         chat_id=linha["chat_id"],
         nome=linha["nome"],
@@ -158,14 +157,14 @@ def _para_usuario(linha: sqlite3.Row) -> Usuario:
 # Dono do bot (é um assistente de uma pessoa só)
 # --------------------------------------------------------------------------- #
 
-def obter_dono(conn: sqlite3.Connection) -> int | None:
+def obter_dono(conn: db.Conexao) -> int | None:
     linha = conn.execute(
         "SELECT valor FROM configuracao WHERE chave = 'dono_chat_id'"
     ).fetchone()
     return int(linha["valor"]) if linha and linha["valor"] else None
 
 
-def definir_dono(conn: sqlite3.Connection, chat_id: int) -> None:
+def definir_dono(conn: db.Conexao, chat_id: int) -> None:
     conn.execute(
         "INSERT INTO configuracao (chave, valor) VALUES ('dono_chat_id', ?) "
         "ON CONFLICT (chave) DO UPDATE SET valor = excluded.valor",
@@ -175,7 +174,7 @@ def definir_dono(conn: sqlite3.Connection, chat_id: int) -> None:
 
 
 def autorizar(
-    conn: sqlite3.Connection,
+    conn: db.Conexao,
     chat_id: int,
     permitidos: frozenset[int] = frozenset(),
     aberto: bool = False,
@@ -202,7 +201,7 @@ def autorizar(
 # --------------------------------------------------------------------------- #
 
 def criar_compromisso(
-    conn: sqlite3.Connection,
+    conn: db.Conexao,
     usuario: Usuario,
     titulo: str,
     quando: datetime,
@@ -220,7 +219,8 @@ def criar_compromisso(
     if quando.tzinfo is None:
         quando = quando.replace(tzinfo=usuario.zona)
 
-    cur = conn.execute(
+    compromisso_id = db.inserir(
+        conn,
         """INSERT INTO compromissos
            (chat_id, titulo, quando_utc, duracao_min, local, observacao,
             recorrencia, antecedencia_min, status, criado_em)
@@ -231,7 +231,6 @@ def criar_compromisso(
             db.agora_utc().strftime(db.FORMATO_UTC),
         ),
     )
-    compromisso_id = int(cur.lastrowid)
     _agendar_lembretes(conn, usuario, compromisso_id, quando, antecedencia_min)
     conn.commit()
     obtido = obter_compromisso(conn, usuario, compromisso_id)
@@ -240,7 +239,7 @@ def criar_compromisso(
 
 
 def obter_compromisso(
-    conn: sqlite3.Connection, usuario: Usuario, compromisso_id: int
+    conn: db.Conexao, usuario: Usuario, compromisso_id: int
 ) -> Compromisso | None:
     linha = conn.execute(
         "SELECT * FROM compromissos WHERE id = ? AND chat_id = ?",
@@ -250,7 +249,7 @@ def obter_compromisso(
 
 
 def listar_compromissos(
-    conn: sqlite3.Connection,
+    conn: db.Conexao,
     usuario: Usuario,
     *,
     inicio: datetime | None = None,
@@ -275,7 +274,7 @@ def listar_compromissos(
 
 
 def compromissos_do_dia(
-    conn: sqlite3.Connection, usuario: Usuario, dia: datetime | None = None
+    conn: db.Conexao, usuario: Usuario, dia: datetime | None = None
 ) -> list[Compromisso]:
     base = dia or usuario.agora()
     inicio = base.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -283,13 +282,13 @@ def compromissos_do_dia(
 
 
 def proximos_compromissos(
-    conn: sqlite3.Connection, usuario: Usuario, limite: int = 10
+    conn: db.Conexao, usuario: Usuario, limite: int = 10
 ) -> list[Compromisso]:
     return listar_compromissos(conn, usuario, inicio=usuario.agora(), limite=limite)
 
 
 def reagendar_compromisso(
-    conn: sqlite3.Connection, usuario: Usuario, compromisso_id: int, novo_quando: datetime
+    conn: db.Conexao, usuario: Usuario, compromisso_id: int, novo_quando: datetime
 ) -> Compromisso | None:
     compromisso = obter_compromisso(conn, usuario, compromisso_id)
     if compromisso is None:
@@ -307,7 +306,7 @@ def reagendar_compromisso(
 
 
 def editar_compromisso(
-    conn: sqlite3.Connection,
+    conn: db.Conexao,
     usuario: Usuario,
     compromisso_id: int,
     *,
@@ -349,7 +348,7 @@ def editar_compromisso(
 
 
 def mudar_status(
-    conn: sqlite3.Connection, usuario: Usuario, compromisso_id: int, status: str
+    conn: db.Conexao, usuario: Usuario, compromisso_id: int, status: str
 ) -> Compromisso | None:
     if status not in STATUS_VALIDOS:
         raise ValueError(f"status inválido: {status}")
@@ -366,7 +365,7 @@ def mudar_status(
     return obter_compromisso(conn, usuario, compromisso_id)
 
 
-def _para_compromisso(linha: sqlite3.Row, usuario: Usuario) -> Compromisso:
+def _para_compromisso(linha, usuario: Usuario) -> Compromisso:
     return Compromisso(
         id=linha["id"],
         chat_id=linha["chat_id"],
@@ -386,7 +385,7 @@ def _para_compromisso(linha: sqlite3.Row, usuario: Usuario) -> Compromisso:
 # --------------------------------------------------------------------------- #
 
 def _agendar_lembretes(
-    conn: sqlite3.Connection,
+    conn: db.Conexao,
     usuario: Usuario,
     compromisso_id: int,
     quando: datetime,
@@ -411,17 +410,18 @@ def _agendar_lembretes(
         )
 
 
-def _limpar_lembretes(conn: sqlite3.Connection, compromisso_id: int) -> None:
+def _limpar_lembretes(conn: db.Conexao, compromisso_id: int) -> None:
     conn.execute(
         "DELETE FROM lembretes WHERE compromisso_id = ? AND enviado = 0", (compromisso_id,)
     )
 
 
 def criar_lembrete_avulso(
-    conn: sqlite3.Connection, usuario: Usuario, texto: str, quando: datetime
+    conn: db.Conexao, usuario: Usuario, texto: str, quando: datetime
 ) -> int:
     """Lembrete solto ("me lembra de tomar o remédio às 22h"), sem compromisso."""
-    cur = conn.execute(
+    lembrete_id = db.inserir(
+        conn,
         """INSERT INTO lembretes (compromisso_id, chat_id, disparo_utc, tipo, texto, criado_em)
            VALUES (NULL, ?, ?, 'avulso', ?, ?)""",
         (
@@ -430,10 +430,10 @@ def criar_lembrete_avulso(
         ),
     )
     conn.commit()
-    return int(cur.lastrowid)
+    return lembrete_id
 
 
-def registrar_resumo_enviado(conn: sqlite3.Connection, chat_id: int, dia_local: str) -> None:
+def registrar_resumo_enviado(conn: db.Conexao, chat_id: int, dia_local: str) -> None:
     conn.execute("UPDATE usuarios SET ultimo_resumo = ? WHERE chat_id = ?", (dia_local, chat_id))
     conn.commit()
 
@@ -443,9 +443,10 @@ def registrar_resumo_enviado(conn: sqlite3.Connection, chat_id: int, dia_local: 
 # --------------------------------------------------------------------------- #
 
 def salvar_nota(
-    conn: sqlite3.Connection, usuario: Usuario, texto: str, etiquetas: str | None = None
+    conn: db.Conexao, usuario: Usuario, texto: str, etiquetas: str | None = None
 ) -> Nota:
-    cur = conn.execute(
+    nota_id = db.inserir(
+        conn,
         "INSERT INTO notas (chat_id, texto, etiquetas, criado_em) VALUES (?, ?, ?, ?)",
         (
             usuario.chat_id, texto.strip(), etiquetas,
@@ -453,11 +454,11 @@ def salvar_nota(
         ),
     )
     conn.commit()
-    linha = conn.execute("SELECT * FROM notas WHERE id = ?", (cur.lastrowid,)).fetchone()
+    linha = conn.execute("SELECT * FROM notas WHERE id = ?", (nota_id,)).fetchone()
     return _para_nota(linha, usuario)
 
 
-def listar_notas(conn: sqlite3.Connection, usuario: Usuario, limite: int = 20) -> list[Nota]:
+def listar_notas(conn: db.Conexao, usuario: Usuario, limite: int = 20) -> list[Nota]:
     linhas = conn.execute(
         "SELECT * FROM notas WHERE chat_id = ? ORDER BY id DESC LIMIT ?",
         (usuario.chat_id, int(limite)),
@@ -466,19 +467,20 @@ def listar_notas(conn: sqlite3.Connection, usuario: Usuario, limite: int = 20) -
 
 
 def buscar_notas(
-    conn: sqlite3.Connection, usuario: Usuario, termo: str, limite: int = 20
+    conn: db.Conexao, usuario: Usuario, termo: str, limite: int = 20
 ) -> list[Nota]:
-    padrao = f"%{termo.strip()}%"
+    padrao = f"%{termo.strip().lower()}%"
     linhas = conn.execute(
         """SELECT * FROM notas
-           WHERE chat_id = ? AND (texto LIKE ? OR IFNULL(etiquetas, '') LIKE ?)
+           WHERE chat_id = ?
+             AND (LOWER(texto) LIKE ? OR LOWER(COALESCE(etiquetas, '')) LIKE ?)
            ORDER BY id DESC LIMIT ?""",
         (usuario.chat_id, padrao, padrao, int(limite)),
     )
     return [_para_nota(l, usuario) for l in linhas]
 
 
-def apagar_nota(conn: sqlite3.Connection, usuario: Usuario, nota_id: int) -> bool:
+def apagar_nota(conn: db.Conexao, usuario: Usuario, nota_id: int) -> bool:
     cur = conn.execute(
         "DELETE FROM notas WHERE id = ? AND chat_id = ?", (nota_id, usuario.chat_id)
     )
@@ -486,7 +488,7 @@ def apagar_nota(conn: sqlite3.Connection, usuario: Usuario, nota_id: int) -> boo
     return cur.rowcount > 0
 
 
-def _para_nota(linha: sqlite3.Row, usuario: Usuario) -> Nota:
+def _para_nota(linha, usuario: Usuario) -> Nota:
     return Nota(
         id=linha["id"],
         chat_id=linha["chat_id"],
@@ -500,7 +502,7 @@ def _para_nota(linha: sqlite3.Row, usuario: Usuario) -> Nota:
 # Histórico da conversa (memória curta usada pela IA)
 # --------------------------------------------------------------------------- #
 
-def salvar_mensagem(conn: sqlite3.Connection, chat_id: int, papel: str, conteudo: str) -> None:
+def salvar_mensagem(conn: db.Conexao, chat_id: int, papel: str, conteudo: str) -> None:
     conn.execute(
         "INSERT INTO mensagens (chat_id, papel, conteudo, criado_em) VALUES (?, ?, ?, ?)",
         (chat_id, papel, conteudo, db.agora_utc().strftime(db.FORMATO_UTC)),
@@ -508,7 +510,7 @@ def salvar_mensagem(conn: sqlite3.Connection, chat_id: int, papel: str, conteudo
     conn.commit()
 
 
-def historico(conn: sqlite3.Connection, chat_id: int, limite: int = 20) -> list[dict]:
+def historico(conn: db.Conexao, chat_id: int, limite: int = 20) -> list[dict]:
     """Histórico pronto para a API: começa em 'user' e sem papéis repetidos seguidos."""
     linhas = conn.execute(
         "SELECT papel, conteudo FROM mensagens WHERE chat_id = ? ORDER BY id DESC LIMIT ?",
@@ -527,6 +529,6 @@ def historico(conn: sqlite3.Connection, chat_id: int, limite: int = 20) -> list[
     return mensagens
 
 
-def limpar_historico(conn: sqlite3.Connection, chat_id: int) -> None:
+def limpar_historico(conn: db.Conexao, chat_id: int) -> None:
     conn.execute("DELETE FROM mensagens WHERE chat_id = ?", (chat_id,))
     conn.commit()

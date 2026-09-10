@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from telegram import Update  # noqa: E402
 
-from assistente import bot, config  # noqa: E402
+from assistente import bot, config, saude  # noqa: E402
 
 
 def main() -> None:
@@ -25,11 +25,16 @@ def main() -> None:
     cfg = config.carregar()
     aplicacao = bot.montar(cfg)
 
-    logging.info("banco: %s", cfg.caminho_db)
+    logging.info("banco: %s", cfg.banco_visivel)
     logging.info("fuso padrão: %s", cfg.fuso_padrao)
     logging.info("conversa com IA: %s", "ligada" if cfg.ia_ativa else "desligada")
     if cfg.chats_permitidos:
         logging.info("chats permitidos: %s", sorted(cfg.chats_permitidos))
+    if cfg.porta:
+        # Hospedagem que exige porta aberta (Render e parecidos).
+        saude.iniciar(cfg.porta)
+        logging.info("porta de saúde: %s (aponte o monitor externo para /saude)", cfg.porta)
+
     logging.info("assistente no ar — Ctrl+C para parar")
 
     aplicacao.run_polling(allowed_updates=Update.ALL_TYPES)

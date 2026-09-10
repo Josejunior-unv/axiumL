@@ -567,7 +567,7 @@ async def erro(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
 # --------------------------------------------------------------------------- #
 
 def montar(config: Config) -> Application:
-    conn = db.conectar(config.caminho_db)
+    conn = db.conectar(config.banco)
     aplicacao = Application.builder().token(config.token).build()
     aplicacao.bot_data.update(
         {"conn": conn, "config": config, "assistente": Assistente(conn, config)}

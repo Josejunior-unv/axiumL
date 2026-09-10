@@ -7,7 +7,6 @@ cair e voltar — ao reiniciar, os lembretes atrasados são enviados.
 
 from __future__ import annotations
 
-import sqlite3
 from calendar import monthrange
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -32,7 +31,7 @@ class LembreteDevido:
 
 
 def lembretes_devidos(
-    conn: sqlite3.Connection, agora: datetime, limite: int = 50
+    conn: db.Conexao, agora: datetime, limite: int = 50
 ) -> list[LembreteDevido]:
     """Lembretes ainda não enviados cujo horário já chegou."""
     linhas = conn.execute(
@@ -60,7 +59,7 @@ def lembretes_devidos(
     return devidos
 
 
-def marcar_enviado(conn: sqlite3.Connection, lembrete_id: int) -> None:
+def marcar_enviado(conn: db.Conexao, lembrete_id: int) -> None:
     conn.execute("UPDATE lembretes SET enviado = 1 WHERE id = ?", (lembrete_id,))
     conn.commit()
 
@@ -80,7 +79,7 @@ def proxima_ocorrencia(quando: datetime, recorrencia: str | None) -> datetime | 
 
 
 def avancar_recorrencia(
-    conn: sqlite3.Connection, usuario: Usuario, compromisso: Compromisso
+    conn: db.Conexao, usuario: Usuario, compromisso: Compromisso
 ) -> Compromisso | None:
     """Depois que um compromisso repetido acontece, joga ele para a próxima data."""
     proxima = proxima_ocorrencia(compromisso.quando, compromisso.recorrencia)
@@ -96,7 +95,7 @@ def avancar_recorrencia(
     return servicos.reagendar_compromisso(conn, usuario, compromisso.id, proxima)
 
 
-def resumos_pendentes(conn: sqlite3.Connection) -> list[Usuario]:
+def resumos_pendentes(conn: db.Conexao) -> list[Usuario]:
     """Usuários que já passaram do horário do resumo diário e ainda não o receberam."""
     pendentes = []
     for linha in conn.execute("SELECT * FROM usuarios WHERE hora_resumo IS NOT NULL"):

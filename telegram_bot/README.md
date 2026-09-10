@@ -25,7 +25,9 @@ Meia hora antes de cada compromisso (dá para mudar) chega um lembrete com botõ
 | 💬 **Conversa** | entende linguagem natural via Claude e usa as mesmas funções dos comandos |
 | 🔒 **Particular** | o bot se tranca na primeira pessoa que falar com ele; os outros levam um "não" |
 
-Tudo fica em **um arquivo SQLite** na sua máquina. Nada de banco externo.
+Por padrão, tudo fica em **um arquivo SQLite** na sua máquina — nada de servidor de
+banco. Se for hospedar onde o disco é apagado a cada deploy, é só apontar
+`DATABASE_URL` para um Postgres e o mesmo código passa a gravar lá.
 
 ## Instalação
 
@@ -172,8 +174,9 @@ telegram_bot/
 │   ├── servicos.py           # regras: agenda, lembretes, notas, preferências
 │   ├── lembretes.py          # fila de disparo, recorrência e resumo diário
 │   ├── ia.py                 # conversa com o Claude + ferramentas
+│   ├── saude.py              # porta HTTP que as hospedagens exigem
 │   └── bot.py                # comandos do Telegram e laço de lembretes
-└── tests/                    # 64 testes, sem rede
+└── tests/                    # 118 testes, sem rede
 ```
 
 ## Testes
@@ -183,5 +186,9 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-64 testes, nenhum deles chamando a API ou o Telegram — a conversa é exercitada com
-um cliente falso.
+118 testes, nenhum deles chamando a API ou o Telegram — a conversa é exercitada com
+um cliente falso. Para rodar a mesma bateria também contra o Postgres:
+
+```bash
+DATABASE_URL_TESTE=postgresql://usuario:senha@localhost/teste pytest
+```

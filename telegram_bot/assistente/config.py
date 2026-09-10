@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -26,7 +27,7 @@ def carregar_env(caminho: Path | None = None) -> None:
 @dataclass(frozen=True)
 class Config:
     token: str
-    caminho_db: Path
+    banco: str          # caminho de arquivo (SQLite) ou URL do Postgres
     fuso_padrao: str
     chats_permitidos: frozenset[int]
     aberto: bool
@@ -39,10 +40,23 @@ class Config:
     max_tokens: int
     usar_fallback: bool
     historico_max: int
+    porta: int | None   # definida pela hospedagem (Render etc.); None = sem servidor HTTP
 
     @property
     def ia_ativa(self) -> bool:
         return bool(self.chave_anthropic)
+
+    @property
+    def banco_visivel(self) -> str:
+        """Versão do endereço do banco sem a senha, para aparecer no log."""
+        return mascarar(self.banco)
+
+
+def mascarar(destino: str) -> str:
+    casamento = re.match(r"^(\w+://)([^@/]+)@(.*)$", destino)
+    if not casamento:
+        return destino
+    return f"{casamento.group(1)}***@{casamento.group(3)}"
 
 
 def _inteiro(nome: str, padrao: int) -> int:
@@ -79,7 +93,12 @@ def carregar(env_file: Path | None = None) -> Config:
 
     return Config(
         token=token,
-        caminho_db=Path(os.environ.get("BOT_DB", str(RAIZ / "dados" / "assistente.db"))),
+        # DATABASE_URL é o nome que Render, Neon, Supabase e afins usam.
+        banco=(
+            os.environ.get("DATABASE_URL", "").strip()
+            or os.environ.get("BOT_DB", "").strip()
+            or str(RAIZ / "dados" / "assistente.db")
+        ),
         fuso_padrao=os.environ.get("BOT_FUSO", "America/Sao_Paulo").strip(),
         chats_permitidos=frozenset(permitidos),
         aberto=_booleano("BOT_ABERTO", False),
@@ -92,4 +111,5 @@ def carregar(env_file: Path | None = None) -> Config:
         max_tokens=_inteiro("BOT_MAX_TOKENS", 16000),
         usar_fallback=_booleano("BOT_FALLBACK", True),
         historico_max=_inteiro("BOT_HISTORICO", 20),
+        porta=_inteiro("PORT", 0) or None,
     )
