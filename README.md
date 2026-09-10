@@ -38,3 +38,9 @@ Os vídeos ficam em `media/videos/<nome_do_arquivo>/<qualidade>/`.
 - Um arquivo `.py` por vídeo dentro de `scenes/`, com nome descritivo em minúsculas (ex.: `intro_derivadas.py`).
 - Cada cena é uma classe com nome em PascalCase (ex.: `IntroDerivadas`).
 - Assets sempre referenciados a partir de `assets/`.
+
+## Bot do Telegram
+
+Além dos vídeos, o repositório traz um assistente pessoal para o Telegram — agenda,
+lembretes e anotações — em [`telegram_bot/`](telegram_bot/README.md). Ele é
+independente do Manim: tem as próprias dependências e o próprio README.
