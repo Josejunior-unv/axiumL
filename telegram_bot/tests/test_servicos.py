@@ -131,3 +131,28 @@ def test_historico_e_normalizado_para_a_api(conn, usuario):
         {"role": "user", "content": "oi\ntá aí?"},
         {"role": "assistant", "content": "tô sim"},
     ]
+
+
+# --------------------------------------------------------------------------- #
+# É um bot de uma pessoa só
+# --------------------------------------------------------------------------- #
+
+def test_o_primeiro_chat_vira_dono_e_tranca_o_resto(conn):
+    assert servicos.obter_dono(conn) is None
+    assert servicos.autorizar(conn, 111) is True          # primeira pessoa: entra e vira dona
+    assert servicos.obter_dono(conn) == 111
+    assert servicos.autorizar(conn, 222) is False         # qualquer outro fica de fora
+    assert servicos.autorizar(conn, 111) is True          # a dona continua entrando
+
+
+def test_lista_no_env_tem_prioridade_sobre_o_dono(conn):
+    servicos.definir_dono(conn, 111)
+    permitidos = frozenset({999})
+    assert servicos.autorizar(conn, 999, permitidos=permitidos) is True
+    assert servicos.autorizar(conn, 111, permitidos=permitidos) is False
+
+
+def test_modo_aberto_nao_tranca_em_ninguem(conn):
+    assert servicos.autorizar(conn, 555, aberto=True) is True
+    assert servicos.autorizar(conn, 666, aberto=True) is True
+    assert servicos.obter_dono(conn) is None

@@ -155,6 +155,49 @@ def _para_usuario(linha: sqlite3.Row) -> Usuario:
 
 
 # --------------------------------------------------------------------------- #
+# Dono do bot (é um assistente de uma pessoa só)
+# --------------------------------------------------------------------------- #
+
+def obter_dono(conn: sqlite3.Connection) -> int | None:
+    linha = conn.execute(
+        "SELECT valor FROM configuracao WHERE chave = 'dono_chat_id'"
+    ).fetchone()
+    return int(linha["valor"]) if linha and linha["valor"] else None
+
+
+def definir_dono(conn: sqlite3.Connection, chat_id: int) -> None:
+    conn.execute(
+        "INSERT INTO configuracao (chave, valor) VALUES ('dono_chat_id', ?) "
+        "ON CONFLICT (chave) DO UPDATE SET valor = excluded.valor",
+        (str(chat_id),),
+    )
+    conn.commit()
+
+
+def autorizar(
+    conn: sqlite3.Connection,
+    chat_id: int,
+    permitidos: frozenset[int] = frozenset(),
+    aberto: bool = False,
+) -> bool:
+    """Diz se este chat pode usar o bot.
+
+    Sem lista explícita no .env, o PRIMEIRO chat que falar com o bot vira o dono
+    e nenhum outro entra depois — é assim que ele fica particular sem a pessoa
+    precisar descobrir o próprio id numérico.
+    """
+    if permitidos:
+        return chat_id in permitidos
+    if aberto:
+        return True
+    dono = obter_dono(conn)
+    if dono is None:
+        definir_dono(conn, chat_id)
+        return True
+    return dono == chat_id
+
+
+# --------------------------------------------------------------------------- #
 # Compromissos
 # --------------------------------------------------------------------------- #
 

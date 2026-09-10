@@ -81,6 +81,11 @@ CREATE TABLE IF NOT EXISTS mensagens (
 );
 
 CREATE INDEX IF NOT EXISTS idx_mensagens_chat ON mensagens (chat_id, id DESC);
+
+CREATE TABLE IF NOT EXISTS configuracao (
+    chave  TEXT PRIMARY KEY,
+    valor  TEXT
+);
 """
 
 

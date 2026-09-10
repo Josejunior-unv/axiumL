@@ -1,24 +1,16 @@
 """Testes das ferramentas que o modelo chama (sem tocar na API)."""
 
 from datetime import timedelta
-from pathlib import Path
 
 import pytest
 
 from assistente import servicos
-from assistente.config import Config
 from assistente.ia import Assistente
 
 
 @pytest.fixture()
-def assistente(conn):
-    config = Config(
-        token="x", caminho_db=Path("/tmp/x.db"), fuso_padrao="America/Sao_Paulo",
-        chats_permitidos=frozenset(), antecedencia_padrao=30, hora_resumo_padrao="08:00",
-        intervalo_lembretes=30, chave_anthropic=None, modelo="claude-opus-5",
-        esforco="low", max_tokens=16000, usar_fallback=True, historico_max=20,
-    )
-    return Assistente(conn, config)
+def assistente(conn, config_falsa):
+    return Assistente(conn, config_falsa())
 
 
 def test_sem_chave_o_assistente_fica_inativo(assistente):

@@ -74,8 +74,24 @@ def _assistente(context: ContextTypes.DEFAULT_TYPE) -> Assistente:
 
 
 def _permitido(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
-    permitidos = _config(context).chats_permitidos
-    return not permitidos or (update.effective_chat and update.effective_chat.id in permitidos)
+    """Bot de uma pessoa só: o primeiro chat vira o dono e os outros ficam de fora."""
+    chat = update.effective_chat
+    if chat is None:
+        return False
+    config = _config(context)
+    return servicos.autorizar(_conn(context), chat.id, config.chats_permitidos, config.aberto)
+
+
+def _info_acesso(context: ContextTypes.DEFAULT_TYPE, chat_id: int) -> str:
+    config = _config(context)
+    if config.aberto:
+        return "aberto a qualquer pessoa (BOT_ABERTO=1)"
+    if config.chats_permitidos:
+        return f"restrito à lista do .env (este chat: {chat_id})"
+    dono = servicos.obter_dono(_conn(context))
+    if dono == chat_id:
+        return f"só você (chat {chat_id})"
+    return f"outro chat é o dono ({dono})"
 
 
 def _usuario(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Usuario:
@@ -146,9 +162,13 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "\n\n(No momento estou sem a chave da IA, então entendo datas e guardo notas, "
         "mas converso pouco.)"
     )
+    cadeado = ""
+    if not _config(context).aberto:
+        cadeado = "\n🔒 Este bot é seu: mais ninguém consegue usar.\n"
     await _responder(
         update,
-        f"Oi, {nome}! 👋 Eu cuido da sua agenda e guardo o que você quiser lembrar.\n\n"
+        f"Oi, {nome}! 👋 Eu cuido da sua agenda e guardo o que você quiser lembrar.\n"
+        f"{cadeado}\n"
         f"Fuso: {usuario.fuso} · resumo do dia: {usuario.hora_resumo or 'desligado'} · "
         f"aviso {usuario.antecedencia_min} min antes.\n\n" + AJUDA + modo,
     )
@@ -310,7 +330,8 @@ async def cmd_config(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         f"Fuso: {usuario.fuso}\n"
         f"Resumo do dia: {usuario.hora_resumo or 'desligado'}\n"
         f"Aviso antes dos compromissos: {formatar_duracao(usuario.antecedencia_min)}\n"
-        f"Conversa com IA: {ia}\n\n"
+        f"Conversa com IA: {ia}\n"
+        f"Acesso: {_info_acesso(context, usuario.chat_id)}\n\n"
         "Mude com /fuso, /resumo e /aviso.",
     )
 

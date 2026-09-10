@@ -23,7 +23,7 @@ Meia hora antes de cada compromisso (dá para mudar) chega um lembrete com botõ
 | ⏰ **Lembretes** | aviso antes da hora + na hora, lembretes soltos ("me lembra de tomar o remédio às 22h") e resumo diário |
 | 📝 **Notas** | guardar qualquer coisa e buscar depois por palavra |
 | 💬 **Conversa** | entende linguagem natural via Claude e usa as mesmas funções dos comandos |
-| 🔒 **Particular** | dá para travar o bot só para o seu chat |
+| 🔒 **Particular** | o bot se tranca na primeira pessoa que falar com ele; os outros levam um "não" |
 
 Tudo fica em **um arquivo SQLite** na sua máquina. Nada de banco externo.
 
@@ -54,8 +54,13 @@ Abra o `.env` e preencha:
 - `ANTHROPIC_API_KEY` — chave da [API da Anthropic](https://console.anthropic.com).
   Opcional: sem ela o bot continua agendando e anotando, só conversa menos (veja
   *Modo sem IA*).
-- `TELEGRAM_CHATS_PERMITIDOS` — seu id numérico, para ninguém mais usar o bot.
-  Descubra o seu falando com o [@userinfobot](https://t.me/userinfobot).
+- `TELEGRAM_CHATS_PERMITIDOS` — pode deixar vazio. O bot é de uma pessoa só: quem
+  mandar a primeira mensagem vira o dono e ninguém mais consegue usar. Preencha
+  apenas se quiser fixar o id na mão ou liberar para duas pessoas (o id sai no
+  [@userinfobot](https://t.me/userinfobot)).
+
+> ⚠️ Mande o `/start` você mesma antes de divulgar o usuário do bot: é a primeira
+> mensagem que fecha o cadeado.
 
 **4. Rode.**
 
@@ -122,6 +127,16 @@ não inundar o chat).
 
 **Backup:** copie `dados/assistente.db` (é o arquivo com tudo).
 
+**Trocar o dono** (bot travado no chat errado, celular novo com outra conta):
+
+```bash
+sqlite3 dados/assistente.db "DELETE FROM configuracao WHERE chave='dono_chat_id'"
+```
+
+O próximo chat que falar com ele assume. Para não depender disso, basta pôr o id
+certo em `TELEGRAM_CHATS_PERMITIDOS`, que tem prioridade sobre o cadeado
+automático.
+
 ## Modo sem IA
 
 Sem `ANTHROPIC_API_KEY` o bot ainda:
@@ -152,7 +167,7 @@ telegram_bot/
 │   ├── lembretes.py          # fila de disparo, recorrência e resumo diário
 │   ├── ia.py                 # conversa com o Claude + ferramentas
 │   └── bot.py                # comandos do Telegram e laço de lembretes
-└── tests/                    # 61 testes, sem rede
+└── tests/                    # 64 testes, sem rede
 ```
 
 ## Testes
@@ -162,4 +177,5 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Nenhum teste chama a API nem o Telegram: a conversa é testada com um cliente falso.
+64 testes, nenhum deles chamando a API ou o Telegram — a conversa é exercitada com
+um cliente falso.

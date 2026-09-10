@@ -3,22 +3,10 @@
 from telegram.ext import CommandHandler
 
 from assistente import bot, servicos
-from assistente.config import Config
 
 
-def _config(tmp_path, **extras) -> Config:
-    base = dict(
-        token="123456:TESTE", caminho_db=tmp_path / "bot.db", fuso_padrao="America/Sao_Paulo",
-        chats_permitidos=frozenset(), antecedencia_padrao=30, hora_resumo_padrao="08:00",
-        intervalo_lembretes=30, chave_anthropic=None, modelo="claude-opus-5",
-        esforco="low", max_tokens=16000, usar_fallback=True, historico_max=20,
-    )
-    base.update(extras)
-    return Config(**base)
-
-
-def test_montar_registra_comandos_e_o_laco_de_lembretes(tmp_path):
-    aplicacao = bot.montar(_config(tmp_path))
+def test_montar_registra_comandos_e_o_laco_de_lembretes(config_falsa):
+    aplicacao = bot.montar(config_falsa())
     comandos = {
         c for h in aplicacao.handlers[0] if isinstance(h, CommandHandler) for c in h.commands
     }

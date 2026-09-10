@@ -29,6 +29,7 @@ class Config:
     caminho_db: Path
     fuso_padrao: str
     chats_permitidos: frozenset[int]
+    aberto: bool
     antecedencia_padrao: int
     hora_resumo_padrao: str | None
     intervalo_lembretes: int
@@ -81,6 +82,7 @@ def carregar(env_file: Path | None = None) -> Config:
         caminho_db=Path(os.environ.get("BOT_DB", str(RAIZ / "dados" / "assistente.db"))),
         fuso_padrao=os.environ.get("BOT_FUSO", "America/Sao_Paulo").strip(),
         chats_permitidos=frozenset(permitidos),
+        aberto=_booleano("BOT_ABERTO", False),
         antecedencia_padrao=_inteiro("BOT_ANTECEDENCIA_MIN", 30),
         hora_resumo_padrao=resumo or None,
         intervalo_lembretes=max(10, _inteiro("BOT_INTERVALO_SEGUNDOS", 30)),
