@@ -25,9 +25,11 @@ planilha do Excel (`.xlsx`).
 O tablet precisa baixar o app de um endereço `https://` para poder instalá-lo.
 Duas opções, as duas gratuitas.
 
-### Vercel
+### Vercel — endereço em uso
 
-O jeito mais rápido de ter um endereço curto:
+**https://analisededados.vercel.app/**
+
+Foi assim que ele subiu:
 
 1. Entre em [vercel.com](https://vercel.com) com a sua conta do GitHub.
 2. **Add New → Project** e importe o repositório `axiumL`.
@@ -38,8 +40,7 @@ Se quiser o endereço mais curto possível (o app na raiz, sem `/app-questionari
 no fim), antes de dar Deploy clique em *Edit* em **Root Directory** e escolha a
 pasta `app-questionario`. Funciona das duas formas.
 
-Sai um endereço como `https://axium-l.vercel.app`. Cada push na branch publica
-sozinho. O `vercel.json` já vai junto e diz para o navegador nunca guardar o
+Cada push na branch publica sozinho. O `vercel.json` já vai junto e diz para o navegador nunca guardar o
 `index.html` e o `sw.js` em cache — assim uma versão nova chega na hora.
 
 ### GitHub Pages
