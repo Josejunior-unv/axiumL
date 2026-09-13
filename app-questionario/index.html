@@ -234,6 +234,16 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:18px}
 }
 #aviso.ver{opacity:1; transform:translate(-50%,0)}
 .rodape-nota{margin-top:34px; padding-top:18px; border-top:1px solid var(--line); color:var(--suave); font-size:13px}
+
+/* ---------- coleta em grupo e compartilhamento ---------- */
+.grupo-txt{color:var(--tinta-2); font-size:14.5px; max-width:62ch}
+.grupo .acoes{margin-top:14px}
+.qr-caixa{display:flex; justify-content:center; margin-bottom:16px}
+.qr-caixa img{width:186px; height:186px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:9px}
+.link-caixa{font-family:var(--mono); font-size:13px; color:var(--tinta); background:var(--surface-3);
+  border:1px solid var(--line); border-radius:9px; padding:11px 13px; word-break:break-all; user-select:all}
+.rodape-nota{display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between}
+.rodape-nota p{max-width:54ch}
 [hidden]{display:none !important}
 @media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important} }
 </style>
@@ -272,11 +282,32 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:18px}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
         Baixar CSV
       </button>
-      <button class="btn btn-perigo" id="btn-limpar" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>
-        Apagar tudo
-      </button>
     </div>
+
+    <section class="secao">
+      <div class="secao-cab">
+        <h2>Coleta em grupo</h2>
+        <span class="conta">uma planilha só no fim</span>
+      </div>
+      <div class="cartao grupo">
+        <p class="grupo-txt">Cada pessoa do grupo aplica a pesquisa no próprio aparelho. No fim, quem for montar o trabalho junta tudo aqui e gera uma planilha única.</p>
+        <div class="acoes">
+          <button class="btn" id="btn-compartilhar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+            Compartilhar o app
+          </button>
+          <button class="btn" id="btn-importar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L8 8m4-4l4 4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+            Juntar respostas
+          </button>
+          <button class="btn" id="btn-backup" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+            Exportar cópia
+          </button>
+        </div>
+        <input type="file" id="arq-importar" accept=".json,application/json" multiple hidden>
+      </div>
+    </section>
 
     <section class="secao">
       <div class="secao-cab">
@@ -294,7 +325,13 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:18px}
       <div class="cartao" id="resumo"></div>
     </section>
 
-    <p class="rodape-nota">As respostas ficam salvas neste aparelho e continuam disponíveis sem internet. Baixe a planilha antes de limpar os dados do navegador.</p>
+    <div class="rodape-nota">
+      <p>As respostas ficam salvas neste aparelho e continuam disponíveis sem internet. Baixe a planilha antes de limpar os dados do navegador.</p>
+      <button class="btn btn-perigo" id="btn-limpar" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>
+        Apagar tudo
+      </button>
+    </div>
   </main>
 
   <!-- ===================== COLETA ===================== -->
@@ -347,6 +384,17 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:18px}
   <div class="dlg-acoes">
     <button class="btn" id="dlg-nao">Cancelar</button>
     <button class="btn btn-perigo" id="dlg-sim">Confirmar</button>
+  </div>
+</dialog>
+<dialog id="dlg-share">
+  <h3>Compartilhar o app</h3>
+  <p>Quem abrir este link aplica a pesquisa no próprio aparelho e pode instalar como app. Ninguém precisa criar conta.</p>
+  <div class="qr-caixa" id="qr-caixa" hidden><img id="qr-img" src="qr-do-app.svg" alt="QR code que abre o app da pesquisa"></div>
+  <p class="link-caixa" id="link-txt"></p>
+  <div class="dlg-acoes">
+    <button class="btn" id="btn-share-fechar">Fechar</button>
+    <button class="btn" id="btn-copiar">Copiar link</button>
+    <button class="btn" id="btn-share-nativo" hidden>Compartilhar…</button>
   </div>
 </dialog>
 <div id="aviso" role="status" aria-live="polite"></div>
@@ -409,6 +457,9 @@ const PERGUNTAS = [
 const TITULO = "Uso da Tecnologia no Ensino Médio";
 const CHAVE = "pesquisa-tecnologia-em-v1";
 const CHAVE_ENVIADAS = CHAVE + ":enviadas";
+// Endereço que o arquivo qr-do-app.svg codifica. Se publicar o app em outro
+// lugar, gere um QR novo e troque esta linha (o QR só aparece quando bate).
+const URL_DO_QR = "https://josejunior-unv.github.io/axiumL/app-questionario/";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
@@ -509,6 +560,7 @@ function renderPainel(){
   $("#btn-xlsx").disabled = n === 0;
   $("#btn-csv").disabled = n === 0;
   $("#btn-limpar").disabled = n === 0;
+  $("#btn-backup").disabled = n === 0;
   $("#conta-coletas").textContent = n === 1 ? "1 resposta" : n + " respostas";
 
   const lista = $("#lista-coletas");
@@ -1035,7 +1087,85 @@ async function baixar(nomeArquivo, blob){
 }
 
 /* =========================================================
-   8. LIGAÇÕES
+   8. COMPARTILHAR E JUNTAR RESPOSTAS DE VÁRIOS APARELHOS
+   ========================================================= */
+function enderecoAtual(){ return location.href.split("#")[0]; }
+
+function abrirCompartilhar(){
+  const dlg = $("#dlg-share");
+  const url = enderecoAtual();
+  $("#link-txt").textContent = url;
+  $("#qr-caixa").hidden = url.indexOf(URL_DO_QR) !== 0;
+  $("#btn-share-nativo").hidden = typeof navigator.share !== "function";
+  if (typeof dlg.showModal === "function") dlg.showModal();
+  else avisar("Link do app: " + url);
+}
+
+async function copiarLink(){
+  const url = $("#link-txt").textContent;
+  try{
+    await navigator.clipboard.writeText(url);
+    avisar("Link copiado.");
+  }catch(e){
+    const faixa = document.createRange();
+    faixa.selectNodeContents($("#link-txt"));
+    const sel = window.getSelection();
+    sel.removeAllRanges(); sel.addRange(faixa);
+    avisar("Toque e segure no link para copiar.");
+  }
+}
+
+function exportarCopia(){
+  const dados = { app:"pesquisa-tecnologia-em", versao:1, geradoEm:new Date().toISOString(), respostas };
+  baixar("copia-pesquisa_" + carimbo() + ".json",
+    new Blob([JSON.stringify(dados, null, 1)], { type:"application/json" }));
+}
+
+function soTexto(v){ return typeof v === "string" ? v.slice(0, 2000) : ""; }
+
+function normalizar(r){
+  const limpo = {
+    id: String(r.id).slice(0, 60),
+    criadoEm: typeof r.criadoEm === "string" ? r.criadoEm : new Date().toISOString(),
+    nome: soTexto(r.nome), turma: soTexto(r.turma), obs: soTexto(r.obs)
+  };
+  PERGUNTAS.forEach(p => {
+    const v = r[p.id];
+    limpo[p.id] = p.tipo === "multipla"
+      ? (Array.isArray(v) ? v.filter(x => typeof x === "string").map(x => x.slice(0, 400)) : [])
+      : soTexto(v);
+    if (p.aberta) limpo[p.id + "_texto"] = soTexto(r[p.id + "_texto"]);
+  });
+  return limpo;
+}
+
+async function juntarArquivos(arquivos){
+  let novas = 0, repetidas = 0, problemas = 0;
+  const jaTem = new Set(respostas.map(r => r.id));
+  for (const arquivo of arquivos){
+    try{
+      const dados = JSON.parse(await arquivo.text());
+      const lista = Array.isArray(dados) ? dados
+        : (dados && Array.isArray(dados.respostas) ? dados.respostas : null);
+      if (!lista){ problemas++; continue; }
+      lista.forEach(r => {
+        if (!r || typeof r !== "object" || !r.id) return;
+        if (jaTem.has(String(r.id))){ repetidas++; return; }
+        const nova = normalizar(r);
+        respostas.push(nova); jaTem.add(nova.id); enviarParaBanco(nova); novas++;
+      });
+    }catch(e){ problemas++; }
+  }
+  if (novas){ ordenar(); gravarLocal(); renderPainel(); }
+  const partes = [];
+  partes.push(novas === 1 ? "1 resposta adicionada" : novas + " respostas adicionadas");
+  if (repetidas) partes.push(repetidas + (repetidas === 1 ? " já estava aqui" : " já estavam aqui"));
+  if (problemas) partes.push(problemas + (problemas === 1 ? " arquivo não reconhecido" : " arquivos não reconhecidos"));
+  avisar(partes.join(" · ") + ".");
+}
+
+/* =========================================================
+   9. LIGAÇÕES
    ========================================================= */
 $("#btn-nova").addEventListener("click", novaColeta);
 $("#btn-salvar").addEventListener("click", salvarColeta);
@@ -1059,6 +1189,27 @@ $("#btn-limpar").addEventListener("click", async () => {
   if (bd) antigas.forEach(r => bd.doc("respostas/" + r.id).delete().catch(() => {}));
   avisar("Todas as respostas foram apagadas.");
 });
+
+$("#btn-compartilhar").addEventListener("click", abrirCompartilhar);
+$("#btn-share-fechar").addEventListener("click", () => $("#dlg-share").close());
+$("#btn-copiar").addEventListener("click", copiarLink);
+$("#btn-share-nativo").addEventListener("click", async () => {
+  try{
+    await navigator.share({
+      title: "Pesquisa — Uso da tecnologia no ensino médio",
+      text: "Ajude na coleta: abra o link e aplique o questionário.",
+      url: $("#link-txt").textContent
+    });
+  }catch(e){}
+});
+$("#btn-backup").addEventListener("click", exportarCopia);
+$("#btn-importar").addEventListener("click", () => $("#arq-importar").click());
+$("#arq-importar").addEventListener("change", async evento => {
+  const arquivos = [...evento.target.files];
+  evento.target.value = "";
+  if (arquivos.length) await juntarArquivos(arquivos);
+});
+$("#qr-img").addEventListener("error", () => { $("#qr-caixa").hidden = true; });
 
 lerLocal();
 ordenar();

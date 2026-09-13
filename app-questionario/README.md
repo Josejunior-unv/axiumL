@@ -16,6 +16,7 @@ planilha do Excel (`.xlsx`).
 | `sw.js` | Guarda o app no aparelho para funcionar offline |
 | `icones/` | Ícone do app na tela inicial |
 | `QUESTIONARIO.md` | O questionário em texto, para conferir ou imprimir |
+| `qr-do-app.svg` | QR code do endereço publicado, para projetar ou imprimir |
 
 ---
 
@@ -80,7 +81,34 @@ você prefira abrir no Google Planilhas ou em outro programa.
 > os dados de navegação ou desinstalar o app — então **baixe a planilha antes de
 > usar "Apagar tudo"**.
 
-## 5. Mudar as perguntas
+## 5. Dividir a coleta com o grupo
+
+Dá para várias pessoas aplicarem a pesquisa ao mesmo tempo, cada uma no próprio
+celular ou tablet, e no fim juntar tudo numa planilha só.
+
+**Passar o app adiante.** No painel, toque em **Compartilhar o app**. Aparece o
+link, um botão de copiar e — quando o app está aberto pelo endereço publicado —
+o QR code para os colegas apontarem a câmera. Em celular e tablet aparece também
+**Compartilhar…**, que abre o WhatsApp, e-mail e o resto do sistema. Ninguém
+precisa criar conta nem instalar nada além do próprio app.
+
+O arquivo `qr-do-app.svg` é esse mesmo QR code, para projetar no telão ou colar
+no caderno. Ele aponta para `https://josejunior-unv.github.io/axiumL/app-questionario/`
+— se você publicar o app em outro endereço, gere um QR novo e troque também a
+constante `URL_DO_QR` no `index.html` (é ela que decide quando o QR aparece).
+
+**Juntar as respostas no fim.** Cada colega toca em **Exportar cópia** e manda o
+arquivo `.json` para quem vai montar o trabalho (WhatsApp, e-mail, o que for
+mais fácil). Quem recebe toca em **Juntar respostas**, seleciona todos os
+arquivos de uma vez e pronto: o app soma tudo, ignora as respostas repetidas
+(se o mesmo arquivo entrar duas vezes) e avisa quantas entraram. Depois é só
+**Baixar Excel** para sair a planilha do grupo inteiro, com o resumo já
+recalculado em cima do total.
+
+> Cada resposta tem um código próprio, então nada é contado duas vezes, mesmo
+> que os arquivos se cruzem entre os colegas.
+
+## 6. Mudar as perguntas
 
 Todo o questionário está em uma única lista no começo do `<script>` do
 `index.html`, na constante `PERGUNTAS`:
