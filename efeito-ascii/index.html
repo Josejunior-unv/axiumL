@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Efeito ASCII — Forest</title>
+<meta name="theme-color" content="#0B1117">
+<style>
+:root{
+  --fundo:#0B1117; --superficie:#121A22; --superficie-2:#18222C;
+  --fio:#243141; --tinta:#E8EFF6; --tinta-2:#9FB2C4; --suave:#6E8298;
+  --azul:#4DA3FF; --ambar:#E8B35C;
+  --corpo:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  --mono:ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--fundo); color:var(--tinta); font-family:var(--corpo);
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased}
+.shell{max-width:1220px; margin:0 auto; padding:26px 18px 60px}
+header{margin-bottom:22px}
+.eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--ambar)}
+h1{font-size:clamp(26px,4vw,34px); margin:8px 0 6px; letter-spacing:-.025em; font-weight:700}
+.sub{color:var(--tinta-2); max-width:66ch}
+.palco{position:relative; border:1px solid var(--fio); border-radius:16px; overflow:hidden;
+  background:#000; line-height:0}
+canvas{width:100%; height:auto; display:block}
+.barra{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:14px 0 22px}
+.btn{font:inherit; font-weight:600; font-size:14px; border:0; border-radius:11px; padding:11px 16px;
+  background:var(--superficie-2); color:var(--tinta); cursor:pointer; transition:background .15s, transform .12s}
+.btn:hover{background:#1F2B37} .btn:active{transform:scale(.97)}
+.btn-p{background:var(--azul); color:#04121F}
+.btn-p:hover{background:#6FB6FF}
+.arq{position:relative; overflow:hidden; display:inline-flex}
+.arq input{position:absolute; inset:0; opacity:0; cursor:pointer}
+.origem{font-family:var(--mono); font-size:12px; color:var(--suave)}
+.grade{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px 20px}
+.ctl{display:flex; align-items:center; justify-content:space-between; gap:12px;
+  background:var(--superficie); border:1px solid var(--fio); border-radius:11px; padding:9px 13px}
+.ctl > span:first-child{font-size:13px; color:var(--tinta-2); white-space:nowrap}
+.ctl select, .ctl input[type=range]{font:inherit; font-size:13px}
+.ctl select{background:var(--superficie-2); color:var(--tinta); border:1px solid var(--fio);
+  border-radius:8px; padding:5px 8px; max-width:130px}
+.faixa-env{display:flex; align-items:center; gap:9px}
+.faixa-env input{width:104px; accent-color:var(--azul)}
+.faixa-env b{font-family:var(--mono); font-size:12px; color:var(--ambar); min-width:30px; text-align:right}
+.ctl input[type=checkbox]{width:18px; height:18px; accent-color:var(--azul)}
+h2{font-size:13px; font-family:var(--mono); letter-spacing:.16em; text-transform:uppercase;
+  color:var(--suave); margin:26px 0 12px; font-weight:600}
+#posefeitos{display:flex; flex-wrap:wrap; gap:8px}
+.pastilha{display:inline-flex; align-items:center; gap:7px; font-size:13px; cursor:pointer;
+  background:var(--superficie); border:1px solid var(--fio); border-radius:999px; padding:8px 14px;
+  color:var(--tinta-2); transition:all .15s}
+.pastilha.on{background:rgba(77,163,255,.14); border-color:rgba(77,163,255,.45); color:var(--azul)}
+.pastilha input{width:15px; height:15px; accent-color:var(--azul)}
+footer{margin-top:34px; padding-top:18px; border-top:1px solid var(--fio); color:var(--suave); font-size:13px}
+@media (prefers-reduced-motion: reduce){ .btn{transition:none} }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <span class="eyebrow">Canvas2D · sem bibliotecas</span>
+    <h1>Efeito ASCII — Forest</h1>
+    <p class="sub">A imagem é dividida numa grade, cada célula vira uma forma escolhida pela luminância, e depois vêm os ajustes de cor, os pós-efeitos e a animação. Solte uma foto sua ou use a cena gerada aqui mesmo.</p>
+  </header>
+
+  <div class="palco"><canvas id="tela"></canvas></div>
+
+  <div class="barra">
+    <span class="btn arq">Carregar foto<input type="file" id="arquivo" accept="image/*"></span>
+    <button class="btn" id="restaurar">Cena gerada</button>
+    <button class="btn btn-p" id="baixar">Baixar PNG</button>
+    <span class="origem">origem: <span id="origem">cena gerada</span></span>
+  </div>
+
+  <div class="grade" id="controles"></div>
+
+  <h2>Pós-efeitos</h2>
+  <div id="posefeitos"></div>
+
+  <footer>Preset Forest: caracteres, cinza 100, contraste 128, desfoque tilt-shift, cromática + meio-tom + poeira de filme, animação shimmer.</footer>
+</div>
+<script src="motor.js"></script>
+<script src="pipeline.js"></script>
+<script src="pagina.js"></script>
+</body>
+</html>
