@@ -395,11 +395,12 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:18px}
 <dialog id="dlg-share">
   <h3>Compartilhar o app</h3>
   <p>Quem abrir este link aplica a pesquisa no próprio aparelho e pode instalar como app. Ninguém precisa criar conta.</p>
-  <div class="qr-caixa" id="qr-caixa" hidden><img id="qr-img" src="qr-do-app.svg" alt="QR code que abre o app da pesquisa"></div>
+  <div class="qr-caixa" id="qr-caixa" hidden></div>
   <p class="link-caixa" id="link-txt"></p>
   <div class="dlg-acoes">
     <button class="btn" id="btn-share-fechar">Fechar</button>
     <button class="btn" id="btn-copiar">Copiar link</button>
+    <button class="btn" id="btn-qr" hidden>Baixar QR</button>
     <button class="btn" id="btn-share-nativo" hidden>Compartilhar…</button>
   </div>
 </dialog>
@@ -464,10 +465,7 @@ const PERGUNTAS = [
 const TITULO = "Uso da Tecnologia no Ensino Superior";
 const CHAVE = "pesquisa-tecnologia-es-v1";
 const CHAVE_ENVIADAS = CHAVE + ":enviadas";
-// Endereço que o arquivo qr-do-app.svg codifica. Se publicar o app em outro
-// lugar, gere um QR novo e troque esta linha (o QR só aparece quando bate).
-const URL_DO_QR = "https://josejunior-unv.github.io/axiumL/app-questionario/";
-const VERSAO = "2 · ensino superior";
+const VERSAO = "3 · ensino superior";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
@@ -1271,11 +1269,238 @@ function baixar(nomeArquivo, blob){
 /* =========================================================
    8. COMPARTILHAR E JUNTAR RESPOSTAS DE VÁRIOS APARELHOS
    ========================================================= */
+/* ---------- gerador de QR code (modo byte, correção M, versões 1 a 10) ----------
+   Escrito aqui dentro para o QR sair sempre do endereço em que o app está
+   sendo servido — assim ele continua certo se o app mudar de domínio. */
+const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
+(function(){ let x = 1;
+  for (let i = 0; i < 255; i++){ EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 0x100) x ^= 0x11d; }
+  for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255]; })();
+const mul = (a,b) => (a === 0 || b === 0) ? 0 : EXP[LOG[a] + LOG[b]];
+
+// [codewords de dados, codewords de correção por bloco, blocos g1, dados g1, blocos g2, dados g2]
+const TABELA_M = [
+  null,
+  [16,10,1,16,0,0],  [28,16,1,28,0,0],  [44,26,1,44,0,0],  [64,18,2,32,0,0],  [86,24,2,43,0,0],
+  [108,16,4,27,0,0], [124,18,4,31,0,0], [154,22,2,38,2,39], [182,22,3,36,2,37], [216,26,4,43,1,44]
+];
+const ALINHAMENTO = [null, [], [6,18], [6,22], [6,26], [6,30], [6,34], [6,22,38], [6,24,42], [6,26,46], [6,28,50]];
+const RESTO = [0,0,7,7,7,7,7,0,0,0,0];
+
+function polyGen(n){
+  let p = [1];
+  for (let i = 0; i < n; i++){
+    const novo = new Array(p.length + 1).fill(0);
+    for (let j = 0; j < p.length; j++){ novo[j] ^= p[j]; novo[j+1] ^= mul(p[j], EXP[i]); }
+    p = novo;
+  }
+  return p;
+}
+function correcao(dados, nEc){
+  const gen = polyGen(nEc);
+  const res = new Array(dados.length + nEc).fill(0);
+  for (let i = 0; i < dados.length; i++) res[i] = dados[i];
+  for (let i = 0; i < dados.length; i++){
+    const c = res[i];
+    if (!c) continue;
+    for (let j = 0; j < gen.length; j++) res[i+j] ^= mul(gen[j], c);
+  }
+  return res.slice(dados.length);
+}
+function bch15(v){ let d = v << 10; for (let i = 4; i >= 0; i--) if (d & (1 << (i + 10))) d ^= 0x537 << i; return ((v << 10) | d) ^ 0x5412; }
+function bch18(v){ let d = v << 12; for (let i = 5; i >= 0; i--) if (d & (1 << (i + 12))) d ^= 0x1f25 << i; return (v << 12) | d; }
+
+function bitsDeDados(bytes, versao){
+  const bits = [];
+  const push = (valor, n) => { for (let i = n - 1; i >= 0; i--) bits.push((valor >> i) & 1); };
+  push(0b0100, 4);
+  push(bytes.length, versao < 10 ? 8 : 16);
+  bytes.forEach(b => push(b, 8));
+  const capacidade = TABELA_M[versao][0] * 8;
+  for (let i = 0; i < 4 && bits.length < capacidade; i++) bits.push(0);
+  while (bits.length % 8) bits.push(0);
+  const preenche = [0xEC, 0x11];
+  for (let i = 0; bits.length < capacidade; i++) push(preenche[i % 2], 8);
+  const cw = [];
+  for (let i = 0; i < bits.length; i += 8){
+    let v = 0; for (let j = 0; j < 8; j++) v = (v << 1) | bits[i+j];
+    cw.push(v);
+  }
+  return cw;
+}
+function intercalar(cw, versao){
+  const [, nEc, b1, d1, b2, d2] = TABELA_M[versao];
+  const blocos = [], blocosEc = [];
+  let pos = 0;
+  for (let i = 0; i < b1; i++){ const b = cw.slice(pos, pos + d1); pos += d1; blocos.push(b); blocosEc.push(correcao(b, nEc)); }
+  for (let i = 0; i < b2; i++){ const b = cw.slice(pos, pos + d2); pos += d2; blocos.push(b); blocosEc.push(correcao(b, nEc)); }
+  const saida = [];
+  const maxD = Math.max(d1, d2);
+  for (let i = 0; i < maxD; i++) blocos.forEach(b => { if (i < b.length) saida.push(b[i]); });
+  for (let i = 0; i < nEc; i++) blocosEc.forEach(b => saida.push(b[i]));
+  return saida;
+}
+
+function matrizBase(versao){
+  const n = versao * 4 + 17;
+  const m = Array.from({length:n}, () => new Array(n).fill(null));
+  const fixo = Array.from({length:n}, () => new Array(n).fill(false));
+  const marcar = (x,y,v) => { m[y][x] = v; fixo[y][x] = true; };
+
+  const localizador = (cx,cy) => {
+    for (let dy = -1; dy <= 7; dy++) for (let dx = -1; dx <= 7; dx++){
+      const x = cx + dx, y = cy + dy;
+      if (x < 0 || y < 0 || x >= n || y >= n) continue;
+      const borda = dx >= 0 && dx <= 6 && dy >= 0 && dy <= 6;
+      const anel = borda && (dx === 0 || dx === 6 || dy === 0 || dy === 6);
+      const centro = dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4;
+      marcar(x, y, anel || centro ? 1 : 0);
+    }
+  };
+  localizador(0,0); localizador(n-7,0); localizador(0,n-7);
+
+  for (let i = 8; i < n - 8; i++){ const v = i % 2 === 0 ? 1 : 0; marcar(i,6,v); marcar(6,i,v); }
+
+  const pos = ALINHAMENTO[versao];
+  pos.forEach(cy => pos.forEach(cx => {
+    if ((cx <= 8 && cy <= 8) || (cx >= n-9 && cy <= 8) || (cx <= 8 && cy >= n-9)) return;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++)
+      marcar(cx+dx, cy+dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1 ? 1 : 0);
+  }));
+
+  marcar(8, n-8, 1);                                  // módulo escuro
+  for (let i = 0; i < 9; i++){ if (!fixo[8][i]) marcar(i,8,0); if (!fixo[i][8]) marcar(8,i,0); }
+  for (let i = n-8; i < n; i++){ if (!fixo[8][i]) marcar(i,8,0); if (!fixo[i][8]) marcar(8,i,0); }
+
+  if (versao >= 7){
+    const info = bch18(versao);
+    for (let i = 0; i < 18; i++){
+      const bit = (info >> i) & 1, a = Math.floor(i/3), b = i % 3;
+      marcar(a, n-11+b, bit); marcar(n-11+b, a, bit);
+    }
+  }
+  return { m, fixo, n };
+}
+
+function colocarDados(m, fixo, n, cw){
+  const bits = [];
+  cw.forEach(v => { for (let i = 7; i >= 0; i--) bits.push((v >> i) & 1); });
+  let idx = 0, subindo = true;
+  for (let col = n - 1; col > 0; col -= 2){
+    if (col === 6) col--;
+    for (let k = 0; k < n; k++){
+      const linha = subindo ? n - 1 - k : k;
+      for (const c of [col, col - 1]){
+        if (fixo[linha][c]) continue;
+        m[linha][c] = idx < bits.length ? bits[idx] : 0;
+        idx++;
+      }
+    }
+    subindo = !subindo;
+  }
+}
+const MASCARAS = [
+  (l,c) => (l + c) % 2 === 0,
+  (l,c) => l % 2 === 0,
+  (l,c) => c % 3 === 0,
+  (l,c) => (l + c) % 3 === 0,
+  (l,c) => (Math.floor(l/2) + Math.floor(c/3)) % 2 === 0,
+  (l,c) => (l*c) % 2 + (l*c) % 3 === 0,
+  (l,c) => ((l*c) % 2 + (l*c) % 3) % 2 === 0,
+  (l,c) => ((l+c) % 2 + (l*c) % 3) % 2 === 0
+];
+function penalidade(m, n){
+  let p = 0;
+  for (let i = 0; i < n; i++){
+    for (const eLinha of [true,false]){
+      let run = 1;
+      for (let j = 1; j < n; j++){
+        const a = eLinha ? m[i][j] : m[j][i], b = eLinha ? m[i][j-1] : m[j-1][i];
+        if (a === b) run++; else { if (run >= 5) p += run - 2; run = 1; }
+      }
+      if (run >= 5) p += run - 2;
+    }
+  }
+  for (let l = 0; l < n-1; l++) for (let c = 0; c < n-1; c++)
+    if (m[l][c] === m[l][c+1] && m[l][c] === m[l+1][c] && m[l][c] === m[l+1][c+1]) p += 3;
+  const alvo = [1,0,1,1,1,0,1,0,0,0,0], alvo2 = [0,0,0,0,1,0,1,1,1,0,1];
+  for (let i = 0; i < n; i++) for (let j = 0; j + 11 <= n; j++){
+    let ok1 = true, ok2 = true, ok3 = true, ok4 = true;
+    for (let k = 0; k < 11; k++){
+      if (m[i][j+k] !== alvo[k]) ok1 = false;
+      if (m[i][j+k] !== alvo2[k]) ok2 = false;
+      if (m[j+k][i] !== alvo[k]) ok3 = false;
+      if (m[j+k][i] !== alvo2[k]) ok4 = false;
+    }
+    p += (ok1?40:0) + (ok2?40:0) + (ok3?40:0) + (ok4?40:0);
+  }
+  let escuros = 0;
+  for (let l = 0; l < n; l++) for (let c = 0; c < n; c++) if (m[l][c]) escuros++;
+  p += Math.floor(Math.abs(escuros * 100 / (n*n) - 50) / 5) * 10;
+  return p;
+}
+function gerarQr(texto){
+  const bytes = Array.from(new TextEncoder().encode(texto));
+  let versao = 0;
+  for (let v = 1; v <= 10; v++){
+    const indicador = v < 10 ? 8 : 16;
+    if (TABELA_M[v][0] * 8 >= 4 + indicador + bytes.length * 8){ versao = v; break; }
+  }
+  if (!versao) return null;
+  const cw = intercalar(bitsDeDados(bytes, versao), versao);
+  const bits = cw.slice();
+  for (let i = 0; i < Math.ceil(RESTO[versao] / 8); i++) bits.push(0);
+
+  let melhor = null, melhorP = Infinity;
+  for (let mascara = 0; mascara < 8; mascara++){
+    const { m, fixo, n } = matrizBase(versao);
+    colocarDados(m, fixo, n, bits);
+    for (let l = 0; l < n; l++) for (let c = 0; c < n; c++)
+      if (!fixo[l][c] && MASCARAS[mascara](l,c)) m[l][c] ^= 1;
+    const info = bch15((0b00 << 3) | mascara);
+    for (let i = 0; i < 15; i++){
+      const bit = (info >> i) & 1;
+      // cópia vertical, na coluna 8
+      if (i < 6) m[i][8] = bit; else if (i < 8) m[i+1][8] = bit; else m[n-15+i][8] = bit;
+      // cópia horizontal, na linha 8
+      if (i < 8) m[8][n-1-i] = bit; else if (i < 9) m[8][7] = bit; else m[8][14-i] = bit;
+    }
+    const p = penalidade(m, n);
+    if (p < melhorP){ melhorP = p; melhor = m; }
+  }
+  return melhor;
+}
+
+function svgDoQr(texto){
+  const m = gerarQr(texto);
+  if (!m) return null;
+  const n = m.length, borda = 3, total = n + borda * 2;
+  let d = "";
+  for (let y = 0; y < n; y++){
+    let x = 0;
+    while (x < n){
+      if (m[y][x]){
+        const i = x;
+        while (x < n && m[y][x]) x++;
+        d += "M" + (i+borda) + " " + (y+borda) + "h" + (x-i) + "v1h-" + (x-i) + "z";
+      } else x++;
+    }
+  }
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + total + ' ' + total + '"' +
+    ' shape-rendering="crispEdges" role="img" aria-label="QR code que abre o app da pesquisa">' +
+    '<rect width="' + total + '" height="' + total + '" fill="#ffffff"/>' +
+    '<path d="' + d + '" fill="#1B4F8F"/></svg>';
+}
+
 function abrirCompartilhar(){
   const dlg = $("#dlg-share");
   const url = location.href.split("#")[0];
   $("#link-txt").textContent = url;
-  $("#qr-caixa").hidden = url.indexOf(URL_DO_QR) !== 0;
+  // o QR só faz sentido quando o app está num endereço que outra pessoa alcança
+  const svg = location.protocol.startsWith("http") ? svgDoQr(url) : null;
+  $("#qr-caixa").innerHTML = svg || "";
+  $("#qr-caixa").hidden = !svg;
+  $("#btn-qr").hidden = !svg;
   $("#btn-share-nativo").hidden = typeof navigator.share !== "function";
   if (typeof dlg.showModal === "function") dlg.showModal();
   else avisar("Link do app: " + url);
@@ -1389,7 +1614,10 @@ $("#arq-importar").addEventListener("change", async evento => {
   evento.target.value = "";
   if (arquivos.length) await juntarArquivos(arquivos);
 });
-$("#qr-img").addEventListener("error", () => { $("#qr-caixa").hidden = true; });
+$("#btn-qr").addEventListener("click", () => {
+  const svg = svgDoQr(location.href.split("#")[0]);
+  if (svg) baixar("qr-da-pesquisa.svg", new Blob([svg], { type:"image/svg+xml" }));
+});
 
 lerLocal();
 ordenar();

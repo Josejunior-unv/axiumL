@@ -3,12 +3,11 @@
    Assim o app continua funcionando sem internet, mas uma versão nova
    publicada nunca fica presa no aparelho — o erro da versão anterior,
    que servia sempre a cópia guardada e nunca ia checar o servidor. */
-const CACHE = "pesquisa-es-v3";
+const CACHE = "pesquisa-es-v4";
 const ESSENCIAIS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
-  "./qr-do-app.svg",
   "./icones/icone-192.png",
   "./icones/icone-512.png",
   "./icones/icone-maskable-512.png"

@@ -14,23 +14,37 @@ planilha do Excel (`.xlsx`).
 | `index.html` | O app inteiro — telas, perguntas e gerador da planilha |
 | `manifest.webmanifest` | Faz o tablet reconhecer como aplicativo instalável |
 | `sw.js` | Guarda o app no aparelho para funcionar offline |
+| `vercel.json` | Cabeçalhos de cache, se publicar na Vercel |
 | `icones/` | Ícone do app na tela inicial |
 | `QUESTIONARIO.md` | O questionário em texto, para conferir ou imprimir |
-| `qr-do-app.svg` | QR code do endereço publicado, para projetar ou imprimir |
 
 ---
 
 ## 1. Colocar o app no ar
 
 O tablet precisa baixar o app de um endereço `https://` para poder instalá-lo.
-O jeito mais simples é o GitHub Pages, que já está configurado neste repositório:
+Duas opções, as duas gratuitas.
 
-1. No GitHub, abra **Settings → Pages**.
-2. Em **Source**, escolha **GitHub Actions**.
-3. Vá em **Actions → Publicar app no GitHub Pages → Run workflow**
-   (ou faça um push na branch `master` — a publicação roda sozinha).
-4. O endereço aparece no fim da execução, algo como:
-   `https://josejunior-unv.github.io/axiumL/`
+### Vercel
+
+O jeito mais rápido de ter um endereço curto:
+
+1. Entre em [vercel.com](https://vercel.com) com a sua conta do GitHub.
+2. **Add New → Project** e importe o repositório `axiumL`.
+3. Em **Root Directory**, clique em *Edit* e escolha a pasta **`app-questionario`**.
+   É o passo que faz o app abrir na raiz do endereço.
+4. Deixe o resto como está (*Framework Preset: Other*, sem comando de build) e
+   clique em **Deploy**.
+
+Sai um endereço como `https://axium-l.vercel.app`. Cada push na branch publica
+sozinho. O `vercel.json` já vai junto e diz para o navegador nunca guardar o
+`index.html` e o `sw.js` em cache — assim uma versão nova chega na hora.
+
+### GitHub Pages
+
+Já está configurado neste repositório: em **Settings → Pages**, com *Deploy from
+a branch* apontando para a branch do app. O endereço é
+`https://josejunior-unv.github.io/axiumL/`.
 
 **Atualizações.** Quando você publica uma versão nova, ela chega ao tablet na
 próxima vez que o app for aberto com internet — o service worker busca primeiro
@@ -103,16 +117,16 @@ celular ou tablet, e no fim juntar tudo numa planilha só.
 No painel, a seção **Coleta em grupo** mostra os três passos na ordem, cada um
 com o próprio botão ao lado.
 
-**Passo 1 — passar o app adiante.** Toque em **Compartilhar o app**. Aparece o
-link, um botão de copiar e — quando o app está aberto pelo endereço publicado —
-o QR code para os colegas apontarem a câmera. Em celular e tablet aparece também
-**Compartilhar…**, que abre o WhatsApp, e-mail e o resto do sistema. Ninguém
-precisa criar conta nem instalar nada além do próprio app.
+**Passo 1 — passar o app adiante.** Toque em **Compartilhar o app**.
+Aparece o link, um botão de copiar e o **QR code** para os colegas apontarem a
+câmera. Em celular e tablet aparece também **Compartilhar…**, que abre o
+WhatsApp, e-mail e o resto do sistema. Ninguém precisa criar conta nem instalar
+nada além do próprio app.
 
-O arquivo `qr-do-app.svg` é esse mesmo QR code, para projetar no telão ou colar
-no caderno. Ele aponta para `https://josejunior-unv.github.io/axiumL/app-questionario/`
-— se você publicar o app em outro endereço, gere um QR novo e troque também a
-constante `URL_DO_QR` no `index.html` (é ela que decide quando o QR aparece).
+O QR é gerado pelo app a partir do endereço em que ele está sendo aberto, então
+continua certo se você mudar de hospedagem — não há endereço fixo no código para
+lembrar de trocar. O botão **Baixar QR** salva a imagem em SVG, para projetar no
+telão ou imprimir sem perder qualidade.
 
 **Passo 2 e 3 — juntar as respostas no fim.** Cada colega toca em **Exportar cópia** e manda o
 arquivo `.json` para quem vai montar o trabalho (WhatsApp, e-mail, o que for
