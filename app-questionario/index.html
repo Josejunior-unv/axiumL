@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pesquisa Tecnologia no Ensino Médio</title>
+<meta name="description" content="Aplicativo de coleta do questionário sobre uso da tecnologia no ensino médio, com exportação para Excel.">
+<meta name="theme-color" content="#0E6552">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icones/icone-192.png">
+<link rel="icon" href="icones/icone-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Zilla+Slab:wght@600;700&display=swap">
+<style>
+:root{
+  --ground:#F2F3EF; --surface:#FFFFFF; --surface-2:#E9EDE7; --surface-3:#F7F8F5;
+  --line:#D5DCD5; --line-forte:#B7C2BA;
+  --tinta:#15201D; --tinta-2:#3F514B; --suave:#6C7C75;
+  --destaque:#0E6552; --destaque-tinta:#FFFFFF; --destaque-fraco:#DFEDE7; --destaque-linha:#93C5B3;
+  --alerta:#9A4F0B; --alerta-fraco:#F7E9D6;
+  --sombra:0 1px 2px rgba(21,32,29,.05), 0 10px 24px -18px rgba(21,32,29,.45);
+  --raio:12px;
+  --display:"Zilla Slab", Georgia, serif;
+  --corpo:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#101614; --surface:#18211E; --surface-2:#202B27; --surface-3:#141D1A;
+    --line:#2B3A34; --line-forte:#3D504A;
+    --tinta:#E7EDEA; --tinta-2:#B3C2BC; --suave:#8A9B94;
+    --destaque:#4FC7A4; --destaque-tinta:#06221B; --destaque-fraco:#1C352E; --destaque-linha:#2F5D4F;
+    --alerta:#E0A45F; --alerta-fraco:#31261A;
+    --sombra:0 1px 2px rgba(0,0,0,.35), 0 10px 24px -18px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101614; --surface:#18211E; --surface-2:#202B27; --surface-3:#141D1A;
+  --line:#2B3A34; --line-forte:#3D504A;
+  --tinta:#E7EDEA; --tinta-2:#B3C2BC; --suave:#8A9B94;
+  --destaque:#4FC7A4; --destaque-tinta:#06221B; --destaque-fraco:#1C352E; --destaque-linha:#2F5D4F;
+  --alerta:#E0A45F; --alerta-fraco:#31261A;
+  --sombra:0 1px 2px rgba(0,0,0,.35), 0 10px 24px -18px rgba(0,0,0,.9);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--tinta);
+  font-family:var(--corpo); font-size:16px; line-height:1.5;
+  -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;
+}
+.shell{max-width:940px; margin:0 auto; padding-inline:18px; padding-block:24px 40px}
+h1,h2,h3{font-family:var(--display); font-weight:600; margin:0; text-wrap:balance; letter-spacing:-.01em}
+h1{font-size:clamp(26px,4.4vw,36px); line-height:1.12}
+h2{font-size:20px}
+p{margin:0}
+.sobrancelha{
+  font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--destaque);
+}
+.sub{color:var(--tinta-2); font-size:15px; max-width:62ch}
+
+/* ---------- cabeçalho ---------- */
+.topo{display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; justify-content:space-between; margin-bottom:22px}
+.topo-txt{display:flex; flex-direction:column; gap:7px}
+.selo{
+  display:inline-flex; align-items:center; gap:8px; flex-shrink:0;
+  font-family:var(--mono); font-size:12px; color:var(--tinta-2);
+  background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:7px 13px;
+}
+.ponto{width:8px; height:8px; border-radius:50%; background:var(--line-forte); flex:none}
+.ponto.on{background:var(--destaque)}
+
+/* ---------- faixa de status ---------- */
+.status{
+  display:grid; grid-template-columns:repeat(3,1fr);
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--raio);
+  overflow:hidden; margin-bottom:18px;
+}
+.status > div{padding:15px 18px; border-left:1px solid var(--line)}
+.status > div:first-child{border-left:0}
+.status dt{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--suave); margin-bottom:4px}
+.status dd{margin:0; font-family:var(--mono); font-weight:600; font-size:22px; font-variant-numeric:tabular-nums; line-height:1.2}
+.status dd small{font-size:13px; font-weight:500; color:var(--tinta-2)}
+
+/* ---------- botões ---------- */
+.btn{
+  font-family:var(--corpo); font-size:15px; font-weight:600; line-height:1;
+  display:inline-flex; align-items:center; justify-content:center; gap:9px;
+  min-height:48px; padding:0 20px; border-radius:10px; cursor:pointer;
+  border:1px solid var(--line-forte); background:var(--surface); color:var(--tinta);
+  transition:background .15s ease, border-color .15s ease, transform .08s ease;
+}
+.btn:active{transform:translateY(1px)}
+.btn:hover{border-color:var(--destaque-linha)}
+.btn:focus-visible{outline:2px solid var(--destaque); outline-offset:2px}
+.btn[disabled]{opacity:.45; cursor:not-allowed; transform:none}
+.btn-principal{background:var(--destaque); border-color:var(--destaque); color:var(--destaque-tinta); min-height:58px; font-size:17px; width:100%}
+.btn-principal:hover{background:var(--destaque); filter:brightness(1.08)}
+.btn-perigo{color:var(--alerta); border-color:var(--line)}
+.btn-perigo:hover{border-color:var(--alerta); background:var(--alerta-fraco)}
+.btn svg{width:18px; height:18px; flex:none}
+.acoes{display:flex; flex-wrap:wrap; gap:10px; margin-top:12px}
+.acoes .btn{flex:1 1 200px}
+
+/* ---------- seções ---------- */
+.secao{margin-top:34px}
+.secao-cab{display:flex; align-items:baseline; justify-content:space-between; gap:14px; margin-bottom:12px; flex-wrap:wrap}
+.conta{font-family:var(--mono); font-size:12px; color:var(--suave); font-variant-numeric:tabular-nums}
+
+/* ---------- lista de coletas ---------- */
+.coletas{border:1px solid var(--line); border-radius:var(--raio); background:var(--surface); overflow:hidden}
+.coleta{display:flex; align-items:center; gap:12px; padding:12px 14px; border-top:1px solid var(--line)}
+.coleta:first-child{border-top:0}
+.coleta-n{font-family:var(--mono); font-size:12px; font-weight:600; color:var(--destaque); background:var(--destaque-fraco); border-radius:6px; padding:5px 8px; flex:none; font-variant-numeric:tabular-nums}
+.coleta-txt{flex:1; min-width:0}
+.coleta-nome{font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.coleta-meta{font-family:var(--mono); font-size:11.5px; color:var(--suave)}
+.icone-btn{
+  flex:none; width:40px; height:40px; display:inline-flex; align-items:center; justify-content:center;
+  border:1px solid transparent; border-radius:9px; background:transparent; color:var(--suave); cursor:pointer;
+}
+.icone-btn:hover{background:var(--surface-2); color:var(--alerta)}
+.icone-btn:focus-visible{outline:2px solid var(--destaque); outline-offset:1px}
+.icone-btn svg{width:18px; height:18px}
+.vazio{
+  border:1px dashed var(--line-forte); border-radius:var(--raio); padding:26px 20px; text-align:center;
+  color:var(--suave); background:var(--surface-3); font-size:15px;
+}
+
+/* ---------- resumo ---------- */
+.resumo-q{padding:16px 0; border-top:1px solid var(--line)}
+.resumo-q:first-child{border-top:0; padding-top:4px}
+.resumo-tit{font-family:var(--display); font-weight:600; font-size:16px; margin:2px 0 10px}
+.barras{display:flex; flex-direction:column; gap:7px}
+.barra{display:grid; grid-template-columns:minmax(0,1.2fr) minmax(170px,1fr); gap:14px; align-items:center; font-size:14px}
+.barra-rot{color:var(--tinta-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.barra-dir{display:flex; align-items:center; gap:8px}
+.trilho{flex:1; height:8px; border-radius:999px; background:var(--surface-2); overflow:hidden}
+.preenche{height:100%; background:var(--destaque); border-radius:999px; width:0; transition:width .35s ease}
+.barra-num{font-family:var(--mono); font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--tinta-2); min-width:62px; text-align:right; flex:none}
+
+/* ---------- coleta (formulário) ---------- */
+.barra-topo{
+  position:sticky; top:0; z-index:20; margin:-24px -18px 18px; padding:12px 18px 0;
+  background:color-mix(in srgb, var(--ground) 97%, transparent);
+  backdrop-filter:blur(10px); border-bottom:1px solid var(--line);
+}
+.barra-topo-linha{display:flex; align-items:center; justify-content:space-between; gap:12px; padding-bottom:10px}
+.progresso{height:4px; background:var(--surface-2); border-radius:999px; overflow:hidden; margin-bottom:-1px}
+.progresso span{display:block; height:100%; background:var(--destaque); width:0; transition:width .3s ease}
+.progresso-num{font-family:var(--mono); font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--tinta-2)}
+.voltar{display:inline-flex; align-items:center; gap:7px; background:none; border:0; cursor:pointer;
+  font-family:var(--corpo); font-size:15px; font-weight:500; color:var(--tinta-2); padding:8px 10px 8px 0}
+.voltar:hover{color:var(--destaque)}
+.voltar:focus-visible{outline:2px solid var(--destaque); outline-offset:2px; border-radius:6px}
+
+.cartao{background:var(--surface); border:1px solid var(--line); border-radius:var(--raio); padding:18px; margin-bottom:14px}
+.cartao-ident{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+@media (max-width:520px){
+  .cartao-ident{grid-template-columns:1fr}
+  .barra{grid-template-columns:1fr; gap:5px}
+  .barra-rot{white-space:normal}
+}
+.campo{display:flex; flex-direction:column; gap:6px}
+.campo label{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--suave)}
+.campo input, .campo textarea{
+  font-family:var(--corpo); font-size:16px; color:var(--tinta); background:var(--surface-3);
+  border:1px solid var(--line); border-radius:9px; padding:12px 13px; width:100%; min-height:48px; resize:vertical;
+}
+.campo textarea{min-height:76px; line-height:1.45}
+.campo input:focus, .campo textarea:focus{outline:2px solid var(--destaque); outline-offset:-1px; border-color:var(--destaque)}
+
+.pergunta{background:var(--surface); border:1px solid var(--line); border-radius:var(--raio); padding:18px; margin-bottom:14px}
+.pergunta.pendente{border-left:3px solid var(--line-forte); padding-left:16px}
+.pergunta.ok{border-left:3px solid var(--destaque); padding-left:16px}
+.pergunta-cab{display:flex; align-items:center; gap:10px; margin-bottom:9px; flex-wrap:wrap}
+.chave{font-family:var(--mono); font-size:12px; font-weight:600; color:var(--destaque-tinta); background:var(--destaque); border-radius:5px; padding:3px 7px}
+.rotulo-curto{font-family:var(--mono); font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--suave)}
+.enunciado{font-family:var(--display); font-weight:600; font-size:19px; line-height:1.3; margin-bottom:4px; text-wrap:balance}
+.ajuda{font-size:13.5px; color:var(--suave); margin-bottom:12px}
+.ajuda.limite{color:var(--alerta); font-weight:500}
+.opcoes{display:flex; flex-direction:column; gap:9px; margin-top:12px}
+.opcao{
+  display:flex; align-items:center; gap:13px; min-height:54px; padding:11px 15px;
+  border:1px solid var(--line); border-radius:10px; background:var(--surface-3);
+  cursor:pointer; font-size:15.5px; line-height:1.35; color:var(--tinta);
+  transition:border-color .14s ease, background .14s ease;
+}
+.opcao:hover{border-color:var(--destaque-linha)}
+.opcao input{position:absolute; opacity:0; width:0; height:0}
+.marca{
+  flex:none; width:23px; height:23px; border:2px solid var(--line-forte); background:var(--surface);
+  display:inline-block; position:relative; transition:border-color .14s ease, background .14s ease;
+}
+.opcao.radio .marca{border-radius:50%}
+.opcao.caixa .marca{border-radius:6px}
+.opcao:has(input:checked){border-color:var(--destaque); background:var(--destaque-fraco)}
+.opcao:has(input:checked) .marca{border-color:var(--destaque); background:var(--destaque)}
+.opcao.radio:has(input:checked) .marca::after{
+  content:""; position:absolute; inset:4px; border-radius:50%; background:var(--destaque-tinta);
+}
+.opcao.caixa:has(input:checked) .marca::after{
+  content:""; position:absolute; left:6.5px; top:2.5px; width:6px; height:11px;
+  border:solid var(--destaque-tinta); border-width:0 2.5px 2.5px 0; transform:rotate(42deg);
+}
+.opcao:has(input:focus-visible){outline:2px solid var(--destaque); outline-offset:2px}
+.opcao:has(input:disabled){opacity:.42; cursor:not-allowed}
+.aberta{margin-top:13px}
+
+.rodape-fixo{
+  position:sticky; bottom:0; z-index:20; margin:18px -18px 0; padding:13px 18px;
+  padding-bottom:calc(13px + env(safe-area-inset-bottom));
+  background:color-mix(in srgb, var(--ground) 97%, transparent);
+  backdrop-filter:blur(10px); border-top:1px solid var(--line);
+  display:flex; gap:10px; align-items:center;
+}
+.rodape-fixo .btn-principal{flex:1; width:auto}
+
+/* ---------- diálogo e aviso ---------- */
+dialog{
+  border:1px solid var(--line); border-radius:14px; background:var(--surface); color:var(--tinta);
+  padding:22px; max-width:420px; width:calc(100% - 36px); box-shadow:var(--sombra); font-family:var(--corpo);
+}
+dialog::backdrop{background:rgba(10,18,16,.45)}
+dialog h3{font-size:19px; margin-bottom:8px}
+dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:18px}
+.dlg-acoes{display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap}
+#aviso{
+  position:fixed; left:50%; bottom:24px; transform:translate(-50%,14px); z-index:60;
+  background:var(--tinta); color:var(--ground); font-size:14.5px; font-weight:500;
+  padding:13px 19px; border-radius:10px; box-shadow:var(--sombra); max-width:min(90vw,440px);
+  opacity:0; pointer-events:none; transition:opacity .22s ease, transform .22s ease;
+}
+#aviso.ver{opacity:1; transform:translate(-50%,0)}
+.rodape-nota{margin-top:34px; padding-top:18px; border-top:1px solid var(--line); color:var(--suave); font-size:13px}
+[hidden]{display:none !important}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important} }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ===================== PAINEL ===================== -->
+  <main id="painel">
+    <header class="topo">
+      <div class="topo-txt">
+        <span class="sobrancelha">Pesquisa de campo · Ensino médio</span>
+        <h1>Uso da tecnologia no ensino médio</h1>
+        <p class="sub">Aplique o questionário de 10 perguntas direto no tablet, uma resposta por aluno. No fim, baixe tudo em uma planilha do Excel.</p>
+      </div>
+      <span class="selo"><span class="ponto" id="ponto-sinc"></span><span id="txt-sinc">armazenado no aparelho</span></span>
+    </header>
+
+    <dl class="status">
+      <div><dt>Respostas</dt><dd id="st-total">0</dd></div>
+      <div><dt>Última coleta</dt><dd id="st-ultima"><small>—</small></dd></div>
+      <div><dt>Perguntas</dt><dd>10</dd></div>
+    </dl>
+
+    <button class="btn btn-principal" id="btn-nova">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Nova resposta
+    </button>
+
+    <div class="acoes">
+      <button class="btn" id="btn-xlsx" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        Baixar Excel (.xlsx)
+      </button>
+      <button class="btn" id="btn-csv" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        Baixar CSV
+      </button>
+      <button class="btn btn-perigo" id="btn-limpar" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>
+        Apagar tudo
+      </button>
+    </div>
+
+    <section class="secao">
+      <div class="secao-cab">
+        <h2>Respostas coletadas</h2>
+        <span class="conta" id="conta-coletas"></span>
+      </div>
+      <div id="lista-coletas"></div>
+    </section>
+
+    <section class="secao">
+      <div class="secao-cab">
+        <h2>Resumo ao vivo</h2>
+        <span class="conta">atualiza a cada coleta</span>
+      </div>
+      <div class="cartao" id="resumo"></div>
+    </section>
+
+    <p class="rodape-nota">As respostas ficam salvas neste aparelho e continuam disponíveis sem internet. Baixe a planilha antes de limpar os dados do navegador.</p>
+  </main>
+
+  <!-- ===================== COLETA ===================== -->
+  <main id="coleta" hidden>
+    <div class="barra-topo">
+      <div class="barra-topo-linha">
+        <button class="voltar" id="btn-voltar">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Painel
+        </button>
+        <span class="progresso-num"><span id="prog-num">0</span> de 10 respondidas</span>
+      </div>
+      <div class="progresso"><span id="prog-barra"></span></div>
+    </div>
+
+    <div class="cartao">
+      <div class="cartao-ident">
+        <div class="campo">
+          <label for="ident-nome">Identificação (opcional)</label>
+          <input id="ident-nome" type="text" autocomplete="off" placeholder="Nome ou código do aluno">
+        </div>
+        <div class="campo">
+          <label for="ident-turma">Turma (opcional)</label>
+          <input id="ident-turma" type="text" autocomplete="off" placeholder="Ex.: 2º ano B">
+        </div>
+      </div>
+    </div>
+
+    <div id="perguntas"></div>
+
+    <div class="cartao">
+      <div class="campo">
+        <label for="obs">Observações do entrevistador (opcional)</label>
+        <textarea id="obs" placeholder="Anote aqui algo que o aluno comentou fora das alternativas."></textarea>
+      </div>
+    </div>
+
+    <div class="rodape-fixo">
+      <button class="btn btn-principal" id="btn-salvar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        Salvar resposta
+      </button>
+    </div>
+  </main>
+</div>
+
+<dialog id="dlg">
+  <h3 id="dlg-tit"></h3>
+  <p id="dlg-txt"></p>
+  <div class="dlg-acoes">
+    <button class="btn" id="dlg-nao">Cancelar</button>
+    <button class="btn btn-perigo" id="dlg-sim">Confirmar</button>
+  </div>
+</dialog>
+<div id="aviso" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* =========================================================
+   1. O QUESTIONÁRIO
+   Para adaptar a pesquisa, edite apenas esta lista.
+   tipo: "unica" (uma alternativa) ou "multipla" (várias)
+   max:  limite de marcações numa pergunta múltipla (0 = sem limite)
+   ========================================================= */
+const PERGUNTAS = [
+  { id:"p1", curto:"Idade", tipo:"unica",
+    texto:"Qual é a sua idade?",
+    opcoes:["Menos de 15 anos","15-16 anos","17-18 anos","Mais de 18 anos"] },
+
+  { id:"p2", curto:"Frequência de uso", tipo:"unica",
+    texto:"Com que frequência você utiliza dispositivos tecnológicos (computador, tablet, smartphone) para atividades escolares?",
+    opcoes:["Todos os dias","Algumas vezes por semana","Raramente","Nunca"] },
+
+  { id:"p3", curto:"Atividades escolares", tipo:"multipla", max:0,
+    texto:"Que tipo de atividades escolares você realiza com o auxílio da tecnologia?",
+    ajuda:"Marque todas as opções que se aplicam.",
+    opcoes:["Pesquisas online","Criação de apresentações","Participação em fóruns ou discussões online","Aulas virtuais ou videoaulas","Resolução de exercícios online"] },
+
+  { id:"p4", curto:"Presencial ou online", tipo:"unica",
+    texto:"Você sente que aprende melhor em aulas presenciais ou online? Por quê?",
+    opcoes:["Aulas presenciais, pois possibilitam interação direta com o professor e colegas.","Aulas online, pois permitem que eu estude no meu próprio ritmo."],
+    aberta:"Por quê? (resposta do aluno, opcional)" },
+
+  { id:"p5", curto:"Principais benefícios", tipo:"multipla", max:3,
+    texto:"Quais são, na sua opinião, os principais benefícios do uso da tecnologia no ensino médio?",
+    ajuda:"Marque até três opções.",
+    opcoes:["Acesso a uma variedade de recursos de aprendizado","Maior interação com o conteúdo através de multimídia","Facilita a comunicação com colegas e professores","Preparação para o uso de tecnologia no mundo real"] },
+
+  { id:"p6", curto:"Principais desafios", tipo:"multipla", max:3,
+    texto:"Quais são os principais desafios que você enfrenta ao utilizar a tecnologia para atividades escolares?",
+    ajuda:"Marque até três opções.",
+    opcoes:["Distrações online durante o estudo","Dificuldade em encontrar informações confiáveis na internet","Falta de habilidades técnicas para utilizar certas ferramentas","Problemas de conectividade ou acesso a dispositivos"] },
+
+  { id:"p7", curto:"Melhora no desempenho", tipo:"unica",
+    texto:"Você acredita que o uso da tecnologia pode melhorar o seu desempenho acadêmico?",
+    opcoes:["Sim, definitivamente","Sim, talvez","Não, não acredito que faça diferença","Não, acredito que possa prejudicar meu desempenho"] },
+
+  { id:"p8", curto:"Aulas mais envolventes", tipo:"unica",
+    texto:"Em sua opinião, as aulas que utilizam tecnologia são mais interessantes e envolventes?",
+    opcoes:["Sim, com certeza","Sim, em geral","Não, nem sempre","Não, raramente"] },
+
+  { id:"p9", curto:"Adaptação a ferramentas", tipo:"unica",
+    texto:"Você já teve dificuldade em adaptar-se a novas ferramentas tecnológicas introduzidas nas aulas?",
+    opcoes:["Sim, frequentemente","Sim, algumas vezes","Não, raramente","Não, nunca tive dificuldades"] },
+
+  { id:"p10", curto:"Preparação para o futuro", tipo:"unica",
+    texto:"Na sua visão, como a tecnologia no ensino médio pode prepará-lo para o futuro profissional e acadêmico?",
+    opcoes:["Desenvolvendo habilidades tecnológicas essenciais","Possibilitando acesso a informações atualizadas","Fomentando a autonomia no aprendizado","Preparando para a colaboração online"] }
+];
+
+const TITULO = "Uso da Tecnologia no Ensino Médio";
+const CHAVE = "pesquisa-tecnologia-em-v1";
+const CHAVE_ENVIADAS = CHAVE + ":enviadas";
+
+/* =========================================================
+   2. ESTADO E ARMAZENAMENTO
+   ========================================================= */
+let respostas = [];        // coletas salvas
+let rascunho = null;       // coleta em andamento
+let bd = null;             // banco compartilhado (quando disponível)
+let salvador = null;       // capacidade de download (quando disponível)
+const enviadas = new Set();
+
+function lerLocal(){
+  try{
+    const bruto = localStorage.getItem(CHAVE);
+    const dados = bruto ? JSON.parse(bruto) : null;
+    respostas = Array.isArray(dados && dados.respostas) ? dados.respostas : [];
+    const env = JSON.parse(localStorage.getItem(CHAVE_ENVIADAS) || "[]");
+    if (Array.isArray(env)) env.forEach(id => enviadas.add(id));
+  }catch(e){ respostas = []; }
+}
+function gravarLocal(){
+  try{
+    localStorage.setItem(CHAVE, JSON.stringify({ versao:1, respostas }));
+    localStorage.setItem(CHAVE_ENVIADAS, JSON.stringify([...enviadas]));
+  }catch(e){ avisar("Não foi possível salvar no aparelho. Baixe a planilha para não perder os dados."); }
+}
+function ordenar(){ respostas.sort((a,b) => String(a.criadoEm).localeCompare(String(b.criadoEm))); }
+
+function novoId(){
+  return "r" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
+
+/* =========================================================
+   3. UTILIDADES
+   ========================================================= */
+const $ = s => document.querySelector(s);
+function elem(tag, classe, texto){
+  const e = document.createElement(tag);
+  if (classe) e.className = classe;
+  if (texto != null) e.textContent = texto;
+  return e;
+}
+let avisoTimer = null;
+function avisar(msg){
+  const a = $("#aviso");
+  a.textContent = msg; a.classList.add("ver");
+  clearTimeout(avisoTimer);
+  avisoTimer = setTimeout(() => a.classList.remove("ver"), 3600);
+}
+function confirmar(titulo, texto, rotulo){
+  return new Promise(resolve => {
+    const dlg = $("#dlg");
+    $("#dlg-tit").textContent = titulo;
+    $("#dlg-txt").textContent = texto;
+    $("#dlg-sim").textContent = rotulo || "Confirmar";
+    const sim = () => { fechar(true); };
+    const nao = () => { fechar(false); };
+    function fechar(v){
+      $("#dlg-sim").removeEventListener("click", sim);
+      $("#dlg-nao").removeEventListener("click", nao);
+      dlg.removeEventListener("cancel", nao);
+      if (dlg.open) dlg.close();
+      resolve(v);
+    }
+    $("#dlg-sim").addEventListener("click", sim);
+    $("#dlg-nao").addEventListener("click", nao);
+    dlg.addEventListener("cancel", nao);
+    if (typeof dlg.showModal === "function") dlg.showModal();
+    else resolve(true);
+  });
+}
+function dataHora(iso){
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const p = n => String(n).padStart(2,"0");
+  return p(d.getDate()) + "/" + p(d.getMonth()+1) + "/" + d.getFullYear() + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+function carimbo(){
+  const d = new Date(), p = n => String(n).padStart(2,"0");
+  return d.getFullYear() + "-" + p(d.getMonth()+1) + "-" + p(d.getDate()) + "_" + p(d.getHours()) + p(d.getMinutes());
+}
+
+/* =========================================================
+   4. PAINEL
+   ========================================================= */
+function mostrar(qual){
+  $("#painel").hidden = qual !== "painel";
+  $("#coleta").hidden = qual !== "coleta";
+  window.scrollTo(0,0);
+}
+
+function renderPainel(){
+  const n = respostas.length;
+  $("#st-total").textContent = String(n).padStart(2,"0");
+  const ultima = n ? dataHora(respostas[n-1].criadoEm) : "";
+  $("#st-ultima").innerHTML = "";
+  $("#st-ultima").appendChild(elem("small", null, ultima || "—"));
+
+  $("#btn-xlsx").disabled = n === 0;
+  $("#btn-csv").disabled = n === 0;
+  $("#btn-limpar").disabled = n === 0;
+  $("#conta-coletas").textContent = n === 1 ? "1 resposta" : n + " respostas";
+
+  const lista = $("#lista-coletas");
+  lista.innerHTML = "";
+  if (!n){
+    lista.appendChild(elem("div","vazio","Nenhuma resposta ainda. Toque em “Nova resposta” para começar a aplicar o questionário."));
+  } else {
+    const caixa = elem("div","coletas");
+    respostas.forEach((r,i) => {
+      const linha = elem("div","coleta");
+      linha.appendChild(elem("span","coleta-n", String(i+1).padStart(2,"0")));
+      const txt = elem("div","coleta-txt");
+      txt.appendChild(elem("div","coleta-nome", r.nome || "Resposta anônima"));
+      const respondidas = PERGUNTAS.filter(p => temResposta(r,p)).length;
+      const meta = [r.turma, dataHora(r.criadoEm), respondidas + "/10"].filter(Boolean).join("  ·  ");
+      txt.appendChild(elem("div","coleta-meta", meta));
+      linha.appendChild(txt);
+      const excluir = elem("button","icone-btn");
+      excluir.type = "button";
+      excluir.title = "Excluir esta resposta";
+      excluir.setAttribute("aria-label","Excluir resposta " + (i+1));
+      excluir.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>';
+      excluir.addEventListener("click", async () => {
+        const ok = await confirmar("Excluir resposta " + (i+1) + "?", "Essa coleta será removida da lista e da planilha.", "Excluir");
+        if (!ok) return;
+        const alvo = respostas[i];
+        respostas.splice(i,1);
+        enviadas.delete(alvo.id);
+        gravarLocal(); renderPainel();
+        if (bd) bd.doc("respostas/" + alvo.id).delete().catch(() => {});
+        avisar("Resposta excluída.");
+      });
+      linha.appendChild(excluir);
+      caixa.appendChild(linha);
+    });
+    lista.appendChild(caixa);
+  }
+  renderResumo();
+}
+
+function temResposta(r, p){
+  const v = r[p.id];
+  return p.tipo === "multipla" ? Array.isArray(v) && v.length > 0 : !!v;
+}
+
+function renderResumo(){
+  const alvo = $("#resumo");
+  alvo.innerHTML = "";
+  const total = respostas.length;
+  PERGUNTAS.forEach((p,i) => {
+    const bloco = elem("div","resumo-q");
+    const cab = elem("div","pergunta-cab");
+    cab.appendChild(elem("span","chave","P" + (i+1)));
+    cab.appendChild(elem("span","rotulo-curto", p.curto));
+    bloco.appendChild(cab);
+    bloco.appendChild(elem("p","resumo-tit", p.texto));
+
+    const base = p.tipo === "multipla"
+      ? respostas.filter(r => temResposta(r,p)).length
+      : total;
+    const barras = elem("div","barras");
+    p.opcoes.forEach(op => {
+      const cont = respostas.filter(r => {
+        const v = r[p.id];
+        return p.tipo === "multipla" ? Array.isArray(v) && v.includes(op) : v === op;
+      }).length;
+      const pct = base ? Math.round(cont / base * 100) : 0;
+      const linha = elem("div","barra");
+      const rot = elem("div","barra-rot", op);
+      rot.title = op;
+      linha.appendChild(rot);
+      const dir = elem("div","barra-dir");
+      const trilho = elem("div","trilho");
+      const pre = elem("div","preenche");
+      pre.style.width = pct + "%";
+      trilho.appendChild(pre);
+      dir.appendChild(trilho);
+      dir.appendChild(elem("span","barra-num", total ? cont + " · " + pct + "%" : "—"));
+      linha.appendChild(dir);
+      barras.appendChild(linha);
+    });
+    bloco.appendChild(barras);
+    alvo.appendChild(bloco);
+  });
+}
+
+/* =========================================================
+   5. FORMULÁRIO DE COLETA
+   ========================================================= */
+function novaColeta(){
+  rascunho = { id:novoId(), criadoEm:new Date().toISOString(), nome:"", turma:"", obs:"", p4_texto:"" };
+  PERGUNTAS.forEach(p => { rascunho[p.id] = p.tipo === "multipla" ? [] : ""; });
+  $("#ident-nome").value = "";
+  $("#ident-turma").value = "";
+  $("#obs").value = "";
+  montarPerguntas();
+  atualizarProgresso();
+  mostrar("coleta");
+}
+
+function montarPerguntas(){
+  const alvo = $("#perguntas");
+  alvo.innerHTML = "";
+  PERGUNTAS.forEach((p,i) => {
+    const bloco = elem("section","pergunta pendente");
+    bloco.id = "bloco-" + p.id;
+
+    const cab = elem("div","pergunta-cab");
+    cab.appendChild(elem("span","chave","P" + (i+1)));
+    cab.appendChild(elem("span","rotulo-curto", p.curto));
+    bloco.appendChild(cab);
+    bloco.appendChild(elem("h3","enunciado", p.texto));
+    if (p.ajuda){
+      const aj = elem("p","ajuda", p.ajuda);
+      aj.id = "ajuda-" + p.id;
+      bloco.appendChild(aj);
+    }
+
+    const grupo = elem("div","opcoes");
+    grupo.setAttribute("role", p.tipo === "multipla" ? "group" : "radiogroup");
+    grupo.setAttribute("aria-label", p.texto);
+    p.opcoes.forEach((op,j) => {
+      const rot = elem("label","opcao " + (p.tipo === "multipla" ? "caixa" : "radio"));
+      const inp = document.createElement("input");
+      inp.type = p.tipo === "multipla" ? "checkbox" : "radio";
+      inp.name = p.id;
+      inp.id = p.id + "_" + j;
+      inp.value = op;
+      inp.addEventListener("change", () => marcar(p, inp));
+      rot.appendChild(inp);
+      rot.appendChild(elem("span","marca"));
+      rot.appendChild(elem("span","opcao-txt", op));
+      grupo.appendChild(rot);
+    });
+    bloco.appendChild(grupo);
+
+    if (p.aberta){
+      const campo = elem("div","campo aberta");
+      const lab = elem("label", null, p.aberta);
+      lab.setAttribute("for", p.id + "_texto");
+      const ta = document.createElement("textarea");
+      ta.id = p.id + "_texto";
+      ta.placeholder = "Escreva o motivo dito pelo aluno.";
+      ta.addEventListener("input", () => { rascunho[p.id + "_texto"] = ta.value; });
+      campo.appendChild(lab); campo.appendChild(ta);
+      bloco.appendChild(campo);
+    }
+    alvo.appendChild(bloco);
+  });
+}
+
+function marcar(p, inp){
+  if (p.tipo === "multipla"){
+    const marcadas = [...document.querySelectorAll('input[name="' + p.id + '"]:checked')].map(e => e.value);
+    if (p.max && marcadas.length > p.max){
+      inp.checked = false;
+      avisar("Você pode marcar no máximo " + p.max + " opções nesta pergunta.");
+      return;
+    }
+    rascunho[p.id] = marcadas;
+    if (p.max){
+      const cheio = marcadas.length >= p.max;
+      document.querySelectorAll('input[name="' + p.id + '"]').forEach(e => { e.disabled = cheio && !e.checked; });
+      const aj = document.getElementById("ajuda-" + p.id);
+      if (aj){
+        aj.textContent = cheio ? "Limite de " + p.max + " opções atingido. Desmarque uma para trocar." : p.ajuda;
+        aj.classList.toggle("limite", cheio);
+      }
+    }
+  } else {
+    rascunho[p.id] = inp.value;
+  }
+  const bloco = document.getElementById("bloco-" + p.id);
+  const ok = temResposta(rascunho, p);
+  bloco.classList.toggle("ok", ok);
+  bloco.classList.toggle("pendente", !ok);
+  atualizarProgresso();
+}
+
+function atualizarProgresso(){
+  const n = PERGUNTAS.filter(p => temResposta(rascunho, p)).length;
+  $("#prog-num").textContent = n;
+  $("#prog-barra").style.width = (n / PERGUNTAS.length * 100) + "%";
+}
+
+async function salvarColeta(){
+  rascunho.nome = $("#ident-nome").value.trim();
+  rascunho.turma = $("#ident-turma").value.trim();
+  rascunho.obs = $("#obs").value.trim();
+
+  const faltando = PERGUNTAS.map((p,i) => temResposta(rascunho,p) ? null : "P" + (i+1)).filter(Boolean);
+  if (faltando.length){
+    const ok = await confirmar(
+      "Salvar sem responder tudo?",
+      "Faltam " + faltando.length + " perguntas: " + faltando.join(", ") + ". Elas ficarão em branco na planilha.",
+      "Salvar assim"
+    );
+    if (!ok){
+      const primeiro = document.getElementById("bloco-" + PERGUNTAS[PERGUNTAS.findIndex(p => !temResposta(rascunho,p))].id);
+      if (primeiro) primeiro.scrollIntoView({ behavior:"smooth", block:"center" });
+      return;
+    }
+  }
+  rascunho.criadoEm = new Date().toISOString();
+  respostas.push(rascunho);
+  ordenar();
+  gravarLocal();
+  enviarParaBanco(rascunho);
+  const quantas = respostas.length;
+  rascunho = null;
+  renderPainel();
+  mostrar("painel");
+  avisar("Resposta " + quantas + " salva.");
+}
+
+/* =========================================================
+   6. SINCRONIZAÇÃO OPCIONAL (quando a página roda no claude.ai)
+   ========================================================= */
+async function capacidade(nome){
+  try{
+    if (window.claude && typeof window.claude.use === "function") return await window.claude.use(nome);
+  }catch(e){}
+  return null;
+}
+function enviarParaBanco(r){
+  if (!bd) return;
+  bd.doc("respostas/" + r.id).set(r).then(() => {
+    enviadas.add(r.id); gravarLocal();
+  }).catch(() => {});
+}
+async function ligarBanco(){
+  bd = await capacidade("db");
+  if (!bd) return;
+  $("#ponto-sinc").classList.add("on");
+  $("#txt-sinc").textContent = "sincronizado";
+  bd.collection("respostas").onSnapshot(snap => {
+    const remotas = new Map();
+    snap.docs.forEach(d => { const v = d.data(); if (v && v.id) remotas.set(v.id, v); });
+    // sobe o que só existe aqui e ainda não foi enviado
+    respostas.forEach(r => { if (!remotas.has(r.id) && !enviadas.has(r.id)) enviarParaBanco(r); });
+    // desce o que veio de outros aparelhos
+    const locais = new Map(respostas.map(r => [r.id, r]));
+    let mudou = false;
+    remotas.forEach((v,id) => { if (!locais.has(id)){ respostas.push(v); enviadas.add(id); mudou = true; } });
+    if (mudou){ ordenar(); gravarLocal(); renderPainel(); }
+  }, () => {
+    bd = null;
+    $("#ponto-sinc").classList.remove("on");
+    $("#txt-sinc").textContent = "armazenado no aparelho";
+  });
+}
+
+/* =========================================================
+   7. GERAÇÃO DO ARQUIVO .XLSX (sem bibliotecas externas)
+   ========================================================= */
+const TABELA_CRC = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++){
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes){
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = TABELA_CRC[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function zipar(arquivos){
+  const enc = new TextEncoder();
+  const partes = [], central = [];
+  const d = new Date();
+  const hora = ((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)) & 0xFFFF;
+  const data = (((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()) & 0xFFFF;
+  let deslocamento = 0;
+
+  arquivos.forEach(a => {
+    const nome = enc.encode(a.nome);
+    const dados = typeof a.dados === "string" ? enc.encode(a.dados) : a.dados;
+    const crc = crc32(dados);
+
+    const local = new Uint8Array(30 + nome.length);
+    const v = new DataView(local.buffer);
+    v.setUint32(0, 0x04034b50, true); v.setUint16(4, 20, true); v.setUint16(6, 0x0800, true);
+    v.setUint16(8, 0, true); v.setUint16(10, hora, true); v.setUint16(12, data, true);
+    v.setUint32(14, crc, true); v.setUint32(18, dados.length, true); v.setUint32(22, dados.length, true);
+    v.setUint16(26, nome.length, true); v.setUint16(28, 0, true);
+    local.set(nome, 30);
+
+    const cd = new Uint8Array(46 + nome.length);
+    const w = new DataView(cd.buffer);
+    w.setUint32(0, 0x02014b50, true); w.setUint16(4, 20, true); w.setUint16(6, 20, true);
+    w.setUint16(8, 0x0800, true); w.setUint16(10, 0, true); w.setUint16(12, hora, true);
+    w.setUint16(14, data, true); w.setUint32(16, crc, true);
+    w.setUint32(20, dados.length, true); w.setUint32(24, dados.length, true);
+    w.setUint16(28, nome.length, true); w.setUint16(30, 0, true); w.setUint16(32, 0, true);
+    w.setUint16(34, 0, true); w.setUint16(36, 0, true); w.setUint32(38, 0, true);
+    w.setUint32(42, deslocamento, true);
+    cd.set(nome, 46);
+
+    partes.push(local, dados);
+    central.push(cd);
+    deslocamento += local.length + dados.length;
+  });
+
+  const tamCentral = central.reduce((s,c) => s + c.length, 0);
+  const fim = new Uint8Array(22);
+  const f = new DataView(fim.buffer);
+  f.setUint32(0, 0x06054b50, true); f.setUint16(4, 0, true); f.setUint16(6, 0, true);
+  f.setUint16(8, arquivos.length, true); f.setUint16(10, arquivos.length, true);
+  f.setUint32(12, tamCentral, true); f.setUint32(16, deslocamento, true); f.setUint16(20, 0, true);
+
+  return new Blob(partes.concat(central, [fim]), { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+
+function escXml(s){
+  return String(s == null ? "" : s)
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function letraColuna(i){
+  let n = i + 1, s = "";
+  while (n > 0){ const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); }
+  return s;
+}
+function celula(ref, valor, estilo){
+  const est = estilo ? ' s="' + estilo + '"' : "";
+  if (typeof valor === "number" && isFinite(valor)) return '<c r="' + ref + '"' + est + '><v>' + valor + '</v></c>';
+  const txt = escXml(valor);
+  if (!txt) return est ? '<c r="' + ref + '"' + est + '/>' : "";
+  return '<c r="' + ref + '"' + est + ' t="inlineStr"><is><t xml:space="preserve">' + txt + '</t></is></c>';
+}
+function folha(linhas, larguras, congelarTopo, autoFiltro){
+  let xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<sheetViews><sheetView workbookViewId="0">' +
+    (congelarTopo ? '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>' : "") +
+    '</sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/>';
+  if (larguras && larguras.length){
+    xml += "<cols>";
+    larguras.forEach((l,i) => { xml += '<col min="' + (i+1) + '" max="' + (i+1) + '" width="' + l + '" customWidth="1"/>'; });
+    xml += "</cols>";
+  }
+  xml += "<sheetData>";
+  linhas.forEach((linha, li) => {
+    const alturaCab = li === 0 && congelarTopo ? ' ht="42" customHeight="1"' : "";
+    xml += '<row r="' + (li+1) + '"' + alturaCab + ">";
+    linha.forEach((cel, ci) => {
+      const val = (cel && typeof cel === "object" && "v" in cel) ? cel.v : cel;
+      const est = (cel && typeof cel === "object" && cel.s) ? cel.s : 0;
+      xml += celula(letraColuna(ci) + (li+1), val, est);
+    });
+    xml += "</row>";
+  });
+  xml += "</sheetData>";
+  if (autoFiltro) xml += '<autoFilter ref="' + autoFiltro + '"/>';
+  return xml + "</worksheet>";
+}
+
+function montarXlsx(){
+  const cab = ["Nº","Data","Hora","Identificação","Turma"];
+  PERGUNTAS.forEach((p,i) => {
+    cab.push("P" + (i+1) + ". " + p.curto);
+    if (p.aberta) cab.push("P" + (i+1) + ". Justificativa");
+  });
+  cab.push("Observações do entrevistador");
+
+  const linhas = [cab.map(t => ({ v:t, s:1 }))];
+  respostas.forEach((r,i) => {
+    const d = new Date(r.criadoEm);
+    const p2 = n => String(n).padStart(2,"0");
+    const linha = [
+      { v:i+1, s:3 },
+      { v:isNaN(d) ? "" : p2(d.getDate()) + "/" + p2(d.getMonth()+1) + "/" + d.getFullYear(), s:3 },
+      { v:isNaN(d) ? "" : p2(d.getHours()) + ":" + p2(d.getMinutes()), s:3 },
+      { v:r.nome || "", s:2 },
+      { v:r.turma || "", s:2 }
+    ];
+    PERGUNTAS.forEach(p => {
+      const val = r[p.id];
+      linha.push({ v:Array.isArray(val) ? val.join(" | ") : (val || ""), s:2 });
+      if (p.aberta) linha.push({ v:r[p.id + "_texto"] || "", s:2 });
+    });
+    linha.push({ v:r.obs || "", s:2 });
+    linhas.push(linha);
+  });
+  const larguras = cab.map((t,i) => i === 0 ? 5 : (i <= 2 ? 11 : (i <= 4 ? 18 : 34)));
+  const faixa = "A1:" + letraColuna(cab.length - 1) + "1";
+
+  // ---- aba Resumo ----
+  const total = respostas.length;
+  const res = [
+    [{ v:"Resumo da pesquisa", s:1 }, { v:"", s:1 }, { v:"", s:1 }, { v:"", s:1 }],
+    [{ v:"Pesquisa", s:4 }, TITULO],
+    [{ v:"Respostas coletadas", s:4 }, total],
+    [{ v:"Gerado em", s:4 }, dataHora(new Date().toISOString())],
+    []
+  ];
+  PERGUNTAS.forEach((p,i) => {
+    const base = p.tipo === "multipla" ? respostas.filter(r => temResposta(r,p)).length : total;
+    res.push([{ v:"P" + (i+1) + ". " + p.texto, s:4 }]);
+    res.push([{ v:"Alternativa", s:5 }, { v:"Respostas", s:5 }, { v:"% da base", s:5 }, { v:"Base", s:5 }]);
+    p.opcoes.forEach(op => {
+      const cont = respostas.filter(r => {
+        const v = r[p.id];
+        return p.tipo === "multipla" ? Array.isArray(v) && v.includes(op) : v === op;
+      }).length;
+      res.push([{ v:op, s:2 }, cont, base ? Math.round(cont / base * 1000) / 10 : 0, base]);
+    });
+    if (p.tipo === "multipla"){
+      res.push([{ v:"(base = alunos que responderam esta pergunta; a soma passa de 100% porque é múltipla escolha)", s:6 }]);
+    }
+    res.push([]);
+  });
+
+  const arquivos = [
+    { nome:"[Content_Types].xml", dados:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+      '<Default Extension="xml" ContentType="application/xml"/>' +
+      '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+      '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+      '<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+      "</Types>" },
+    { nome:"_rels/.rels", dados:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+      "</Relationships>" },
+    { nome:"xl/workbook.xml", dados:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+      '<sheets><sheet name="Respostas" sheetId="1" r:id="rId1"/><sheet name="Resumo" sheetId="2" r:id="rId2"/></sheets>' +
+      "</workbook>" },
+    { nome:"xl/_rels/workbook.xml.rels", dados:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+      '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>' +
+      '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+      "</Relationships>" },
+    { nome:"xl/styles.xml", dados:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<fonts count="4">' +
+        '<font><sz val="11"/><color theme="1"/><name val="Calibri"/></font>' +
+        '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>' +
+        '<font><b/><sz val="11"/><color rgb="FF0E6552"/><name val="Calibri"/></font>' +
+        '<font><i/><sz val="9"/><color rgb="FF6C7C75"/><name val="Calibri"/></font>' +
+      "</fonts>" +
+      '<fills count="4">' +
+        '<fill><patternFill patternType="none"/></fill>' +
+        '<fill><patternFill patternType="gray125"/></fill>' +
+        '<fill><patternFill patternType="solid"><fgColor rgb="FF0E6552"/><bgColor indexed="64"/></patternFill></fill>' +
+        '<fill><patternFill patternType="solid"><fgColor rgb="FFDFEDE7"/><bgColor indexed="64"/></patternFill></fill>' +
+      "</fills>" +
+      '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+      '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+      '<cellXfs count="7">' +
+        '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+        '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>' +
+        '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>' +
+        '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" horizontal="center"/></xf>' +
+        '<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>' +
+        '<xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1" applyAlignment="1"><alignment vertical="center"/></xf>' +
+        '<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="center"/></xf>' +
+      "</cellXfs>" +
+      '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
+      "</styleSheet>" },
+    { nome:"xl/worksheets/sheet1.xml", dados: folha(linhas, larguras, true, faixa) },
+    { nome:"xl/worksheets/sheet2.xml", dados: folha(res, [58,12,12,10], false, null) }
+  ];
+  return zipar(arquivos);
+}
+
+function montarCsv(){
+  const cab = ["Nº","Data/Hora","Identificação","Turma"];
+  PERGUNTAS.forEach((p,i) => {
+    cab.push("P" + (i+1) + ". " + p.curto);
+    if (p.aberta) cab.push("P" + (i+1) + ". Justificativa");
+  });
+  cab.push("Observações");
+  const campo = v => {
+    const t = String(v == null ? "" : v);
+    return /[";\r\n]/.test(t) ? '"' + t.replace(/"/g,'""') + '"' : t;
+  };
+  const linhas = [cab.map(campo).join(";")];
+  respostas.forEach((r,i) => {
+    const col = [i+1, dataHora(r.criadoEm), r.nome || "", r.turma || ""];
+    PERGUNTAS.forEach(p => {
+      const v = r[p.id];
+      col.push(Array.isArray(v) ? v.join(" | ") : (v || ""));
+      if (p.aberta) col.push(r[p.id + "_texto"] || "");
+    });
+    col.push(r.obs || "");
+    linhas.push(col.map(campo).join(";"));
+  });
+  return new Blob(["﻿" + linhas.join("\r\n")], { type:"text/csv;charset=utf-8" });
+}
+
+async function baixar(nomeArquivo, blob){
+  if (salvador === null) salvador = await capacidade("downloads");
+  if (salvador){
+    try{
+      await salvador.save({ filename:nomeArquivo, data:blob });
+      avisar("Planilha salva: " + nomeArquivo);
+    }catch(e){
+      const codigo = e && e.code;
+      if (codigo === "declined") avisar("Download cancelado.");
+      else if (codigo === "rate_limited") avisar("Aguarde um instante e toque novamente.");
+      else avisar("Não foi possível salvar o arquivo aqui. Abra o app pelo navegador do tablet.");
+    }
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = nomeArquivo; a.rel = "noopener";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  avisar("Planilha gerada: " + nomeArquivo);
+}
+
+/* =========================================================
+   8. LIGAÇÕES
+   ========================================================= */
+$("#btn-nova").addEventListener("click", novaColeta);
+$("#btn-salvar").addEventListener("click", salvarColeta);
+$("#btn-voltar").addEventListener("click", async () => {
+  const preenchidas = PERGUNTAS.filter(p => temResposta(rascunho, p)).length;
+  if (preenchidas > 0){
+    const ok = await confirmar("Descartar esta resposta?", "Você já marcou " + preenchidas + " perguntas. Sair agora apaga essas marcações.", "Descartar");
+    if (!ok) return;
+  }
+  rascunho = null;
+  mostrar("painel");
+});
+$("#btn-xlsx").addEventListener("click", () => baixar("pesquisa-tecnologia_" + carimbo() + ".xlsx", montarXlsx()));
+$("#btn-csv").addEventListener("click", () => baixar("pesquisa-tecnologia_" + carimbo() + ".csv", montarCsv()));
+$("#btn-limpar").addEventListener("click", async () => {
+  const ok = await confirmar("Apagar todas as respostas?", "As " + respostas.length + " coletas serão removidas deste aparelho. Baixe a planilha antes, se ainda não baixou.", "Apagar tudo");
+  if (!ok) return;
+  const antigas = respostas.slice();
+  respostas = []; enviadas.clear();
+  gravarLocal(); renderPainel();
+  if (bd) antigas.forEach(r => bd.doc("respostas/" + r.id).delete().catch(() => {}));
+  avisar("Todas as respostas foram apagadas.");
+});
+
+lerLocal();
+ordenar();
+renderPainel();
+ligarBanco();
+
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+}
+</script>
+</body>
+</html>

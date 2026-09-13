@@ -1,9 +1,21 @@
 # axiumL — Projeto de vídeos com Manim
 
-## Estrutura das pastas
+Este repositório guarda dois projetos:
+
+- **`scenes/`** — os vídeos de matemática feitos com Manim (descrito abaixo).
+- **`app-questionario/`** — app de tablet para aplicar a pesquisa *Uso da
+  Tecnologia no Ensino Médio* e exportar as respostas para o Excel.
+  Veja [`app-questionario/README.md`](app-questionario/README.md).
+
+---
+
+## Vídeos com Manim
+
+### Estrutura das pastas
 
 ```
 axiumL/
+├── app-questionario/  # App da pesquisa (ver README próprio)
 ├── manim.cfg          # Configuração do Manim (saída, qualidade, etc.)
 ├── scenes/            # Código das cenas (.py) — um arquivo por vídeo/tema
 │   └── exemplo.py
@@ -16,7 +28,7 @@ axiumL/
     └── videos/<arquivo>/<qualidade>/NomeDaCena.mp4
 ```
 
-## Como renderizar
+### Como renderizar
 
 Rode sempre a partir da raiz do projeto (onde está o `manim.cfg`):
 
@@ -33,7 +45,7 @@ manim -ql scenes/exemplo.py Exemplo
 
 Os vídeos ficam em `media/videos/<nome_do_arquivo>/<qualidade>/`.
 
-## Convenções
+### Convenções
 
 - Um arquivo `.py` por vídeo dentro de `scenes/`, com nome descritivo em minúsculas (ex.: `intro_derivadas.py`).
 - Cada cena é uma classe com nome em PascalCase (ex.: `IntroDerivadas`).
