@@ -100,6 +100,14 @@ gráficos já montados:
   gráfico de barras pronto**, já em porcentagem, com o número de respondentes no
   título (*n = 9*).
 
+Os números do Resumo são **fórmulas ligadas à aba Respostas**, não valores
+colados: `CONT.SE` para contar cada alternativa, `CONT.VALORES` para a base e uma
+divisão para a porcentagem. Corrija uma resposta na aba Respostas e a tabela e o
+gráfico se atualizam sozinhos. As faixas vão até a linha 1000, então dá para
+acrescentar respostas à mão que elas entram na conta. Nas perguntas de múltipla
+escolha a contagem procura o texto dentro da célula, porque as alternativas
+ficam juntas separadas por `|`.
+
 Os gráficos são gráficos nativos do Excel, não imagens: clique com o botão
 direito para mudar cor, tipo ou título, e é só copiar e colar no Word do
 trabalho. Como estão ligados às células, se você corrigir um número na tabela o

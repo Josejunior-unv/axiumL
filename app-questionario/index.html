@@ -465,7 +465,7 @@ const PERGUNTAS = [
 const TITULO = "Uso da Tecnologia no Ensino Superior";
 const CHAVE = "pesquisa-tecnologia-es-v1";
 const CHAVE_ENVIADAS = CHAVE + ":enviadas";
-const VERSAO = "3 · ensino superior";
+const VERSAO = "4 · ensino superior";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
@@ -905,6 +905,10 @@ function letraColuna(i){
 }
 function celula(ref, valor, estilo){
   const est = estilo ? ' s="' + estilo + '"' : "";
+  // { f: fórmula, v: valor já calculado } — o valor em cache faz a planilha
+  // mostrar o número mesmo antes do Excel recalcular
+  if (valor && typeof valor === "object" && valor.f)
+    return '<c r="' + ref + '"' + est + '><f>' + escXml(valor.f) + '</f><v>' + (valor.v == null ? 0 : valor.v) + '</v></c>';
   if (typeof valor === "number" && isFinite(valor)) return '<c r="' + ref + '"' + est + '><v>' + valor + '</v></c>';
   const txt = escXml(valor);
   if (!txt) return est ? '<c r="' + ref + '"' + est + '/>' : "";
@@ -1045,7 +1049,28 @@ const ALTURA_BLOCO = 18;   // linhas reservadas por pergunta na aba Resumo
 const COL_GRAFICO_INI = 5; // coluna F
 const COL_GRAFICO_FIM = 14;
 
+const LINHA_FIM = 1000;  // até onde as fórmulas olham, para caber respostas acrescentadas à mão
+
 function montarXlsx(){
+  /* ---------------- onde cada pergunta cai na aba Respostas ---------------- */
+  const colunaDa = {};
+  let proxima = 6;  // Nº, Data, Hora, Identificação, Curso, Respondidas
+  PERGUNTAS.forEach(p => { colunaDa[p.id] = proxima++; if (p.aberta) proxima++; });
+
+  // as colunas de alternativa, agrupadas em intervalos contíguos (a justificativa fica de fora)
+  const faixasResposta = [];
+  PERGUNTAS.forEach(p => {
+    const c = colunaDa[p.id];
+    const ultima = faixasResposta[faixasResposta.length - 1];
+    if (ultima && c === ultima[1] + 1) ultima[1] = c; else faixasResposta.push([c, c]);
+  });
+  const formulaRespondidas = linha => "COUNTA(" +
+    faixasResposta.map(([a,b]) => letraColuna(a) + linha + ":" + letraColuna(b) + linha).join(",") + ")";
+  const faixaDaPergunta = p => {
+    const c = "$" + letraColuna(colunaDa[p.id]);
+    return "Respostas!" + c + "$2:" + c + "$" + LINHA_FIM;
+  };
+
   /* ---------------- aba Respostas ---------------- */
   const cab = ["Nº","Data","Hora","Identificação","Curso e período","Respondidas"];
   PERGUNTAS.forEach((p,i) => {
@@ -1063,7 +1088,7 @@ function montarXlsx(){
       { v:serial == null ? "" : serial, s:10 },
       { v:r.nome || "", s:2 },
       { v:r.curso || "", s:2 },
-      { v:PERGUNTAS.filter(p => temResposta(r,p)).length, s:7 }
+      { v:{ f:formulaRespondidas(i + 2), v:PERGUNTAS.filter(p => temResposta(r,p)).length }, s:7 }
     ];
     PERGUNTAS.forEach(p => {
       const val = r[p.id];
@@ -1081,7 +1106,7 @@ function montarXlsx(){
   const res = [
     [{ v:"Resumo da pesquisa", s:1 }, { v:"", s:1 }, { v:"", s:1 }, { v:"", s:1 }],
     [{ v:"Pesquisa", s:4 }, TITULO],
-    [{ v:"Respostas coletadas", s:4 }, { v:total, s:7 }],
+    [{ v:"Respostas coletadas", s:4 }, { v:{ f:"COUNTA(Respostas!$A$2:$A$" + LINHA_FIM + ")", v:total }, s:7 }],
     [{ v:"Gerado em", s:4 }, { v:serialData(new Date()), s:9 }],
     [{ v:"Cada tabela tem o gráfico pronto ao lado, já em porcentagem.", s:6 }]
   ];
@@ -1096,8 +1121,20 @@ function montarXlsx(){
     res.push([{ v:"P" + (i+1) + ". " + p.texto, s:4 }]);
     res.push([{ v:"Alternativa", s:5 }, { v:"Respostas", s:5 }, { v:"% da base", s:5 }, { v:"Base", s:5 }]);
     const primeiraOpcao = res.length + 1;
+    const faixa = faixaDaPergunta(p);
     p.opcoes.forEach((op,j) => {
-      res.push([{ v:op, s:2 }, { v:contagens[j], s:7 }, { v:fracoes[j], s:8 }, { v:b, s:7 }]);
+      const linha = res.length + 1;
+      // múltipla escolha guarda as alternativas numa célula só, separadas por " | ",
+      // por isso a contagem procura o texto dentro da célula
+      const conta = p.tipo === "multipla"
+        ? 'COUNTIF(' + faixa + ',"*"&$A' + linha + '&"*")'
+        : 'COUNTIF(' + faixa + ',$A' + linha + ')';
+      res.push([
+        { v:op, s:2 },
+        { v:{ f:conta, v:contagens[j] }, s:7 },
+        { v:{ f:'IF($D' + linha + '=0,0,$B' + linha + '/$D' + linha + ')', v:fracoes[j] }, s:8 },
+        { v:{ f:'COUNTA(' + faixa + ')', v:b }, s:7 }
+      ]);
     });
     const ultimaOpcao = res.length;
     if (p.tipo === "multipla"){
@@ -1146,6 +1183,7 @@ function montarXlsx(){
       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
       '<sheets><sheet name="Respostas" sheetId="1" r:id="rId1"/><sheet name="Resumo" sheetId="2" r:id="rId2"/></sheets>' +
+      '<calcPr calcId="171027" fullCalcOnLoad="1"/>' +
       "</workbook>" },
     { nome:"xl/_rels/workbook.xml.rels", dados:
       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
