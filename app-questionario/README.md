@@ -32,6 +32,11 @@ O jeito mais simples é o GitHub Pages, que já está configurado neste reposit�
 4. O endereço aparece no fim da execução, algo como:
    `https://josejunior-unv.github.io/axiumL/`
 
+**Atualizações.** Quando você publica uma versão nova, ela chega ao tablet na
+próxima vez que o app for aberto com internet — o service worker busca primeiro
+no servidor e só usa a cópia guardada quando está offline. O rodapé do painel
+mostra qual versão está rodando.
+
 > Sem internet na hora de instalar? Dá para copiar a pasta `app-questionario`
 > para o tablet e abrir o `index.html` direto. Nesse modo o app funciona e
 > exporta a planilha normalmente, só não instala como ícone na tela inicial.

@@ -221,6 +221,7 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:18px}
 .rodape-nota{margin-top:34px; padding-top:18px; border-top:1px solid var(--line); color:var(--suave); font-size:13px;
   display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between}
 .rodape-nota p{max-width:54ch}
+.versao{font-family:var(--mono); font-size:11px; color:var(--suave); letter-spacing:.06em; width:100%}
 [hidden]{display:none !important}
 @media (max-width:520px){
   .cartao-ident{grid-template-columns:1fr}
@@ -334,6 +335,7 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:18px}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>
         Apagar tudo
       </button>
+      <span class="versao" id="versao"></span>
     </div>
   </main>
 
@@ -465,6 +467,7 @@ const CHAVE_ENVIADAS = CHAVE + ":enviadas";
 // Endereço que o arquivo qr-do-app.svg codifica. Se publicar o app em outro
 // lugar, gere um QR novo e troque esta linha (o QR só aparece quando bate).
 const URL_DO_QR = "https://josejunior-unv.github.io/axiumL/app-questionario/";
+const VERSAO = "2 · ensino superior";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
@@ -1239,8 +1242,22 @@ ligarBanco();
 // resolvido no carregamento: assim o download acontece dentro do toque do usuário
 capacidade("downloads").then(s => { salvador = s; });
 
+$("#versao").textContent = "versão " + VERSAO;
+
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
-  window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+  const jaControlado = !!navigator.serviceWorker.controller;
+  let recarregando = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    // só recarrega quando uma versão NOVA substitui uma que já estava no ar
+    if (!jaControlado || recarregando) return;
+    recarregando = true;
+    location.reload();
+  });
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js", { updateViaCache: "none" })
+      .then(reg => reg.update())
+      .catch(() => {});
+  });
 }
 </script>
 </body>

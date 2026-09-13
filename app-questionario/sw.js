@@ -1,9 +1,14 @@
-/* Service worker: deixa o app funcionar sem internet depois da primeira abertura. */
-const CACHE = "pesquisa-tec-v1";
+/* Service worker do app da pesquisa.
+   Estratégia: REDE PRIMEIRO, cache como reserva.
+   Assim o app continua funcionando sem internet, mas uma versão nova
+   publicada nunca fica presa no aparelho — o erro da versão anterior,
+   que servia sempre a cópia guardada e nunca ia checar o servidor. */
+const CACHE = "pesquisa-es-v3";
 const ESSENCIAIS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
+  "./qr-do-app.svg",
   "./icones/icone-192.png",
   "./icones/icone-512.png",
   "./icones/icone-maskable-512.png"
@@ -12,7 +17,8 @@ const ESSENCIAIS = [
 self.addEventListener("install", evento => {
   evento.waitUntil(
     caches.open(CACHE)
-      .then(cache => cache.addAll(ESSENCIAIS))
+      // um arquivo que falhe não pode derrubar a instalação inteira
+      .then(cache => Promise.all(ESSENCIAIS.map(u => cache.add(u).catch(() => {}))))
       .then(() => self.skipWaiting())
   );
 });
@@ -30,19 +36,18 @@ self.addEventListener("fetch", evento => {
   if (req.method !== "GET") return;
 
   evento.respondWith(
-    caches.match(req).then(guardado => {
-      if (guardado) return guardado;
-      return fetch(req).then(resposta => {
-        // guarda também as fontes do Google para uso offline
+    fetch(req)
+      .then(resposta => {
         if (resposta && (resposta.ok || resposta.type === "opaque")){
           const copia = resposta.clone();
           caches.open(CACHE).then(cache => cache.put(req, copia)).catch(() => {});
         }
         return resposta;
-      }).catch(() => {
+      })
+      .catch(() => caches.match(req).then(guardado => {
+        if (guardado) return guardado;
         if (req.mode === "navigate") return caches.match("./index.html");
         return new Response("", { status: 504, statusText: "Sem conexão" });
-      });
-    })
+      }))
   );
 });
