@@ -8,6 +8,8 @@ planilha do Excel (`.xlsx`).
 - **Instala como aplicativo** no tablet (ícone na tela inicial, tela cheia).
 - **Não depende de servidor nem de conta**: as respostas ficam no próprio aparelho.
 - **Sem bibliotecas externas**: a planilha é gerada pelo próprio app.
+- **Tipografia do sistema**: no iPhone e no iPad usa a SF Pro da Apple; nos
+  outros aparelhos, a Inter, que é o equivalente mais próximo.
 
 | Arquivo | O que é |
 | --- | --- |

@@ -11,7 +11,7 @@
 <link rel="icon" href="icones/icone-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <style>
 :root{
   /* papel e fios */
@@ -25,10 +25,13 @@
   --sobre-marinho:#EDF3FA; --sobre-marinho-2:#9DB5CE; --fio-marinho:#24486C;
   --alerta:#96500E; --alerta-fraco:#F8ECDA;
   --sombra:0 1px 2px rgba(14,42,69,.05), 0 14px 34px -22px rgba(14,42,69,.5);
-  --raio:11px;
-  --display:"Spectral", Georgia, "Times New Roman", serif;
-  --corpo:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --raio:16px;
+  --perigo:#C9283E;
+  /* no iPhone e no iPad isto resolve para a SF Pro do próprio sistema;
+     fora deles, a Inter é o equivalente mais próximo */
+  --corpo:-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+  --display:var(--corpo);
+  --mono:ui-monospace, "SF Mono", SFMono-Regular, Menlo, "Roboto Mono", monospace;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -38,11 +41,12 @@
     --azul:#6BAFF3; --azul-claro:#8CC4FA; --azul-fraco:#152E4A; --azul-fio:#2A5077;
     --tinta:#E7EEF7; --tinta-2:#AEBECF; --suave:#8294A8;
     --sobre-marinho:#E7EEF7; --sobre-marinho-2:#8FA7C0; --fio-marinho:#2A4767;
-    --alerta:#DFA463; --alerta-fraco:#2E2317;
+    --alerta:#DFA463; --alerta-fraco:#2E2317; --perigo:#FF6B6B;
     --sombra:0 1px 2px rgba(0,0,0,.4), 0 14px 34px -22px rgba(0,0,0,.95);
   }
 }
 :root[data-theme="dark"]{
+  --perigo:#FF6B6B;
   --papel:#0A121C; --superficie:#121D2A; --superficie-2:#1A2836; --superficie-3:#0E1824;
   --fio:#243545; --fio-forte:#375065;
   --marinho:#14263C; --marinho-2:#1E3552;
@@ -54,11 +58,14 @@
 }
 *{box-sizing:border-box}
 body{margin:0; background:var(--papel); color:var(--tinta); font-family:var(--corpo);
-  font-size:16px; line-height:1.55; -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent}
+  font-size:17px; line-height:1.47; letter-spacing:-.01em;
+  -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility}
 .shell{max-width:980px; margin:0 auto; padding-inline:18px; padding-block:22px 120px}
-h1,h2,h3{font-family:var(--display); font-weight:600; margin:0; text-wrap:balance; letter-spacing:-.012em}
-h1{font-size:clamp(28px,4.6vw,40px); line-height:1.1; font-weight:700}
-h2{font-size:21px}
+h1,h2,h3{font-family:var(--display); font-weight:600; margin:0; text-wrap:balance}
+h1{font-size:clamp(30px,4.8vw,38px); line-height:1.14; font-weight:700; letter-spacing:-.026em}
+h2{font-size:20px; letter-spacing:-.022em}
+h3{letter-spacing:-.018em}
 p{margin:0}
 .sobrancelha{font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.2em; text-transform:uppercase}
 .sub{font-size:15px; max-width:60ch}
@@ -96,19 +103,19 @@ p{margin:0}
 /* ---------- botões ---------- */
 .btn{font-family:var(--corpo); font-size:15px; font-weight:600; line-height:1;
   display:inline-flex; align-items:center; justify-content:center; gap:9px;
-  min-height:48px; padding:0 20px; border-radius:10px; cursor:pointer;
-  border:1px solid var(--fio-forte); background:var(--superficie); color:var(--tinta);
-  transition:border-color .15s ease, background .15s ease, color .15s ease}
-.btn:hover{border-color:var(--azul); color:var(--azul)}
-.btn:active{transform:translateY(1px)}
+  min-height:50px; padding:0 20px; border-radius:13px; cursor:pointer; letter-spacing:-.015em;
+  border:0; background:var(--azul-fraco); color:var(--azul);
+  transition:background .18s ease, color .18s ease, transform .12s cubic-bezier(.32,.72,0,1)}
+.btn:hover{background:color-mix(in srgb, var(--azul-fraco) 82%, var(--azul))}
+.btn:active{transform:scale(.97)}
 .btn:focus-visible{outline:2px solid var(--azul-claro); outline-offset:2px}
 .btn[disabled]{opacity:.4; cursor:not-allowed; transform:none}
-.btn[disabled]:hover{border-color:var(--fio-forte); color:var(--tinta)}
-.btn-principal{background:var(--azul); border-color:var(--azul); color:#fff; min-height:60px;
-  font-size:17px; width:100%; letter-spacing:.005em}
-.btn-principal:hover{background:var(--azul-claro); border-color:var(--azul-claro); color:#fff}
-.btn-perigo{color:var(--alerta); border-color:var(--fio)}
-.btn-perigo:hover{border-color:var(--alerta); background:var(--alerta-fraco); color:var(--alerta)}
+.btn[disabled]:hover{background:var(--azul-fraco); color:var(--azul)}
+.btn-principal{background:var(--azul); color:#fff; min-height:54px; font-size:17px; font-weight:600;
+  width:100%; border-radius:15px}
+.btn-principal:hover{background:var(--azul-claro); color:#fff}
+.btn-perigo{background:transparent; color:var(--perigo)}
+.btn-perigo:hover{background:color-mix(in srgb, var(--perigo) 12%, transparent); color:var(--perigo)}
 .btn svg{width:18px; height:18px; flex:none}
 .acoes{display:flex; flex-wrap:wrap; gap:10px; margin-top:12px}
 .acoes .btn{flex:1 1 210px}
@@ -116,7 +123,7 @@ p{margin:0}
 /* ---------- seções ---------- */
 .secao{margin-top:38px}
 .secao-cab{display:flex; align-items:baseline; justify-content:space-between; gap:14px;
-  margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--fio); flex-wrap:wrap}
+  margin-bottom:12px; flex-wrap:wrap}
 .conta{font-family:var(--mono); font-size:11.5px; color:var(--suave); font-variant-numeric:tabular-nums;
   letter-spacing:.02em}
 .cartao{background:var(--superficie); border:1px solid var(--fio); border-radius:var(--raio);
@@ -138,8 +145,8 @@ p{margin:0}
 
 /* ---------- lista de coletas ---------- */
 .coletas{border:1px solid var(--fio); border-radius:var(--raio); background:var(--superficie); overflow:hidden}
-.coleta{display:flex; align-items:center; gap:14px; padding:13px 16px; border-top:1px solid var(--fio)}
-.coleta:first-child{border-top:0}
+.coleta{display:flex; align-items:center; gap:14px; padding:14px 16px; position:relative}
+.coleta + .coleta::before{content:""; position:absolute; left:52px; right:0; top:0; height:1px; background:var(--fio)}
 .coleta-n{font-family:var(--mono); font-size:12px; font-weight:600; color:var(--azul);
   flex:none; font-variant-numeric:tabular-nums; min-width:22px}
 .coleta-txt{flex:1; min-width:0}
@@ -199,21 +206,23 @@ p{margin:0}
 .ajuda{font-size:13.5px; color:var(--suave); margin-bottom:14px}
 .ajuda.limite{color:var(--alerta); font-weight:500}
 .opcoes{display:flex; flex-direction:column; gap:8px; margin-top:14px}
-.opcao{display:flex; align-items:center; gap:14px; min-height:54px; padding:12px 16px;
-  border:1px solid var(--fio); border-radius:9px; background:var(--superficie-3);
-  cursor:pointer; font-size:15.5px; line-height:1.4; color:var(--tinta);
-  transition:border-color .15s ease, background .15s ease}
+.opcao{display:flex; align-items:center; gap:14px; min-height:56px; padding:13px 16px;
+  border:1px solid var(--fio); border-radius:13px; background:var(--superficie-3);
+  cursor:pointer; font-size:16.5px; line-height:1.38; color:var(--tinta); letter-spacing:-.012em;
+  transition:border-color .15s ease, background .15s ease, transform .12s cubic-bezier(.32,.72,0,1)}
+.opcao:active{transform:scale(.985)}
 .opcao:hover{border-color:var(--azul-fio); background:var(--superficie)}
 .opcao input{position:absolute; opacity:0; width:0; height:0}
-.marca{flex:none; width:22px; height:22px; border:1.5px solid var(--fio-forte); background:var(--superficie);
-  display:inline-block; position:relative; transition:border-color .15s ease, background .15s ease}
+.marca{flex:none; width:24px; height:24px; border:1.5px solid var(--fio-forte); background:var(--superficie);
+  display:inline-block; position:relative; transition:border-color .18s ease, background .18s ease}
 .opcao.radio .marca{border-radius:50%}
 .opcao.caixa .marca{border-radius:6px}
 .opcao:has(input:checked){border-color:var(--azul); background:var(--azul-fraco)}
 .opcao:has(input:checked) .marca{border-color:var(--azul); background:var(--azul)}
-.opcao.radio:has(input:checked) .marca::after{content:""; position:absolute; inset:4px; border-radius:50%; background:#fff}
-.opcao.caixa:has(input:checked) .marca::after{content:""; position:absolute; left:6.5px; top:2.5px; width:6px; height:11px;
-  border:solid #fff; border-width:0 2.5px 2.5px 0; transform:rotate(42deg)}
+.marca::after{content:""; position:absolute; left:8px; top:3.5px; width:6px; height:12px;
+  border:solid #fff; border-width:0 2.5px 2.5px 0; transform:rotate(42deg) scale(.4); opacity:0;
+  transition:opacity .14s ease, transform .26s cubic-bezier(.32,.72,0,1)}
+.opcao:has(input:checked) .marca::after{opacity:1; transform:rotate(42deg) scale(1)}
 .opcao:has(input:focus-visible){outline:2px solid var(--azul-claro); outline-offset:2px}
 .opcao:has(input:disabled){opacity:.4; cursor:not-allowed}
 .opcao:has(input:disabled):hover{border-color:var(--fio); background:var(--superficie-3)}
@@ -226,20 +235,38 @@ p{margin:0}
 .rodape-fixo .btn-principal{flex:1; width:auto}
 
 /* ---------- diálogo e aviso ---------- */
-dialog{border:1px solid var(--fio); border-radius:14px; background:var(--superficie); color:var(--tinta);
-  padding:24px; max-width:430px; width:calc(100% - 36px); box-shadow:var(--sombra); font-family:var(--corpo)}
-dialog::backdrop{background:rgba(8,16,26,.55); backdrop-filter:blur(2px)}
-dialog h3{font-size:20px; margin-bottom:9px}
-dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:20px}
-.dlg-acoes{display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap}
+dialog{border:0; background:var(--superficie); color:var(--tinta); font-family:var(--corpo);
+  padding:26px 22px calc(22px + env(safe-area-inset-bottom));
+  width:100%; max-width:520px; margin:auto auto 0; border-radius:22px 22px 0 0;
+  box-shadow:0 -8px 40px -12px rgba(8,16,26,.35);
+  animation:folha-sobe .42s cubic-bezier(.32,.72,0,1)}
+@keyframes folha-sobe{ from{transform:translateY(100%)} to{transform:translateY(0)} }
+dialog::backdrop{background:rgba(8,16,26,.4); backdrop-filter:blur(3px); animation:fade .3s ease}
+@keyframes fade{ from{opacity:0} to{opacity:1} }
+/* alça da folha, como nas modais do iOS */
+dialog::before{content:""; display:block; width:36px; height:5px; border-radius:999px;
+  background:var(--fio-forte); margin:-14px auto 18px}
+dialog h3{font-size:21px; margin-bottom:8px; letter-spacing:-.022em}
+dialog p{color:var(--tinta-2); font-size:16px; margin-bottom:22px}
+.dlg-acoes{display:flex; flex-direction:column-reverse; gap:9px}
+.dlg-acoes .btn{width:100%}
+@media (min-width:560px){
+  dialog{margin:auto; border-radius:20px; width:calc(100% - 40px);
+    animation:folha-surge .32s cubic-bezier(.32,.72,0,1); padding-bottom:22px}
+  dialog::before{display:none}
+  @keyframes folha-surge{ from{opacity:0; transform:scale(.94)} to{opacity:1; transform:scale(1)} }
+  .dlg-acoes{flex-direction:row; justify-content:flex-end}
+  .dlg-acoes .btn{width:auto}
+}
 .qr-caixa{display:flex; justify-content:center; margin-bottom:18px}
 .qr-caixa svg{width:190px; height:190px; background:#fff; border:1px solid var(--fio); border-radius:10px; padding:10px}
 .link-caixa{font-family:var(--mono); font-size:12.5px; color:var(--tinta); background:var(--superficie-3);
   border:1px solid var(--fio); border-radius:9px; padding:12px 14px; word-break:break-all; user-select:all}
 #aviso{position:fixed; left:50%; bottom:98px; transform:translate(-50%,14px); z-index:60;
-  background:var(--marinho); color:var(--sobre-marinho); font-size:14.5px; font-weight:500;
-  padding:14px 20px; border-radius:10px; box-shadow:var(--sombra); max-width:min(90vw,470px);
-  border:1px solid var(--fio-marinho);
+  background:color-mix(in srgb, var(--marinho) 92%, transparent); color:var(--sobre-marinho);
+  font-size:15px; font-weight:500; letter-spacing:-.012em;
+  padding:14px 22px; border-radius:999px; box-shadow:var(--sombra); max-width:min(90vw,470px);
+  border:1px solid var(--fio-marinho); backdrop-filter:blur(16px) saturate(180%);
   opacity:0; pointer-events:none; transition:opacity .24s ease, transform .24s ease}
 #aviso.ver{opacity:1; transform:translate(-50%,0)}
 #aviso.com-link{pointer-events:auto}
@@ -566,7 +593,7 @@ const PERGUNTAS = [
 const TITULO = "Uso da Tecnologia no Ensino Superior";
 const CHAVE = "pesquisa-tecnologia-es-v1";
 const CHAVE_ENVIADAS = CHAVE + ":enviadas";
-const VERSAO = "6 · ensino superior";
+const VERSAO = "7 · ensino superior";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
@@ -877,7 +904,8 @@ async function salvarColeta(){
   if (faltando.length){
     const ok = await confirmar(
       "Salvar sem responder tudo?",
-      "Faltam " + faltando.length + " perguntas: " + faltando.join(", ") + ". Elas ficarão em branco na planilha.",
+      (faltando.length === 1 ? "Falta 1 pergunta: " : "Faltam " + faltando.length + " perguntas: ") +
+        faltando.join(", ") + (faltando.length === 1 ? ". Ela ficará" : ". Elas ficarão") + " em branco na planilha.",
       "Salvar assim"
     );
     if (!ok){
@@ -1788,7 +1816,9 @@ $("#btn-salvar").addEventListener("click", salvarColeta);
 $("#btn-voltar").addEventListener("click", async () => {
   const preenchidas = PERGUNTAS.filter(p => temResposta(rascunho, p)).length;
   if (preenchidas > 0){
-    const ok = await confirmar("Descartar esta resposta?", "Você já marcou " + preenchidas + " perguntas. Sair agora apaga essas marcações.", "Descartar");
+    const ok = await confirmar("Descartar esta resposta?",
+      "Você já marcou " + (preenchidas === 1 ? "1 pergunta" : preenchidas + " perguntas") +
+      ". Sair agora apaga " + (preenchidas === 1 ? "essa marcação" : "essas marcações") + ".", "Descartar");
     if (!ok) return;
   }
   rascunho = null;
@@ -1797,7 +1827,9 @@ $("#btn-voltar").addEventListener("click", async () => {
 $("#btn-xlsx").addEventListener("click", () => baixar("pesquisa-tecnologia_" + carimbo() + ".xlsx", montarXlsx()));
 $("#btn-csv").addEventListener("click", () => baixar("pesquisa-tecnologia_" + carimbo() + ".csv", montarCsv()));
 $("#btn-limpar").addEventListener("click", async () => {
-  const ok = await confirmar("Apagar todas as respostas?", "As " + respostas.length + " coletas serão removidas deste aparelho. Baixe a planilha antes, se ainda não baixou.", "Apagar tudo");
+  const ok = await confirmar("Apagar todas as respostas?",
+    (respostas.length === 1 ? "A única coleta será removida" : "As " + respostas.length + " coletas serão removidas") +
+    " deste aparelho. Baixe a planilha antes, se ainda não baixou.", "Apagar tudo");
   if (!ok) return;
   const antigas = respostas.slice();
   respostas = []; enviadas.clear();
