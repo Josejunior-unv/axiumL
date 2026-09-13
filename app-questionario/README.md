@@ -83,10 +83,14 @@ resposta**, que fica fixo no rodapé.
 
 ## 4. A gatinha
 
-Toda vez que um botão é apertado, uma gatinha aparece ao lado dele, bate a
-patinha junto e some sozinha. Ela é um desenho original em SVG, na paleta do
-app — **não é a Hello Kitty**, que é personagem registrado da Sanrio e não pode
-ser reproduzido num site publicado.
+Toda vez que um botão é apertado, uma gatinha chega e **aperta junto**: a
+patinha dela encosta exatamente no ponto em que o dedo tocou, afunda no mesmo
+instante e levanta quando o dedo levanta. Ela vem pela esquerda e se espelha
+sozinha quando não cabe.
+
+O desenho é original, em SVG, na paleta do app. O botão **trocar figura**, no
+rodapé, troca a gatinha por uma imagem sua — ela é reduzida para 160px e fica
+guardada só neste aparelho.
 
 O desenho tem `pointer-events: none`, então nunca rouba o toque: o botão recebe
 o clique normalmente mesmo com ela por cima. Também não aparece nas alternativas

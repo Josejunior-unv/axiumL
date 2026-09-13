@@ -357,27 +357,32 @@ main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
 }
 
 /* ---------- a gatinha que aparece quando um botão é apertado ---------- */
-#gata{position:fixed; z-index:90; width:70px; height:70px; pointer-events:none;
+#gata{position:fixed; z-index:90; width:78px; height:78px; pointer-events:none;
   opacity:0; will-change:transform, opacity; filter:drop-shadow(0 6px 14px rgba(14,42,69,.3))}
 #gata.entra{animation:gata-entra .42s cubic-bezier(.32,.72,0,1) forwards}
 #gata.sai{animation:gata-sai .3s cubic-bezier(.32,.72,0,1) forwards}
 @keyframes gata-entra{
-  0%{opacity:0; transform:translateY(18px) scale(.55) rotate(-14deg)}
-  55%{opacity:1; transform:translateY(-5px) scale(1.08) rotate(5deg)}
-  100%{opacity:1; transform:translateY(0) scale(1) rotate(0)}
+  0%{opacity:0; transform:translate(-14px,10px) scale(.6) rotate(-16deg)}
+  60%{opacity:1; transform:translate(2px,-2px) scale(1.06) rotate(4deg)}
+  100%{opacity:1; transform:none}
 }
 @keyframes gata-sai{ to{opacity:0; transform:translateY(12px) scale(.7) rotate(8deg)} }
-#gata .pata{transform-origin:24px 26px; animation:pata-bate .5s cubic-bezier(.32,.72,0,1) .28s}
-@keyframes pata-bate{
-  0%,100%{transform:translate(0,0) rotate(0)}
-  45%{transform:translate(-7px,9px) rotate(-26deg)}
-}
+#gata .pata{transform-origin:26px 30px; transform:translate(0,0) rotate(0deg);
+  transition:transform .13s cubic-bezier(.32,.72,0,1)}
+/* enquanto o dedo está apertando, a patinha afunda no botão junto */
+#gata.apertando .pata{transform:translate(3px,7px) rotate(9deg)}
+#gata.apertando{transform:translateY(2px)}
+#gata.espelhada{transform:scaleX(-1)}
+#gata.espelhada.apertando{transform:scaleX(-1) translateY(2px)}
+#gata img{width:100%; height:100%; object-fit:contain; display:block}
 #gata .rabo{transform-origin:54px 52px; animation:rabo-balanca .9s ease-in-out .3s 2}
 @keyframes rabo-balanca{ 0%,100%{transform:rotate(0)} 50%{transform:rotate(-16deg)} }
 .chave-gata{display:inline-flex; align-items:center; gap:8px; cursor:pointer;
   font-family:var(--mono); font-size:11px; letter-spacing:.06em; color:var(--suave);
   background:none; border:0; padding:6px 0}
 .chave-gata:hover{color:var(--realce)}
+.figura-gata{position:relative; overflow:hidden; display:inline-flex}
+.figura-gata input{position:absolute; inset:0; opacity:0; cursor:pointer; width:100%}
 .chave-gata i{width:26px; height:16px; border-radius:999px; background:var(--fio-forte);
   position:relative; transition:background .2s ease; flex:none}
 .chave-gata i::after{content:""; position:absolute; top:2px; left:2px; width:12px; height:12px;
@@ -508,6 +513,10 @@ main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
       <button class="chave-gata" id="chave-gata" type="button" aria-pressed="true">
         <i aria-hidden="true"></i><span id="chave-gata-txt">gatinha ligada</span>
       </button>
+      <label class="chave-gata figura-gata" title="Trocar a figura da gatinha">
+        <span id="figura-txt">trocar figura</span>
+        <input type="file" id="figura-gata" accept="image/*">
+      </label>
     </div>
   </main>
 
@@ -609,6 +618,8 @@ main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
   <!-- focinho e sorriso -->
   <ellipse cx="36" cy="40" rx="2.6" ry="1.9" fill="#E9BA5E"/>
   <path d="M31 44 q5 4 10 0" fill="none" stroke="#0E2A45" stroke-width="2.6" stroke-linecap="round"/>
+  <ellipse cx="21" cy="40" rx="4" ry="2.6" fill="#E9BA5E" opacity=".45"/>
+  <ellipse cx="51" cy="40" rx="4" ry="2.6" fill="#E9BA5E" opacity=".45"/>
   <!-- bigodes -->
   <path d="M6 34 l11 2 M6 42 l11 -1 M66 34 l-11 2 M66 42 l-11 -1"
         stroke="#0E2A45" stroke-width="2.4" stroke-linecap="round"/>
@@ -616,7 +627,11 @@ main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
   <path d="M57 14 q7 -6 9 0 q-7 5 -9 0 q-7 -6 -9 0 q7 5 9 0" fill="#E9BA5E" stroke="#0E2A45" stroke-width="2.4" stroke-linejoin="round"/>
   <circle cx="57" cy="14" r="2.4" fill="#fff" stroke="#0E2A45" stroke-width="2"/>
   <!-- patinha que bate -->
-  <ellipse class="pata" cx="24" cy="26" rx="7" ry="5.6" fill="#fff" stroke="#0E2A45" stroke-width="3" transform="rotate(-18 24 26)"/>
+  <g class="pata">
+    <path d="M30 30 q-7 -1 -11 3" fill="none" stroke="#0E2A45" stroke-width="3" stroke-linecap="round"/>
+    <ellipse cx="17" cy="34" rx="7.5" ry="6" fill="#fff" stroke="#0E2A45" stroke-width="3"/>
+    <circle cx="14" cy="32" r="1.3" fill="#E9BA5E"/><circle cx="18" cy="31" r="1.3" fill="#E9BA5E"/>
+  </g>
 </svg>
 
 <div id="aviso" role="status" aria-live="polite"></div>
@@ -679,7 +694,7 @@ const PERGUNTAS = [
 const TITULO = "Uso da Tecnologia no Ensino Superior";
 const CHAVE = "pesquisa-tecnologia-es-v1";
 const CHAVE_ENVIADAS = CHAVE + ":enviadas";
-const VERSAO = "9 · ensino superior";
+const VERSAO = "10 · ensino superior";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
@@ -1931,34 +1946,62 @@ function pintarChaveGata(){
   $("#chave-gata-txt").textContent = gataLigada ? "gatinha ligada" : "gatinha desligada";
 }
 
-function chamarGata(alvo){
+const L_GATA = 78;
+// onde a patinha fica dentro do desenho, em fração do quadro
+const PATA_X = 17 / 72, PATA_Y = 34 / 72;
+
+function chamarGata(alvo, px, py){
   if (!gataLigada || !alvo) return;
   const r = alvo.getBoundingClientRect();
   if (!r.width) return;
-  const L = 70, folga = 8;
-  // fica à direita do botão; se não couber, vai para a esquerda
-  let x = r.right + folga;
-  if (x + L > window.innerWidth - 6) x = r.left - L - folga;
-  x = Math.max(6, Math.min(x, window.innerWidth - L - 6));
-  const y = Math.max(6, Math.min(r.top + r.height / 2 - L / 2, window.innerHeight - L - 6));
+
+  // o ponto do botão onde a patinha vai encostar: onde o dedo tocou,
+  // ou a beirada de dentro do botão quando o toque veio do teclado
+  const alvoX = px != null ? px : r.left + Math.min(28, r.width * .3);
+  const alvoY = py != null ? py : r.top + r.height / 2;
+
+  // ela chega pela esquerda; se não couber, espelha e chega pela direita
+  let espelhada = false;
+  let x = alvoX - L_GATA * PATA_X;
+  if (x < 4){ espelhada = true; x = alvoX - L_GATA * (1 - PATA_X); }
+  if (x + L_GATA > window.innerWidth - 4){ espelhada = true; x = alvoX - L_GATA * (1 - PATA_X); }
+  x = Math.max(4, Math.min(x, window.innerWidth - L_GATA - 4));
+  const y = Math.max(4, Math.min(alvoY - L_GATA * PATA_Y, window.innerHeight - L_GATA - 4));
 
   gata.style.left = x + "px";
   gata.style.top = y + "px";
-  gata.classList.remove("entra", "sai");
-  void gata.offsetWidth;            // reinicia a animação
-  gata.classList.add("entra");
+  gata.classList.toggle("espelhada", espelhada);
+  gata.classList.remove("sai");
+  if (!gata.classList.contains("entra")){ void gata.offsetWidth; gata.classList.add("entra"); }
+  gata.classList.add("apertando");
+  clearTimeout(gataTimer);
+}
+
+function soltarGata(){
+  if (!gata.classList.contains("apertando")) return;
+  gata.classList.remove("apertando");
   clearTimeout(gataTimer);
   gataTimer = setTimeout(() => {
     gata.classList.remove("entra");
     gata.classList.add("sai");
-  }, 1150);
+  }, 780);
 }
 
-// qualquer botão de verdade convoca a gatinha; as alternativas da coleta não,
-// porque são tocadas o tempo todo e atrapalhariam quem está respondendo
-document.addEventListener("click", evento => {
+// aperta no mesmo instante do dedo, não depois: por isso é pointerdown
+document.addEventListener("pointerdown", evento => {
   const alvo = evento.target.closest("button, .btn, .menu-item, .menu-barra");
-  if (alvo && alvo.id !== "chave-gata") chamarGata(alvo);
+  if (alvo && alvo.id !== "chave-gata") chamarGata(alvo, evento.clientX, evento.clientY);
+}, true);
+document.addEventListener("pointerup", soltarGata, true);
+document.addEventListener("pointercancel", soltarGata, true);
+// teclado: sem dedo na tela, ela encosta na beirada do botão
+document.addEventListener("keydown", evento => {
+  if (evento.key !== "Enter" && evento.key !== " ") return;
+  const alvo = document.activeElement;
+  if (alvo && alvo.matches && alvo.matches("button, .btn, .menu-item, .menu-barra") && alvo.id !== "chave-gata"){
+    chamarGata(alvo);
+    setTimeout(soltarGata, 180);
+  }
 }, true);
 
 $("#chave-gata").addEventListener("click", () => {
@@ -1969,6 +2012,41 @@ $("#chave-gata").addEventListener("click", () => {
   else { gata.classList.remove("entra"); gata.classList.add("sai"); }
 });
 pintarChaveGata();
+
+/* Trocar a figura: a imagem escolhida é reduzida e guardada só neste
+   aparelho. O que você põe aqui é escolha sua. */
+const CHAVE_FIGURA = CHAVE + ":figura";
+function vestirGata(dados){
+  if (!dados) return;
+  gata.innerHTML = "";
+  const img = document.createElement("img");
+  img.src = dados; img.alt = "";
+  gata.appendChild(img);
+  $("#figura-txt").textContent = "figura trocada";
+}
+try{ vestirGata(localStorage.getItem(CHAVE_FIGURA)); }catch(e){}
+
+$("#figura-gata").addEventListener("change", evento => {
+  const arq = evento.target.files[0];
+  if (!arq) return;
+  const img = new Image();
+  img.onload = () => {
+    const lado = 160;
+    const c = document.createElement("canvas");
+    c.width = lado; c.height = lado;
+    const x = c.getContext("2d");
+    const k = Math.min(lado / img.width, lado / img.height);
+    const w = img.width * k, h = img.height * k;
+    x.drawImage(img, (lado - w) / 2, (lado - h) / 2, w, h);
+    const dados = c.toDataURL("image/png");
+    try{ localStorage.setItem(CHAVE_FIGURA, dados); }catch(e){ avisar("A figura ficou grande demais para guardar."); return; }
+    vestirGata(dados);
+    URL.revokeObjectURL(img.src);
+    avisar("Figura trocada. Aperte um botão para ver.");
+  };
+  img.onerror = () => avisar("Não consegui ler essa imagem.");
+  img.src = URL.createObjectURL(arq);
+});
 
 /* =========================================================
    11. LIGAÇÕES
