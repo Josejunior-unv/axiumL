@@ -103,11 +103,21 @@ document.getElementById("restaurar").addEventListener("click", () => {
   document.getElementById("origem").textContent = "cena gerada";
   arquivo.value = "";
 });
+/* salvar: usa a capacidade do ambiente quando existe, senão o link direto */
+let salvador = null;
+if (window.claude && typeof window.claude.use === "function")
+  window.claude.use("downloads").then(s => { salvador = s; }).catch(() => {});
+
 document.getElementById("baixar").addEventListener("click", () => {
   saida.toBlob(b => {
+    const nome = "ascii-" + cfg.renderMode + ".png";
+    if (salvador){
+      salvador.save({ filename: nome, data: b }).catch(() => {});
+      return;
+    }
     const u = URL.createObjectURL(b);
     const a = document.createElement("a");
-    a.href = u; a.download = "ascii-" + cfg.renderMode + ".png";
+    a.href = u; a.download = nome;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(u), 2000);
   });
