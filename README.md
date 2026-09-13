@@ -4,7 +4,7 @@ Este repositório guarda dois projetos:
 
 - **`scenes/`** — os vídeos de matemática feitos com Manim (descrito abaixo).
 - **`app-questionario/`** — app de tablet para aplicar a pesquisa *Uso da
-  Tecnologia no Ensino Médio* e exportar as respostas para o Excel.
+  Tecnologia no Ensino Superior* e exportar as respostas para o Excel.
   Veja [`app-questionario/README.md`](app-questionario/README.md).
 
 ---

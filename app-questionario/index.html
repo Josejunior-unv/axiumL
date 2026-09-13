@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Pesquisa Tecnologia no Ensino Médio</title>
-<meta name="description" content="Aplicativo de coleta do questionário sobre uso da tecnologia no ensino médio, com exportação para Excel.">
-<meta name="theme-color" content="#0E6552">
+<title>Pesquisa Tecnologia no Ensino Superior</title>
+<meta name="description" content="Aplicativo de coleta do questionário sobre uso da tecnologia no ensino superior, com exportação para Excel.">
+<meta name="theme-color" content="#1B4F8F">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icones/icone-192.png">
 <link rel="icon" href="icones/icone-192.png">
@@ -14,12 +14,12 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Zilla+Slab:wght@600;700&display=swap">
 <style>
 :root{
-  --ground:#F2F3EF; --surface:#FFFFFF; --surface-2:#E9EDE7; --surface-3:#F7F8F5;
-  --line:#D5DCD5; --line-forte:#B7C2BA;
-  --tinta:#15201D; --tinta-2:#3F514B; --suave:#6C7C75;
-  --destaque:#0E6552; --destaque-tinta:#FFFFFF; --destaque-fraco:#DFEDE7; --destaque-linha:#93C5B3;
-  --alerta:#9A4F0B; --alerta-fraco:#F7E9D6;
-  --sombra:0 1px 2px rgba(21,32,29,.05), 0 10px 24px -18px rgba(21,32,29,.45);
+  --ground:#F1F3F7; --surface:#FFFFFF; --surface-2:#E6EBF2; --surface-3:#F6F8FB;
+  --line:#D3DBE6; --line-forte:#B2BECF;
+  --tinta:#131A24; --tinta-2:#3C4A5C; --suave:#6A7889;
+  --destaque:#1B4F8F; --destaque-tinta:#FFFFFF; --destaque-fraco:#DDE8F6; --destaque-linha:#9BBDE3;
+  --alerta:#9A5410; --alerta-fraco:#F7EAD8;
+  --sombra:0 1px 2px rgba(19,26,36,.05), 0 10px 24px -18px rgba(19,26,36,.45);
   --raio:12px;
   --display:"Zilla Slab", Georgia, serif;
   --corpo:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -27,20 +27,20 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --ground:#101614; --surface:#18211E; --surface-2:#202B27; --surface-3:#141D1A;
-    --line:#2B3A34; --line-forte:#3D504A;
-    --tinta:#E7EDEA; --tinta-2:#B3C2BC; --suave:#8A9B94;
-    --destaque:#4FC7A4; --destaque-tinta:#06221B; --destaque-fraco:#1C352E; --destaque-linha:#2F5D4F;
-    --alerta:#E0A45F; --alerta-fraco:#31261A;
+    --ground:#0E141C; --surface:#161F2A; --surface-2:#1E2937; --surface-3:#121A23;
+    --line:#28323F; --line-forte:#3A4757;
+    --tinta:#E6EDF6; --tinta-2:#B0BECE; --suave:#8695A6;
+    --destaque:#6BB0F5; --destaque-tinta:#07182B; --destaque-fraco:#17304B; --destaque-linha:#2C5580;
+    --alerta:#E0A45F; --alerta-fraco:#2F2519;
     --sombra:0 1px 2px rgba(0,0,0,.35), 0 10px 24px -18px rgba(0,0,0,.9);
   }
 }
 :root[data-theme="dark"]{
-  --ground:#101614; --surface:#18211E; --surface-2:#202B27; --surface-3:#141D1A;
-  --line:#2B3A34; --line-forte:#3D504A;
-  --tinta:#E7EDEA; --tinta-2:#B3C2BC; --suave:#8A9B94;
-  --destaque:#4FC7A4; --destaque-tinta:#06221B; --destaque-fraco:#1C352E; --destaque-linha:#2F5D4F;
-  --alerta:#E0A45F; --alerta-fraco:#31261A;
+  --ground:#0E141C; --surface:#161F2A; --surface-2:#1E2937; --surface-3:#121A23;
+  --line:#28323F; --line-forte:#3A4757;
+  --tinta:#E6EDF6; --tinta-2:#B0BECE; --suave:#8695A6;
+  --destaque:#6BB0F5; --destaque-tinta:#07182B; --destaque-fraco:#17304B; --destaque-linha:#2C5580;
+  --alerta:#E0A45F; --alerta-fraco:#2F2519;
   --sombra:0 1px 2px rgba(0,0,0,.35), 0 10px 24px -18px rgba(0,0,0,.9);
 }
 *{box-sizing:border-box}
@@ -54,29 +54,20 @@ h1,h2,h3{font-family:var(--display); font-weight:600; margin:0; text-wrap:balanc
 h1{font-size:clamp(26px,4.4vw,36px); line-height:1.12}
 h2{font-size:20px}
 p{margin:0}
-.sobrancelha{
-  font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.14em;
-  text-transform:uppercase; color:var(--destaque);
-}
+.sobrancelha{font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--destaque)}
 .sub{color:var(--tinta-2); font-size:15px; max-width:62ch}
 
 /* ---------- cabeçalho ---------- */
 .topo{display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; justify-content:space-between; margin-bottom:22px}
 .topo-txt{display:flex; flex-direction:column; gap:7px}
-.selo{
-  display:inline-flex; align-items:center; gap:8px; flex-shrink:0;
-  font-family:var(--mono); font-size:12px; color:var(--tinta-2);
-  background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:7px 13px;
-}
+.selo{display:inline-flex; align-items:center; gap:8px; flex-shrink:0; font-family:var(--mono); font-size:12px;
+  color:var(--tinta-2); background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:7px 13px}
 .ponto{width:8px; height:8px; border-radius:50%; background:var(--line-forte); flex:none}
 .ponto.on{background:var(--destaque)}
 
 /* ---------- faixa de status ---------- */
-.status{
-  display:grid; grid-template-columns:repeat(3,1fr);
-  background:var(--surface); border:1px solid var(--line); border-radius:var(--raio);
-  overflow:hidden; margin-bottom:18px;
-}
+.status{display:grid; grid-template-columns:repeat(3,1fr); background:var(--surface);
+  border:1px solid var(--line); border-radius:var(--raio); overflow:hidden; margin-bottom:18px}
 .status > div{padding:15px 18px; border-left:1px solid var(--line)}
 .status > div:first-child{border-left:0}
 .status dt{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--suave); margin-bottom:4px}
@@ -84,13 +75,11 @@ p{margin:0}
 .status dd small{font-size:13px; font-weight:500; color:var(--tinta-2)}
 
 /* ---------- botões ---------- */
-.btn{
-  font-family:var(--corpo); font-size:15px; font-weight:600; line-height:1;
+.btn{font-family:var(--corpo); font-size:15px; font-weight:600; line-height:1;
   display:inline-flex; align-items:center; justify-content:center; gap:9px;
   min-height:48px; padding:0 20px; border-radius:10px; cursor:pointer;
   border:1px solid var(--line-forte); background:var(--surface); color:var(--tinta);
-  transition:background .15s ease, border-color .15s ease, transform .08s ease;
-}
+  transition:background .15s ease, border-color .15s ease, transform .08s ease}
 .btn:active{transform:translateY(1px)}
 .btn:hover{border-color:var(--destaque-linha)}
 .btn:focus-visible{outline:2px solid var(--destaque); outline-offset:2px}
@@ -108,25 +97,39 @@ p{margin:0}
 .secao-cab{display:flex; align-items:baseline; justify-content:space-between; gap:14px; margin-bottom:12px; flex-wrap:wrap}
 .conta{font-family:var(--mono); font-size:12px; color:var(--suave); font-variant-numeric:tabular-nums}
 
+/* ---------- passos da coleta em grupo ---------- */
+.passos{list-style:none; margin:0; padding:0}
+.passo{display:grid; grid-template-columns:auto 1fr auto; gap:8px 14px; align-items:center;
+  padding:16px 0; border-top:1px solid var(--line)}
+.passo:first-child{border-top:0; padding-top:2px}
+.passo-n{width:28px; height:28px; border-radius:50%; background:var(--destaque-fraco); color:var(--destaque);
+  font-family:var(--mono); font-weight:600; font-size:13px; display:flex; align-items:center; justify-content:center}
+.passo-txt h3{font-family:var(--corpo); font-size:15.5px; font-weight:600; margin-bottom:3px; letter-spacing:0}
+.passo-txt p{color:var(--tinta-2); font-size:14px; max-width:52ch}
+.passo .btn{white-space:nowrap}
+@media (max-width:660px){
+  .passo{grid-template-columns:auto 1fr}
+  .passo .btn{grid-column:1 / -1; width:100%}
+}
+.passos-fim{margin-top:16px; padding-top:15px; border-top:1px solid var(--line); color:var(--tinta-2); font-size:14px}
+.passos-fim strong{color:var(--tinta)}
+
 /* ---------- lista de coletas ---------- */
 .coletas{border:1px solid var(--line); border-radius:var(--raio); background:var(--surface); overflow:hidden}
 .coleta{display:flex; align-items:center; gap:12px; padding:12px 14px; border-top:1px solid var(--line)}
 .coleta:first-child{border-top:0}
-.coleta-n{font-family:var(--mono); font-size:12px; font-weight:600; color:var(--destaque); background:var(--destaque-fraco); border-radius:6px; padding:5px 8px; flex:none; font-variant-numeric:tabular-nums}
+.coleta-n{font-family:var(--mono); font-size:12px; font-weight:600; color:var(--destaque); background:var(--destaque-fraco);
+  border-radius:6px; padding:5px 8px; flex:none; font-variant-numeric:tabular-nums}
 .coleta-txt{flex:1; min-width:0}
 .coleta-nome{font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .coleta-meta{font-family:var(--mono); font-size:11.5px; color:var(--suave)}
-.icone-btn{
-  flex:none; width:40px; height:40px; display:inline-flex; align-items:center; justify-content:center;
-  border:1px solid transparent; border-radius:9px; background:transparent; color:var(--suave); cursor:pointer;
-}
+.icone-btn{flex:none; width:40px; height:40px; display:inline-flex; align-items:center; justify-content:center;
+  border:1px solid transparent; border-radius:9px; background:transparent; color:var(--suave); cursor:pointer}
 .icone-btn:hover{background:var(--surface-2); color:var(--alerta)}
 .icone-btn:focus-visible{outline:2px solid var(--destaque); outline-offset:1px}
 .icone-btn svg{width:18px; height:18px}
-.vazio{
-  border:1px dashed var(--line-forte); border-radius:var(--raio); padding:26px 20px; text-align:center;
-  color:var(--suave); background:var(--surface-3); font-size:15px;
-}
+.vazio{border:1px dashed var(--line-forte); border-radius:var(--raio); padding:26px 20px; text-align:center;
+  color:var(--suave); background:var(--surface-3); font-size:15px}
 
 /* ---------- resumo ---------- */
 .resumo-q{padding:16px 0; border-top:1px solid var(--line)}
@@ -138,14 +141,12 @@ p{margin:0}
 .barra-dir{display:flex; align-items:center; gap:8px}
 .trilho{flex:1; height:8px; border-radius:999px; background:var(--surface-2); overflow:hidden}
 .preenche{height:100%; background:var(--destaque); border-radius:999px; width:0; transition:width .35s ease}
-.barra-num{font-family:var(--mono); font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--tinta-2); min-width:62px; text-align:right; flex:none}
+.barra-num{font-family:var(--mono); font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--tinta-2);
+  min-width:62px; text-align:right; flex:none}
 
 /* ---------- coleta (formulário) ---------- */
-.barra-topo{
-  position:sticky; top:0; z-index:20; margin:-24px -18px 18px; padding:12px 18px 0;
-  background:color-mix(in srgb, var(--ground) 97%, transparent);
-  backdrop-filter:blur(10px); border-bottom:1px solid var(--line);
-}
+.barra-topo{position:sticky; top:0; z-index:20; margin:-24px -18px 18px; padding:12px 18px 0;
+  background:color-mix(in srgb, var(--ground) 97%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
 .barra-topo-linha{display:flex; align-items:center; justify-content:space-between; gap:12px; padding-bottom:10px}
 .progresso{height:4px; background:var(--surface-2); border-radius:999px; overflow:hidden; margin-bottom:-1px}
 .progresso span{display:block; height:100%; background:var(--destaque); width:0; transition:width .3s ease}
@@ -157,17 +158,10 @@ p{margin:0}
 
 .cartao{background:var(--surface); border:1px solid var(--line); border-radius:var(--raio); padding:18px; margin-bottom:14px}
 .cartao-ident{display:grid; grid-template-columns:1fr 1fr; gap:12px}
-@media (max-width:520px){
-  .cartao-ident{grid-template-columns:1fr}
-  .barra{grid-template-columns:1fr; gap:5px}
-  .barra-rot{white-space:normal}
-}
 .campo{display:flex; flex-direction:column; gap:6px}
 .campo label{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--suave)}
-.campo input, .campo textarea{
-  font-family:var(--corpo); font-size:16px; color:var(--tinta); background:var(--surface-3);
-  border:1px solid var(--line); border-radius:9px; padding:12px 13px; width:100%; min-height:48px; resize:vertical;
-}
+.campo input, .campo textarea{font-family:var(--corpo); font-size:16px; color:var(--tinta); background:var(--surface-3);
+  border:1px solid var(--line); border-radius:9px; padding:12px 13px; width:100%; min-height:48px; resize:vertical}
 .campo textarea{min-height:76px; line-height:1.45}
 .campo input:focus, .campo textarea:focus{outline:2px solid var(--destaque); outline-offset:-1px; border-color:var(--destaque)}
 
@@ -181,70 +175,58 @@ p{margin:0}
 .ajuda{font-size:13.5px; color:var(--suave); margin-bottom:12px}
 .ajuda.limite{color:var(--alerta); font-weight:500}
 .opcoes{display:flex; flex-direction:column; gap:9px; margin-top:12px}
-.opcao{
-  display:flex; align-items:center; gap:13px; min-height:54px; padding:11px 15px;
+.opcao{display:flex; align-items:center; gap:13px; min-height:54px; padding:11px 15px;
   border:1px solid var(--line); border-radius:10px; background:var(--surface-3);
   cursor:pointer; font-size:15.5px; line-height:1.35; color:var(--tinta);
-  transition:border-color .14s ease, background .14s ease;
-}
+  transition:border-color .14s ease, background .14s ease}
 .opcao:hover{border-color:var(--destaque-linha)}
 .opcao input{position:absolute; opacity:0; width:0; height:0}
-.marca{
-  flex:none; width:23px; height:23px; border:2px solid var(--line-forte); background:var(--surface);
-  display:inline-block; position:relative; transition:border-color .14s ease, background .14s ease;
-}
+.marca{flex:none; width:23px; height:23px; border:2px solid var(--line-forte); background:var(--surface);
+  display:inline-block; position:relative; transition:border-color .14s ease, background .14s ease}
 .opcao.radio .marca{border-radius:50%}
 .opcao.caixa .marca{border-radius:6px}
 .opcao:has(input:checked){border-color:var(--destaque); background:var(--destaque-fraco)}
 .opcao:has(input:checked) .marca{border-color:var(--destaque); background:var(--destaque)}
-.opcao.radio:has(input:checked) .marca::after{
-  content:""; position:absolute; inset:4px; border-radius:50%; background:var(--destaque-tinta);
-}
-.opcao.caixa:has(input:checked) .marca::after{
-  content:""; position:absolute; left:6.5px; top:2.5px; width:6px; height:11px;
-  border:solid var(--destaque-tinta); border-width:0 2.5px 2.5px 0; transform:rotate(42deg);
-}
+.opcao.radio:has(input:checked) .marca::after{content:""; position:absolute; inset:4px; border-radius:50%; background:var(--destaque-tinta)}
+.opcao.caixa:has(input:checked) .marca::after{content:""; position:absolute; left:6.5px; top:2.5px; width:6px; height:11px;
+  border:solid var(--destaque-tinta); border-width:0 2.5px 2.5px 0; transform:rotate(42deg)}
 .opcao:has(input:focus-visible){outline:2px solid var(--destaque); outline-offset:2px}
 .opcao:has(input:disabled){opacity:.42; cursor:not-allowed}
 .aberta{margin-top:13px}
 
-.rodape-fixo{
-  position:sticky; bottom:0; z-index:20; margin:18px -18px 0; padding:13px 18px;
+.rodape-fixo{position:sticky; bottom:0; z-index:20; margin:18px -18px 0; padding:13px 18px;
   padding-bottom:calc(13px + env(safe-area-inset-bottom));
-  background:color-mix(in srgb, var(--ground) 97%, transparent);
-  backdrop-filter:blur(10px); border-top:1px solid var(--line);
-  display:flex; gap:10px; align-items:center;
-}
+  background:color-mix(in srgb, var(--ground) 97%, transparent); backdrop-filter:blur(10px);
+  border-top:1px solid var(--line); display:flex; gap:10px; align-items:center}
 .rodape-fixo .btn-principal{flex:1; width:auto}
 
 /* ---------- diálogo e aviso ---------- */
-dialog{
-  border:1px solid var(--line); border-radius:14px; background:var(--surface); color:var(--tinta);
-  padding:22px; max-width:420px; width:calc(100% - 36px); box-shadow:var(--sombra); font-family:var(--corpo);
-}
-dialog::backdrop{background:rgba(10,18,16,.45)}
+dialog{border:1px solid var(--line); border-radius:14px; background:var(--surface); color:var(--tinta);
+  padding:22px; max-width:420px; width:calc(100% - 36px); box-shadow:var(--sombra); font-family:var(--corpo)}
+dialog::backdrop{background:rgba(8,14,22,.5)}
 dialog h3{font-size:19px; margin-bottom:8px}
 dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:18px}
 .dlg-acoes{display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap}
-#aviso{
-  position:fixed; left:50%; bottom:24px; transform:translate(-50%,14px); z-index:60;
-  background:var(--tinta); color:var(--ground); font-size:14.5px; font-weight:500;
-  padding:13px 19px; border-radius:10px; box-shadow:var(--sombra); max-width:min(90vw,440px);
-  opacity:0; pointer-events:none; transition:opacity .22s ease, transform .22s ease;
-}
-#aviso.ver{opacity:1; transform:translate(-50%,0)}
-.rodape-nota{margin-top:34px; padding-top:18px; border-top:1px solid var(--line); color:var(--suave); font-size:13px}
-
-/* ---------- coleta em grupo e compartilhamento ---------- */
-.grupo-txt{color:var(--tinta-2); font-size:14.5px; max-width:62ch}
-.grupo .acoes{margin-top:14px}
 .qr-caixa{display:flex; justify-content:center; margin-bottom:16px}
 .qr-caixa img{width:186px; height:186px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:9px}
 .link-caixa{font-family:var(--mono); font-size:13px; color:var(--tinta); background:var(--surface-3);
   border:1px solid var(--line); border-radius:9px; padding:11px 13px; word-break:break-all; user-select:all}
-.rodape-nota{display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between}
+#aviso{position:fixed; left:50%; bottom:24px; transform:translate(-50%,14px); z-index:60;
+  background:var(--tinta); color:var(--ground); font-size:14.5px; font-weight:500;
+  padding:13px 19px; border-radius:10px; box-shadow:var(--sombra); max-width:min(90vw,460px);
+  opacity:0; pointer-events:none; transition:opacity .22s ease, transform .22s ease}
+#aviso.ver{opacity:1; transform:translate(-50%,0)}
+#aviso.com-link{pointer-events:auto}
+#aviso a{color:var(--ground); font-weight:700; text-decoration:underline; text-underline-offset:3px; margin-left:7px; white-space:nowrap}
+.rodape-nota{margin-top:34px; padding-top:18px; border-top:1px solid var(--line); color:var(--suave); font-size:13px;
+  display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between}
 .rodape-nota p{max-width:54ch}
 [hidden]{display:none !important}
+@media (max-width:520px){
+  .cartao-ident{grid-template-columns:1fr}
+  .barra{grid-template-columns:1fr; gap:5px}
+  .barra-rot{white-space:normal}
+}
 @media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important} }
 </style>
 </head>
@@ -255,9 +237,9 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:18px}
   <main id="painel">
     <header class="topo">
       <div class="topo-txt">
-        <span class="sobrancelha">Pesquisa de campo · Ensino médio</span>
-        <h1>Uso da tecnologia no ensino médio</h1>
-        <p class="sub">Aplique o questionário de 10 perguntas direto no tablet, uma resposta por aluno. No fim, baixe tudo em uma planilha do Excel.</p>
+        <span class="sobrancelha">Pesquisa de campo · Ensino superior</span>
+        <h1>Uso da tecnologia no ensino superior</h1>
+        <p class="sub">Aplique o questionário de 10 perguntas direto no tablet, uma resposta por estudante. No fim, baixe tudo em uma planilha do Excel.</p>
       </div>
       <span class="selo"><span class="ponto" id="ponto-sinc"></span><span id="txt-sinc">armazenado no aparelho</span></span>
     </header>
@@ -287,24 +269,45 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:18px}
     <section class="secao">
       <div class="secao-cab">
         <h2>Coleta em grupo</h2>
-        <span class="conta">uma planilha só no fim</span>
+        <span class="conta">tudo em uma planilha só</span>
       </div>
-      <div class="cartao grupo">
-        <p class="grupo-txt">Cada pessoa do grupo aplica a pesquisa no próprio aparelho. No fim, quem for montar o trabalho junta tudo aqui e gera uma planilha única.</p>
-        <div class="acoes">
-          <button class="btn" id="btn-compartilhar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
-            Compartilhar o app
-          </button>
-          <button class="btn" id="btn-importar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L8 8m4-4l4 4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-            Juntar respostas
-          </button>
-          <button class="btn" id="btn-backup" disabled>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-            Exportar cópia
-          </button>
-        </div>
+      <div class="cartao">
+        <ol class="passos">
+          <li class="passo">
+            <span class="passo-n" aria-hidden="true">1</span>
+            <div class="passo-txt">
+              <h3>Mande o link para o grupo</h3>
+              <p>Cada pessoa abre no próprio celular ou tablet e aplica a pesquisa. Ninguém precisa criar conta.</p>
+            </div>
+            <button class="btn" id="btn-compartilhar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+              Compartilhar o app
+            </button>
+          </li>
+          <li class="passo">
+            <span class="passo-n" aria-hidden="true">2</span>
+            <div class="passo-txt">
+              <h3>No fim, cada um exporta a cópia</h3>
+              <p>Gera um arquivo com as respostas daquele aparelho. Mande por WhatsApp ou e-mail para quem vai montar o trabalho.</p>
+            </div>
+            <button class="btn" id="btn-backup" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+              Exportar cópia
+            </button>
+          </li>
+          <li class="passo">
+            <span class="passo-n" aria-hidden="true">3</span>
+            <div class="passo-txt">
+              <h3>Junte aqui os arquivos recebidos</h3>
+              <p>Selecione todos de uma vez. O app soma tudo e ignora respostas repetidas.</p>
+            </div>
+            <button class="btn" id="btn-importar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L8 8m4-4l4 4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+              Juntar respostas
+            </button>
+          </li>
+        </ol>
+        <p class="passos-fim">Depois é só tocar em <strong>Baixar Excel</strong> aqui em cima: a planilha sai com as respostas de todo mundo e o resumo já recalculado sobre o total.</p>
         <input type="file" id="arq-importar" accept=".json,application/json" multiple hidden>
       </div>
     </section>
@@ -351,11 +354,11 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:18px}
       <div class="cartao-ident">
         <div class="campo">
           <label for="ident-nome">Identificação (opcional)</label>
-          <input id="ident-nome" type="text" autocomplete="off" placeholder="Nome ou código do aluno">
+          <input id="ident-nome" type="text" autocomplete="off" placeholder="Nome ou código do estudante">
         </div>
         <div class="campo">
-          <label for="ident-turma">Turma (opcional)</label>
-          <input id="ident-turma" type="text" autocomplete="off" placeholder="Ex.: 2º ano B">
+          <label for="ident-curso">Curso e período (opcional)</label>
+          <input id="ident-curso" type="text" autocomplete="off" placeholder="Ex.: Engenharia — 4º período">
         </div>
       </div>
     </div>
@@ -365,7 +368,7 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:18px}
     <div class="cartao">
       <div class="campo">
         <label for="obs">Observações do entrevistador (opcional)</label>
-        <textarea id="obs" placeholder="Anote aqui algo que o aluno comentou fora das alternativas."></textarea>
+        <textarea id="obs" placeholder="Anote aqui algo que o estudante comentou fora das alternativas."></textarea>
       </div>
     </div>
 
@@ -386,6 +389,7 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:18px}
     <button class="btn btn-perigo" id="dlg-sim">Confirmar</button>
   </div>
 </dialog>
+
 <dialog id="dlg-share">
   <h3>Compartilhar o app</h3>
   <p>Quem abrir este link aplica a pesquisa no próprio aparelho e pode instalar como app. Ninguém precisa criar conta.</p>
@@ -397,6 +401,7 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:18px}
     <button class="btn" id="btn-share-nativo" hidden>Compartilhar…</button>
   </div>
 </dialog>
+
 <div id="aviso" role="status" aria-live="polite"></div>
 
 <script>
@@ -411,31 +416,31 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:18px}
 const PERGUNTAS = [
   { id:"p1", curto:"Idade", tipo:"unica",
     texto:"Qual é a sua idade?",
-    opcoes:["Menos de 15 anos","15-16 anos","17-18 anos","Mais de 18 anos"] },
+    opcoes:["Menos de 18 anos","18 a 21 anos","22 a 25 anos","26 a 30 anos","Mais de 30 anos"] },
 
   { id:"p2", curto:"Frequência de uso", tipo:"unica",
-    texto:"Com que frequência você utiliza dispositivos tecnológicos (computador, tablet, smartphone) para atividades escolares?",
+    texto:"Com que frequência você utiliza dispositivos tecnológicos (computador, tablet, smartphone) para as atividades do curso?",
     opcoes:["Todos os dias","Algumas vezes por semana","Raramente","Nunca"] },
 
-  { id:"p3", curto:"Atividades escolares", tipo:"multipla", max:0,
-    texto:"Que tipo de atividades escolares você realiza com o auxílio da tecnologia?",
+  { id:"p3", curto:"Atividades acadêmicas", tipo:"multipla", max:0,
+    texto:"Que tipo de atividades acadêmicas você realiza com o auxílio da tecnologia?",
     ajuda:"Marque todas as opções que se aplicam.",
-    opcoes:["Pesquisas online","Criação de apresentações","Participação em fóruns ou discussões online","Aulas virtuais ou videoaulas","Resolução de exercícios online"] },
+    opcoes:["Pesquisa em bases e periódicos científicos","Produção de trabalhos e artigos acadêmicos","Criação de apresentações e seminários","Participação em fóruns do ambiente virtual de aprendizagem","Aulas remotas, gravadas ou videoaulas","Resolução de listas e atividades online","Trabalhos em grupo a distância"] },
 
   { id:"p4", curto:"Presencial ou online", tipo:"unica",
     texto:"Você sente que aprende melhor em aulas presenciais ou online? Por quê?",
-    opcoes:["Aulas presenciais, pois possibilitam interação direta com o professor e colegas.","Aulas online, pois permitem que eu estude no meu próprio ritmo."],
-    aberta:"Por quê? (resposta do aluno, opcional)" },
+    opcoes:["Aulas presenciais, pois possibilitam interação direta com o professor e os colegas.","Aulas online, pois permitem que eu estude no meu próprio ritmo."],
+    aberta:"Por quê? (resposta do estudante, opcional)" },
 
   { id:"p5", curto:"Principais benefícios", tipo:"multipla", max:3,
-    texto:"Quais são, na sua opinião, os principais benefícios do uso da tecnologia no ensino médio?",
+    texto:"Quais são, na sua opinião, os principais benefícios do uso da tecnologia no ensino superior?",
     ajuda:"Marque até três opções.",
-    opcoes:["Acesso a uma variedade de recursos de aprendizado","Maior interação com o conteúdo através de multimídia","Facilita a comunicação com colegas e professores","Preparação para o uso de tecnologia no mundo real"] },
+    opcoes:["Acesso a uma variedade de recursos e materiais de estudo","Acesso a artigos e bases de pesquisa científica","Maior interação com o conteúdo através de multimídia","Facilita a comunicação com colegas e professores","Flexibilidade para conciliar estudo, trabalho e estágio","Preparação para o uso de tecnologia no mercado de trabalho"] },
 
   { id:"p6", curto:"Principais desafios", tipo:"multipla", max:3,
-    texto:"Quais são os principais desafios que você enfrenta ao utilizar a tecnologia para atividades escolares?",
+    texto:"Quais são os principais desafios que você enfrenta ao utilizar a tecnologia nas atividades do curso?",
     ajuda:"Marque até três opções.",
-    opcoes:["Distrações online durante o estudo","Dificuldade em encontrar informações confiáveis na internet","Falta de habilidades técnicas para utilizar certas ferramentas","Problemas de conectividade ou acesso a dispositivos"] },
+    opcoes:["Distrações online durante o estudo","Dificuldade em avaliar a confiabilidade das fontes","Falta de habilidades técnicas para utilizar certas ferramentas","Problemas de conectividade ou acesso a dispositivos","Excesso de plataformas e sistemas diferentes","Conciliar o tempo de estudo com trabalho e estágio"] },
 
   { id:"p7", curto:"Melhora no desempenho", tipo:"unica",
     texto:"Você acredita que o uso da tecnologia pode melhorar o seu desempenho acadêmico?",
@@ -446,16 +451,16 @@ const PERGUNTAS = [
     opcoes:["Sim, com certeza","Sim, em geral","Não, nem sempre","Não, raramente"] },
 
   { id:"p9", curto:"Adaptação a ferramentas", tipo:"unica",
-    texto:"Você já teve dificuldade em adaptar-se a novas ferramentas tecnológicas introduzidas nas aulas?",
+    texto:"Você já teve dificuldade em adaptar-se a novas ferramentas tecnológicas introduzidas nas disciplinas?",
     opcoes:["Sim, frequentemente","Sim, algumas vezes","Não, raramente","Não, nunca tive dificuldades"] },
 
   { id:"p10", curto:"Preparação para o futuro", tipo:"unica",
-    texto:"Na sua visão, como a tecnologia no ensino médio pode prepará-lo para o futuro profissional e acadêmico?",
-    opcoes:["Desenvolvendo habilidades tecnológicas essenciais","Possibilitando acesso a informações atualizadas","Fomentando a autonomia no aprendizado","Preparando para a colaboração online"] }
+    texto:"Na sua visão, como a tecnologia no ensino superior pode prepará-lo para a vida profissional e para a pesquisa acadêmica?",
+    opcoes:["Desenvolvendo habilidades tecnológicas exigidas pelo mercado","Possibilitando acesso a informações e produção científica atualizadas","Fomentando a autonomia no aprendizado","Preparando para o trabalho colaborativo a distância"] }
 ];
 
-const TITULO = "Uso da Tecnologia no Ensino Médio";
-const CHAVE = "pesquisa-tecnologia-em-v1";
+const TITULO = "Uso da Tecnologia no Ensino Superior";
+const CHAVE = "pesquisa-tecnologia-es-v1";
 const CHAVE_ENVIADAS = CHAVE + ":enviadas";
 // Endereço que o arquivo qr-do-app.svg codifica. Se publicar o app em outro
 // lugar, gere um QR novo e troque esta linha (o QR só aparece quando bate).
@@ -486,10 +491,7 @@ function gravarLocal(){
   }catch(e){ avisar("Não foi possível salvar no aparelho. Baixe a planilha para não perder os dados."); }
 }
 function ordenar(){ respostas.sort((a,b) => String(a.criadoEm).localeCompare(String(b.criadoEm))); }
-
-function novoId(){
-  return "r" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
-}
+function novoId(){ return "r" + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
 /* =========================================================
    3. UTILIDADES
@@ -502,11 +504,21 @@ function elem(tag, classe, texto){
   return e;
 }
 let avisoTimer = null;
-function avisar(msg){
+function avisar(msg, link){
   const a = $("#aviso");
-  a.textContent = msg; a.classList.add("ver");
+  a.textContent = msg;
+  a.classList.toggle("com-link", !!link);
+  if (link){
+    const el = document.createElement("a");
+    el.href = link.href;
+    el.textContent = link.texto;
+    if (link.arquivo) el.download = link.arquivo;
+    el.rel = "noopener";
+    a.appendChild(el);
+  }
+  a.classList.add("ver");
   clearTimeout(avisoTimer);
-  avisoTimer = setTimeout(() => a.classList.remove("ver"), 3600);
+  avisoTimer = setTimeout(() => a.classList.remove("ver"), link ? 30000 : 3600);
 }
 function confirmar(titulo, texto, rotulo){
   return new Promise(resolve => {
@@ -514,8 +526,8 @@ function confirmar(titulo, texto, rotulo){
     $("#dlg-tit").textContent = titulo;
     $("#dlg-txt").textContent = texto;
     $("#dlg-sim").textContent = rotulo || "Confirmar";
-    const sim = () => { fechar(true); };
-    const nao = () => { fechar(false); };
+    const sim = () => fechar(true);
+    const nao = () => fechar(false);
     function fechar(v){
       $("#dlg-sim").removeEventListener("click", sim);
       $("#dlg-nao").removeEventListener("click", nao);
@@ -553,9 +565,8 @@ function mostrar(qual){
 function renderPainel(){
   const n = respostas.length;
   $("#st-total").textContent = String(n).padStart(2,"0");
-  const ultima = n ? dataHora(respostas[n-1].criadoEm) : "";
   $("#st-ultima").innerHTML = "";
-  $("#st-ultima").appendChild(elem("small", null, ultima || "—"));
+  $("#st-ultima").appendChild(elem("small", null, n ? dataHora(respostas[n-1].criadoEm) : "—"));
 
   $("#btn-xlsx").disabled = n === 0;
   $("#btn-csv").disabled = n === 0;
@@ -575,7 +586,7 @@ function renderPainel(){
       const txt = elem("div","coleta-txt");
       txt.appendChild(elem("div","coleta-nome", r.nome || "Resposta anônima"));
       const respondidas = PERGUNTAS.filter(p => temResposta(r,p)).length;
-      const meta = [r.turma, dataHora(r.criadoEm), respondidas + "/10"].filter(Boolean).join("  ·  ");
+      const meta = [r.curso, dataHora(r.criadoEm), respondidas + "/10"].filter(Boolean).join("  ·  ");
       txt.appendChild(elem("div","coleta-meta", meta));
       linha.appendChild(txt);
       const excluir = elem("button","icone-btn");
@@ -606,6 +617,16 @@ function temResposta(r, p){
   return p.tipo === "multipla" ? Array.isArray(v) && v.length > 0 : !!v;
 }
 
+function contar(p, opcao){
+  return respostas.filter(r => {
+    const v = r[p.id];
+    return p.tipo === "multipla" ? Array.isArray(v) && v.includes(opcao) : v === opcao;
+  }).length;
+}
+function base(p){
+  return p.tipo === "multipla" ? respostas.filter(r => temResposta(r,p)).length : respostas.length;
+}
+
 function renderResumo(){
   const alvo = $("#resumo");
   alvo.innerHTML = "";
@@ -618,16 +639,11 @@ function renderResumo(){
     bloco.appendChild(cab);
     bloco.appendChild(elem("p","resumo-tit", p.texto));
 
-    const base = p.tipo === "multipla"
-      ? respostas.filter(r => temResposta(r,p)).length
-      : total;
+    const b = base(p);
     const barras = elem("div","barras");
     p.opcoes.forEach(op => {
-      const cont = respostas.filter(r => {
-        const v = r[p.id];
-        return p.tipo === "multipla" ? Array.isArray(v) && v.includes(op) : v === op;
-      }).length;
-      const pct = base ? Math.round(cont / base * 100) : 0;
+      const cont = contar(p, op);
+      const pct = b ? Math.round(cont / b * 100) : 0;
       const linha = elem("div","barra");
       const rot = elem("div","barra-rot", op);
       rot.title = op;
@@ -651,10 +667,10 @@ function renderResumo(){
    5. FORMULÁRIO DE COLETA
    ========================================================= */
 function novaColeta(){
-  rascunho = { id:novoId(), criadoEm:new Date().toISOString(), nome:"", turma:"", obs:"", p4_texto:"" };
+  rascunho = { id:novoId(), criadoEm:new Date().toISOString(), nome:"", curso:"", obs:"", p4_texto:"" };
   PERGUNTAS.forEach(p => { rascunho[p.id] = p.tipo === "multipla" ? [] : ""; });
   $("#ident-nome").value = "";
-  $("#ident-turma").value = "";
+  $("#ident-curso").value = "";
   $("#obs").value = "";
   montarPerguntas();
   atualizarProgresso();
@@ -703,7 +719,7 @@ function montarPerguntas(){
       lab.setAttribute("for", p.id + "_texto");
       const ta = document.createElement("textarea");
       ta.id = p.id + "_texto";
-      ta.placeholder = "Escreva o motivo dito pelo aluno.";
+      ta.placeholder = "Escreva o motivo dito pelo estudante.";
       ta.addEventListener("input", () => { rascunho[p.id + "_texto"] = ta.value; });
       campo.appendChild(lab); campo.appendChild(ta);
       bloco.appendChild(campo);
@@ -748,7 +764,7 @@ function atualizarProgresso(){
 
 async function salvarColeta(){
   rascunho.nome = $("#ident-nome").value.trim();
-  rascunho.turma = $("#ident-turma").value.trim();
+  rascunho.curso = $("#ident-curso").value.trim();
   rascunho.obs = $("#obs").value.trim();
 
   const faltando = PERGUNTAS.map((p,i) => temResposta(rascunho,p) ? null : "P" + (i+1)).filter(Boolean);
@@ -759,7 +775,8 @@ async function salvarColeta(){
       "Salvar assim"
     );
     if (!ok){
-      const primeiro = document.getElementById("bloco-" + PERGUNTAS[PERGUNTAS.findIndex(p => !temResposta(rascunho,p))].id);
+      const pendente = PERGUNTAS.find(p => !temResposta(rascunho,p));
+      const primeiro = document.getElementById("bloco-" + pendente.id);
       if (primeiro) primeiro.scrollIntoView({ behavior:"smooth", block:"center" });
       return;
     }
@@ -799,12 +816,10 @@ async function ligarBanco(){
   bd.collection("respostas").onSnapshot(snap => {
     const remotas = new Map();
     snap.docs.forEach(d => { const v = d.data(); if (v && v.id) remotas.set(v.id, v); });
-    // sobe o que só existe aqui e ainda não foi enviado
     respostas.forEach(r => { if (!remotas.has(r.id) && !enviadas.has(r.id)) enviarParaBanco(r); });
-    // desce o que veio de outros aparelhos
     const locais = new Map(respostas.map(r => [r.id, r]));
     let mudou = false;
-    remotas.forEach((v,id) => { if (!locais.has(id)){ respostas.push(v); enviadas.add(id); mudou = true; } });
+    remotas.forEach((v,id) => { if (!locais.has(id)){ respostas.push(normalizar(v)); enviadas.add(id); mudou = true; } });
     if (mudou){ ordenar(); gravarLocal(); renderPainel(); }
   }, () => {
     bd = null;
@@ -922,7 +937,7 @@ function folha(linhas, larguras, congelarTopo, autoFiltro){
 }
 
 function montarXlsx(){
-  const cab = ["Nº","Data","Hora","Identificação","Turma"];
+  const cab = ["Nº","Data","Hora","Identificação","Curso e período"];
   PERGUNTAS.forEach((p,i) => {
     cab.push("P" + (i+1) + ". " + p.curto);
     if (p.aberta) cab.push("P" + (i+1) + ". Justificativa");
@@ -938,7 +953,7 @@ function montarXlsx(){
       { v:isNaN(d) ? "" : p2(d.getDate()) + "/" + p2(d.getMonth()+1) + "/" + d.getFullYear(), s:3 },
       { v:isNaN(d) ? "" : p2(d.getHours()) + ":" + p2(d.getMinutes()), s:3 },
       { v:r.nome || "", s:2 },
-      { v:r.turma || "", s:2 }
+      { v:r.curso || "", s:2 }
     ];
     PERGUNTAS.forEach(p => {
       const val = r[p.id];
@@ -948,7 +963,7 @@ function montarXlsx(){
     linha.push({ v:r.obs || "", s:2 });
     linhas.push(linha);
   });
-  const larguras = cab.map((t,i) => i === 0 ? 5 : (i <= 2 ? 11 : (i <= 4 ? 18 : 34)));
+  const larguras = cab.map((t,i) => i === 0 ? 5 : (i <= 2 ? 11 : (i <= 4 ? 22 : 34)));
   const faixa = "A1:" + letraColuna(cab.length - 1) + "1";
 
   // ---- aba Resumo ----
@@ -961,18 +976,15 @@ function montarXlsx(){
     []
   ];
   PERGUNTAS.forEach((p,i) => {
-    const base = p.tipo === "multipla" ? respostas.filter(r => temResposta(r,p)).length : total;
+    const b = base(p);
     res.push([{ v:"P" + (i+1) + ". " + p.texto, s:4 }]);
     res.push([{ v:"Alternativa", s:5 }, { v:"Respostas", s:5 }, { v:"% da base", s:5 }, { v:"Base", s:5 }]);
     p.opcoes.forEach(op => {
-      const cont = respostas.filter(r => {
-        const v = r[p.id];
-        return p.tipo === "multipla" ? Array.isArray(v) && v.includes(op) : v === op;
-      }).length;
-      res.push([{ v:op, s:2 }, cont, base ? Math.round(cont / base * 1000) / 10 : 0, base]);
+      const cont = contar(p, op);
+      res.push([{ v:op, s:2 }, cont, b ? Math.round(cont / b * 1000) / 10 : 0, b]);
     });
     if (p.tipo === "multipla"){
-      res.push([{ v:"(base = alunos que responderam esta pergunta; a soma passa de 100% porque é múltipla escolha)", s:6 }]);
+      res.push([{ v:"(base = estudantes que responderam esta pergunta; a soma passa de 100% porque é múltipla escolha)", s:6 }]);
     }
     res.push([]);
   });
@@ -1011,14 +1023,14 @@ function montarXlsx(){
       '<fonts count="4">' +
         '<font><sz val="11"/><color theme="1"/><name val="Calibri"/></font>' +
         '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>' +
-        '<font><b/><sz val="11"/><color rgb="FF0E6552"/><name val="Calibri"/></font>' +
-        '<font><i/><sz val="9"/><color rgb="FF6C7C75"/><name val="Calibri"/></font>' +
+        '<font><b/><sz val="11"/><color rgb="FF1B4F8F"/><name val="Calibri"/></font>' +
+        '<font><i/><sz val="9"/><color rgb="FF6A7889"/><name val="Calibri"/></font>' +
       "</fonts>" +
       '<fills count="4">' +
         '<fill><patternFill patternType="none"/></fill>' +
         '<fill><patternFill patternType="gray125"/></fill>' +
-        '<fill><patternFill patternType="solid"><fgColor rgb="FF0E6552"/><bgColor indexed="64"/></patternFill></fill>' +
-        '<fill><patternFill patternType="solid"><fgColor rgb="FFDFEDE7"/><bgColor indexed="64"/></patternFill></fill>' +
+        '<fill><patternFill patternType="solid"><fgColor rgb="FF1B4F8F"/><bgColor indexed="64"/></patternFill></fill>' +
+        '<fill><patternFill patternType="solid"><fgColor rgb="FFDDE8F6"/><bgColor indexed="64"/></patternFill></fill>' +
       "</fills>" +
       '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
       '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
@@ -1040,7 +1052,7 @@ function montarXlsx(){
 }
 
 function montarCsv(){
-  const cab = ["Nº","Data/Hora","Identificação","Turma"];
+  const cab = ["Nº","Data/Hora","Identificação","Curso e período"];
   PERGUNTAS.forEach((p,i) => {
     cab.push("P" + (i+1) + ". " + p.curto);
     if (p.aberta) cab.push("P" + (i+1) + ". Justificativa");
@@ -1052,7 +1064,7 @@ function montarCsv(){
   };
   const linhas = [cab.map(campo).join(";")];
   respostas.forEach((r,i) => {
-    const col = [i+1, dataHora(r.criadoEm), r.nome || "", r.turma || ""];
+    const col = [i+1, dataHora(r.criadoEm), r.nome || "", r.curso || ""];
     PERGUNTAS.forEach(p => {
       const v = r[p.id];
       col.push(Array.isArray(v) ? v.join(" | ") : (v || ""));
@@ -1064,36 +1076,45 @@ function montarCsv(){
   return new Blob(["﻿" + linhas.join("\r\n")], { type:"text/csv;charset=utf-8" });
 }
 
-async function baixar(nomeArquivo, blob){
-  if (salvador === null) salvador = await capacidade("downloads");
+/* ---------- download ----------
+   Três caminhos, do melhor para o mais tolerante:
+   1. a capacidade de salvar do claude.ai, quando a página roda lá dentro;
+   2. o download direto do navegador (GitHub Pages, Chrome, Safari);
+   3. um link manual no aviso, para o caso de o navegador bloquear o item 2. */
+function baixarDireto(nomeArquivo, blob){
+  const url = URL.createObjectURL(blob);
+  try{
+    const a = document.createElement("a");
+    a.href = url; a.download = nomeArquivo; a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }catch(e){}
+  avisar("Baixando " + nomeArquivo + ". Não começou?", { texto:"Toque aqui", href:url, arquivo:nomeArquivo });
+  setTimeout(() => URL.revokeObjectURL(url), 120000);
+}
+
+function baixar(nomeArquivo, blob){
   if (salvador){
-    try{
-      await salvador.save({ filename:nomeArquivo, data:blob });
-      avisar("Planilha salva: " + nomeArquivo);
-    }catch(e){
-      const codigo = e && e.code;
-      if (codigo === "declined") avisar("Download cancelado.");
-      else if (codigo === "rate_limited") avisar("Aguarde um instante e toque novamente.");
-      else avisar("Não foi possível salvar o arquivo aqui. Abra o app pelo navegador do tablet.");
-    }
+    salvador.save({ filename:nomeArquivo, data:blob })
+      .then(() => avisar("Arquivo salvo: " + nomeArquivo))
+      .catch(erro => {
+        const codigo = erro && erro.code;
+        if (codigo === "declined") avisar("Download cancelado.");
+        else if (codigo === "rate_limited") avisar("Espere um instante e toque de novo.");
+        else baixarDireto(nomeArquivo, blob);
+      });
     return;
   }
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = nomeArquivo; a.rel = "noopener";
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-  avisar("Planilha gerada: " + nomeArquivo);
+  baixarDireto(nomeArquivo, blob);
 }
 
 /* =========================================================
    8. COMPARTILHAR E JUNTAR RESPOSTAS DE VÁRIOS APARELHOS
    ========================================================= */
-function enderecoAtual(){ return location.href.split("#")[0]; }
-
 function abrirCompartilhar(){
   const dlg = $("#dlg-share");
-  const url = enderecoAtual();
+  const url = location.href.split("#")[0];
   $("#link-txt").textContent = url;
   $("#qr-caixa").hidden = url.indexOf(URL_DO_QR) !== 0;
   $("#btn-share-nativo").hidden = typeof navigator.share !== "function";
@@ -1116,7 +1137,7 @@ async function copiarLink(){
 }
 
 function exportarCopia(){
-  const dados = { app:"pesquisa-tecnologia-em", versao:1, geradoEm:new Date().toISOString(), respostas };
+  const dados = { app:"pesquisa-tecnologia-es", versao:1, geradoEm:new Date().toISOString(), respostas };
   baixar("copia-pesquisa_" + carimbo() + ".json",
     new Blob([JSON.stringify(dados, null, 1)], { type:"application/json" }));
 }
@@ -1127,7 +1148,9 @@ function normalizar(r){
   const limpo = {
     id: String(r.id).slice(0, 60),
     criadoEm: typeof r.criadoEm === "string" ? r.criadoEm : new Date().toISOString(),
-    nome: soTexto(r.nome), turma: soTexto(r.turma), obs: soTexto(r.obs)
+    nome: soTexto(r.nome),
+    curso: soTexto(r.curso || r.turma),
+    obs: soTexto(r.obs)
   };
   PERGUNTAS.forEach(p => {
     const v = r[p.id];
@@ -1157,8 +1180,7 @@ async function juntarArquivos(arquivos){
     }catch(e){ problemas++; }
   }
   if (novas){ ordenar(); gravarLocal(); renderPainel(); }
-  const partes = [];
-  partes.push(novas === 1 ? "1 resposta adicionada" : novas + " respostas adicionadas");
+  const partes = [novas === 1 ? "1 resposta adicionada" : novas + " respostas adicionadas"];
   if (repetidas) partes.push(repetidas + (repetidas === 1 ? " já estava aqui" : " já estavam aqui"));
   if (problemas) partes.push(problemas + (problemas === 1 ? " arquivo não reconhecido" : " arquivos não reconhecidos"));
   avisar(partes.join(" · ") + ".");
@@ -1189,14 +1211,13 @@ $("#btn-limpar").addEventListener("click", async () => {
   if (bd) antigas.forEach(r => bd.doc("respostas/" + r.id).delete().catch(() => {}));
   avisar("Todas as respostas foram apagadas.");
 });
-
 $("#btn-compartilhar").addEventListener("click", abrirCompartilhar);
 $("#btn-share-fechar").addEventListener("click", () => $("#dlg-share").close());
 $("#btn-copiar").addEventListener("click", copiarLink);
 $("#btn-share-nativo").addEventListener("click", async () => {
   try{
     await navigator.share({
-      title: "Pesquisa — Uso da tecnologia no ensino médio",
+      title: "Pesquisa — Uso da tecnologia no ensino superior",
       text: "Ajude na coleta: abra o link e aplique o questionário.",
       url: $("#link-txt").textContent
     });
@@ -1215,6 +1236,8 @@ lerLocal();
 ordenar();
 renderPainel();
 ligarBanco();
+// resolvido no carregamento: assim o download acontece dentro do toque do usuário
+capacidade("downloads").then(s => { salvador = s; });
 
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
   window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });

@@ -1,7 +1,7 @@
-# Pesquisa — Uso da Tecnologia no Ensino Médio
+# Pesquisa — Uso da Tecnologia no Ensino Superior
 
 App de coleta do questionário de 10 perguntas, feito para rodar no tablet:
-você marca as respostas de cada aluno na tela e, no fim, baixa tudo em uma
+você marca as respostas de cada estudante na tela e, no fim, baixa tudo em uma
 planilha do Excel (`.xlsx`).
 
 - **Funciona sem internet** depois da primeira abertura.
@@ -51,23 +51,23 @@ ou na sala.
 ## 3. Aplicar a pesquisa
 
 1. Toque em **Nova resposta**.
-2. Preencha o nome e a turma se quiser (os dois são opcionais — a pesquisa pode
+2. Preencha a identificação e o curso se quiser (os dois são opcionais — a pesquisa pode
    ser anônima).
-3. Marque as alternativas de cada aluno. A barra no topo mostra quantas das 10
+3. Marque as alternativas de cada estudante. A barra no topo mostra quantas das 10
    já foram respondidas, e a faixa verde na lateral marca as concluídas.
    - **P3** aceita quantas marcações quiser.
    - **P5** e **P6** travam em três marcações, como pede o questionário.
-   - **P4** tem um campo livre para anotar o "por quê" dito pelo aluno.
+   - **P4** tem um campo livre para anotar o "por quê" dito pelo estudante.
 4. Toque em **Salvar resposta**. Se faltar alguma pergunta, o app avisa antes —
    e deixa salvar mesmo assim, se for o caso.
-5. Repita para o próximo aluno. O painel mostra o total coletado e um resumo com
+5. Repita para o próximo estudante. O painel mostra o total coletado e um resumo com
    as porcentagens de cada alternativa, que já atualiza a cada resposta.
 
 ## 4. Levar os dados para o Excel
 
 No painel, toque em **Baixar Excel (.xlsx)**. O arquivo sai com duas abas:
 
-- **Respostas** — uma linha por aluno, uma coluna por pergunta. Cabeçalho
+- **Respostas** — uma linha por estudante, uma coluna por pergunta. Cabeçalho
   congelado e filtro já ligado. Nas perguntas de múltipla escolha as alternativas
   vêm separadas por `|` na mesma célula.
 - **Resumo** — a contagem e a porcentagem de cada alternativa, pergunta por
@@ -86,7 +86,10 @@ você prefira abrir no Google Planilhas ou em outro programa.
 Dá para várias pessoas aplicarem a pesquisa ao mesmo tempo, cada uma no próprio
 celular ou tablet, e no fim juntar tudo numa planilha só.
 
-**Passar o app adiante.** No painel, toque em **Compartilhar o app**. Aparece o
+No painel, a seção **Coleta em grupo** mostra os três passos na ordem, cada um
+com o próprio botão ao lado.
+
+**Passo 1 — passar o app adiante.** Toque em **Compartilhar o app**. Aparece o
 link, um botão de copiar e — quando o app está aberto pelo endereço publicado —
 o QR code para os colegas apontarem a câmera. Em celular e tablet aparece também
 **Compartilhar…**, que abre o WhatsApp, e-mail e o resto do sistema. Ninguém
@@ -97,7 +100,7 @@ no caderno. Ele aponta para `https://josejunior-unv.github.io/axiumL/app-questio
 — se você publicar o app em outro endereço, gere um QR novo e troque também a
 constante `URL_DO_QR` no `index.html` (é ela que decide quando o QR aparece).
 
-**Juntar as respostas no fim.** Cada colega toca em **Exportar cópia** e manda o
+**Passo 2 e 3 — juntar as respostas no fim.** Cada colega toca em **Exportar cópia** e manda o
 arquivo `.json` para quem vai montar o trabalho (WhatsApp, e-mail, o que for
 mais fácil). Quem recebe toca em **Juntar respostas**, seleciona todos os
 arquivos de uma vez e pronto: o app soma tudo, ignora as respostas repetidas
