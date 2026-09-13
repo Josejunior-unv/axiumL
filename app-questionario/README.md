@@ -31,10 +31,12 @@ O jeito mais rápido de ter um endereço curto:
 
 1. Entre em [vercel.com](https://vercel.com) com a sua conta do GitHub.
 2. **Add New → Project** e importe o repositório `axiumL`.
-3. Em **Root Directory**, clique em *Edit* e escolha a pasta **`app-questionario`**.
-   É o passo que faz o app abrir na raiz do endereço.
-4. Deixe o resto como está (*Framework Preset: Other*, sem comando de build) e
-   clique em **Deploy**.
+3. Clique em **Deploy**. Não precisa mudar mais nada — o `vercel.json` da raiz
+   já redireciona o endereço principal para o app e cuida do cache.
+
+Se quiser o endereço mais curto possível (o app na raiz, sem `/app-questionario`
+no fim), antes de dar Deploy clique em *Edit* em **Root Directory** e escolha a
+pasta `app-questionario`. Funciona das duas formas.
 
 Sai um endereço como `https://axium-l.vercel.app`. Cada push na branch publica
 sozinho. O `vercel.json` já vai junto e diz para o navegador nunca guardar o
