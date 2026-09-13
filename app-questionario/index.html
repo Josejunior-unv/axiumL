@@ -27,6 +27,7 @@
   --sombra:0 1px 2px rgba(14,42,69,.05), 0 14px 34px -22px rgba(14,42,69,.5);
   --raio:16px;
   --perigo:#C9283E;
+  --realce:#9C6B12; --realce-claro:#E9BA5E; --realce-fraco:#F7EEDC;
   /* no iPhone e no iPad isto resolve para a SF Pro do próprio sistema;
      fora deles, a Inter é o equivalente mais próximo */
   --corpo:-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
@@ -42,11 +43,13 @@
     --tinta:#E7EEF7; --tinta-2:#AEBECF; --suave:#8294A8;
     --sobre-marinho:#E7EEF7; --sobre-marinho-2:#8FA7C0; --fio-marinho:#2A4767;
     --alerta:#DFA463; --alerta-fraco:#2E2317; --perigo:#FF6B6B;
+    --realce:#E9BA5E; --realce-claro:#F3CE86; --realce-fraco:#2C2314;
     --sombra:0 1px 2px rgba(0,0,0,.4), 0 14px 34px -22px rgba(0,0,0,.95);
   }
 }
 :root[data-theme="dark"]{
   --perigo:#FF6B6B;
+  --realce:#E9BA5E; --realce-claro:#F3CE86; --realce-fraco:#2C2314;
   --papel:#0A121C; --superficie:#121D2A; --superficie-2:#1A2836; --superficie-3:#0E1824;
   --fio:#243545; --fio-forte:#375065;
   --marinho:#14263C; --marinho-2:#1E3552;
@@ -75,7 +78,7 @@ p{margin:0}
   padding:26px 26px 0; margin-bottom:26px; overflow:hidden}
 .topo{display:flex; flex-wrap:wrap; gap:18px; align-items:flex-start; justify-content:space-between}
 .topo-txt{display:flex; flex-direction:column; gap:9px; min-width:0}
-.topo-txt .sobrancelha{color:var(--azul-fio)}
+.topo-txt .sobrancelha{color:var(--realce-claro)}
 .topo-txt h1{color:#fff}
 .topo-txt .sub{color:var(--sobre-marinho-2)}
 .selo{display:inline-flex; align-items:center; gap:8px; flex:none; font-family:var(--mono); font-size:11.5px;
@@ -89,6 +92,7 @@ p{margin:0}
 .status > div:first-child{border-left:0}
 .status dd{margin:0 0 2px; font-family:var(--mono); font-weight:600; font-size:26px;
   font-variant-numeric:tabular-nums; line-height:1.1; color:#fff}
+.status > div:first-child dd{color:var(--realce-claro)}
 .status dd small{font-size:14px; font-weight:500; color:var(--sobre-marinho)}
 .status dt{font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--sobre-marinho-2)}
 @media (max-width:560px){
@@ -134,7 +138,7 @@ p{margin:0}
 .passo{display:grid; grid-template-columns:auto 1fr auto; gap:10px 16px; align-items:center;
   padding:18px 0; border-top:1px solid var(--fio)}
 .passo:first-child{border-top:0; padding-top:2px}
-.passo-n{font-family:var(--display); font-size:26px; font-weight:600; color:var(--azul-fio);
+.passo-n{font-family:var(--display); font-size:26px; font-weight:700; color:var(--realce);
   line-height:1; width:26px; text-align:center; font-variant-numeric:lining-nums}
 .passo-txt h3{font-family:var(--corpo); font-size:15.5px; font-weight:600; margin-bottom:3px; letter-spacing:0}
 .passo-txt p{color:var(--tinta-2); font-size:14px; max-width:52ch}
@@ -330,6 +334,26 @@ dialog p{color:var(--tinta-2); font-size:16px; margin-bottom:22px}
 @media (prefers-reduced-motion: reduce){
   .menu-flutuante{animation:none; opacity:1}
   .menu-morfo, .menu-circulo, .menu-rolo, .menu-risca i, .menu-barra{transition:none !important}
+}
+
+/* ---------- movimento ---------- */
+@keyframes surge{ from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none} }
+@keyframes troca{ from{opacity:0; transform:translateY(8px) scale(.995)} to{opacity:1; transform:none} }
+#painel > *, #coleta > *{animation:surge .5s cubic-bezier(.32,.72,0,1) backwards}
+#painel > *:nth-child(1), #coleta > *:nth-child(1){animation-delay:.02s}
+#painel > *:nth-child(2), #coleta > *:nth-child(2){animation-delay:.08s}
+#painel > *:nth-child(3), #coleta > *:nth-child(3){animation-delay:.14s}
+#painel > *:nth-child(4), #coleta > *:nth-child(4){animation-delay:.20s}
+#painel > *:nth-child(5){animation-delay:.26s}
+#painel > *:nth-child(6){animation-delay:.32s}
+main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
+.status dd{transition:color .3s ease}
+.status dd.pulsa{animation:pulsa .6s cubic-bezier(.32,.72,0,1)}
+@keyframes pulsa{ 0%{transform:scale(1)} 34%{transform:scale(1.16)} 100%{transform:scale(1)} }
+.coleta{animation:surge .42s cubic-bezier(.32,.72,0,1) backwards}
+.barra .preenche{transition:width .7s cubic-bezier(.32,.72,0,1)}
+@media (prefers-reduced-motion: reduce){
+  #painel > *, #coleta > *, main:not([hidden]), .coleta, .status dd.pulsa{animation:none !important}
 }
 [hidden]{display:none !important}
 @media (max-width:520px){
@@ -593,7 +617,7 @@ const PERGUNTAS = [
 const TITULO = "Uso da Tecnologia no Ensino Superior";
 const CHAVE = "pesquisa-tecnologia-es-v1";
 const CHAVE_ENVIADAS = CHAVE + ":enviadas";
-const VERSAO = "7 · ensino superior";
+const VERSAO = "8 · ensino superior";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
@@ -695,7 +719,7 @@ function mostrar(qual){
 
 function renderPainel(){
   const n = respostas.length;
-  $("#st-total").textContent = String(n).padStart(2,"0");
+  animarNumero($("#st-total"), n);
   $("#st-ultima").innerHTML = "";
   $("#st-ultima").appendChild(elem("small", null, n ? dataHora(respostas[n-1].criadoEm) : "—"));
 
@@ -713,6 +737,7 @@ function renderPainel(){
     const caixa = elem("div","coletas");
     respostas.forEach((r,i) => {
       const linha = elem("div","coleta");
+      linha.style.animationDelay = Math.min(i * 28, 400) + "ms";
       linha.appendChild(elem("span","coleta-n", String(i+1).padStart(2,"0")));
       const txt = elem("div","coleta-txt");
       txt.appendChild(elem("div","coleta-nome", r.nome || "Resposta anônima"));
@@ -741,6 +766,23 @@ function renderPainel(){
     lista.appendChild(caixa);
   }
   renderResumo();
+}
+
+let numeroAtual = 0;
+function animarNumero(alvo, destino){
+  const de = numeroAtual;
+  numeroAtual = destino;
+  const mostrar = v => { alvo.textContent = String(v).padStart(2,"0"); };
+  const reduz = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduz || de === destino){ mostrar(destino); return; }
+  if (destino > de){ alvo.classList.remove("pulsa"); void alvo.offsetWidth; alvo.classList.add("pulsa"); }
+  const t0 = performance.now(), dur = 520;
+  (function passo(agora){
+    const k = Math.min(1, (agora - t0) / dur);
+    const suave = 1 - Math.pow(1 - k, 3);
+    mostrar(Math.round(de + (destino - de) * suave));
+    if (k < 1) requestAnimationFrame(passo);
+  })(performance.now());
 }
 
 function temResposta(r, p){
@@ -784,7 +826,9 @@ function renderResumo(){
       const dir = elem("div","barra-dir");
       const trilho = elem("div","trilho");
       const pre = elem("div","preenche");
-      pre.style.width = pct + "%";
+      pre.style.width = "0%";
+      const atraso = 60 + (i * p.opcoes.length + p.opcoes.indexOf(op)) * 8;
+      setTimeout(() => { pre.style.width = pct + "%"; }, Math.min(atraso, 900));
       trilho.appendChild(pre);
       dir.appendChild(trilho);
       dir.appendChild(elem("span","barra-num", total ? cont + " · " + pct + "%" : "—"));
