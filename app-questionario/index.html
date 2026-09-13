@@ -912,10 +912,11 @@ function celula(ref, valor, estilo){
   if (!txt) return est ? '<c r="' + ref + '"' + est + '/>' : "";
   return '<c r="' + ref + '"' + est + ' t="inlineStr"><is><t xml:space="preserve">' + txt + '</t></is></c>';
 }
-function folha(linhas, larguras, congelarTopo, autoFiltro){
+function folha(linhas, larguras, congelarTopo, autoFiltro, comDesenho){
   let xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
-    '<sheetViews><sheetView workbookViewId="0">' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"' +
+    ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+    '<sheetViews><sheetView showGridLines="' + (comDesenho ? "0" : "1") + '" workbookViewId="0">' +
     (congelarTopo ? '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>' : "") +
     '</sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/>';
   if (larguras && larguras.length){
@@ -936,11 +937,119 @@ function folha(linhas, larguras, congelarTopo, autoFiltro){
   });
   xml += "</sheetData>";
   if (autoFiltro) xml += '<autoFilter ref="' + autoFiltro + '"/>';
+  if (comDesenho) xml += '<drawing r:id="rId1"/>';
   return xml + "</worksheet>";
 }
 
+/* ---------- gráficos nativos do Excel (DrawingML) ----------
+   Um gráfico de barras por pergunta, série única na cor do app, sem
+   legenda (o título nomeia a série), sem eixo de valores (os rótulos
+   já carregam os números) e sem grade — só a barra e o número. */
+const COR_BARRA = "1B4F8F";
+const COR_TEXTO = "3C4A5C";
+const COR_TITULO = "131A24";
+const COR_LINHA = "D3DBE6";
+
+function txPr(tamanho, cor, negrito){
+  return '<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="' + tamanho + '"' +
+    (negrito ? ' b="1"' : "") + '><a:solidFill><a:srgbClr val="' + cor + '"/></a:solidFill>' +
+    '<a:latin typeface="Calibri"/></a:defRPr></a:pPr><a:endParaRPr lang="pt-BR"/></a:p></c:txPr>';
+}
+
+function graficoXml(titulo, categorias, fracoes, refCat, refVal, eixoA, eixoB){
+  const pontos = (lista, ehTexto) => lista.map((v,i) =>
+    '<c:pt idx="' + i + '"><c:v>' + (ehTexto ? escXml(v) : v) + '</c:v></c:pt>').join("");
+
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+  '<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"' +
+  ' xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"' +
+  ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+  '<c:roundedCorners val="0"/>' +
+  '<c:chart>' +
+    '<c:title><c:tx><c:rich><a:bodyPr rot="0" spcFirstLastPara="1" vertOverflow="ellipsis" wrap="square" anchor="ctr" anchorCtr="1"/><a:lstStyle/>' +
+      '<a:p><a:pPr><a:defRPr sz="1100" b="1"><a:solidFill><a:srgbClr val="' + COR_TITULO + '"/></a:solidFill><a:latin typeface="Calibri"/></a:defRPr></a:pPr>' +
+      '<a:r><a:rPr lang="pt-BR" sz="1100" b="1"/><a:t>' + escXml(titulo) + '</a:t></a:r></a:p>' +
+    '</c:rich></c:tx><c:overlay val="0"/></c:title>' +
+    '<c:autoTitleDeleted val="0"/>' +
+    '<c:plotArea><c:layout/>' +
+      '<c:barChart>' +
+        '<c:barDir val="bar"/><c:grouping val="clustered"/><c:varyColors val="0"/>' +
+        '<c:ser>' +
+          '<c:idx val="0"/><c:order val="0"/>' +
+          '<c:tx><c:v>% da base</c:v></c:tx>' +
+          '<c:spPr><a:solidFill><a:srgbClr val="' + COR_BARRA + '"/></a:solidFill><a:ln><a:noFill/></a:ln></c:spPr>' +
+          '<c:invertIfNegative val="0"/>' +
+          '<c:dLbls><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>' + txPr(900, COR_TEXTO) +
+            '<c:dLblPos val="outEnd"/><c:showLegendKey val="0"/><c:showVal val="1"/>' +
+            '<c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls>' +
+          '<c:cat><c:strRef><c:f>' + refCat + '</c:f><c:strCache><c:ptCount val="' + categorias.length + '"/>' +
+            pontos(categorias, true) + '</c:strCache></c:strRef></c:cat>' +
+          '<c:val><c:numRef><c:f>' + refVal + '</c:f><c:numCache><c:formatCode>0.0%</c:formatCode>' +
+            '<c:ptCount val="' + fracoes.length + '"/>' + pontos(fracoes, false) + '</c:numCache></c:numRef></c:val>' +
+        '</c:ser>' +
+        '<c:gapWidth val="110"/>' +
+        '<c:axId val="' + eixoA + '"/><c:axId val="' + eixoB + '"/>' +
+      '</c:barChart>' +
+      '<c:catAx>' +
+        '<c:axId val="' + eixoA + '"/><c:scaling><c:orientation val="maxMin"/></c:scaling><c:delete val="0"/><c:axPos val="l"/>' +
+        '<c:numFmt formatCode="General" sourceLinked="0"/>' +
+        '<c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/>' +
+        '<c:spPr><a:noFill/><a:ln w="9525" cap="flat"><a:solidFill><a:srgbClr val="' + COR_LINHA + '"/></a:solidFill></a:ln></c:spPr>' +
+        txPr(900, COR_TEXTO) +
+        '<c:crossAx val="' + eixoB + '"/><c:crosses val="autoZero"/><c:auto val="1"/>' +
+        '<c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="0"/>' +
+      '</c:catAx>' +
+      '<c:valAx>' +
+        '<c:axId val="' + eixoB + '"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="1"/><c:axPos val="b"/>' +
+        '<c:numFmt formatCode="0.0%" sourceLinked="0"/>' +
+        '<c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="none"/>' +
+        '<c:crossAx val="' + eixoA + '"/><c:crosses val="autoZero"/><c:crossBetween val="between"/>' +
+      '</c:valAx>' +
+      '<c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>' +
+    '</c:plotArea>' +
+    '<c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/>' +
+  '</c:chart>' +
+  '<c:spPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:ln><a:solidFill><a:srgbClr val="' + COR_LINHA + '"/></a:solidFill></a:ln></c:spPr>' +
+  '</c:chartSpace>';
+}
+
+function desenhoXml(ancoras){
+  let xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"' +
+    ' xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">';
+  ancoras.forEach((an, i) => {
+    xml += '<xdr:twoCellAnchor>' +
+      '<xdr:from><xdr:col>' + an.col1 + '</xdr:col><xdr:colOff>38100</xdr:colOff>' +
+        '<xdr:row>' + an.linha1 + '</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>' +
+      '<xdr:to><xdr:col>' + an.col2 + '</xdr:col><xdr:colOff>0</xdr:colOff>' +
+        '<xdr:row>' + an.linha2 + '</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>' +
+      '<xdr:graphicFrame macro="">' +
+        '<xdr:nvGraphicFramePr><xdr:cNvPr id="' + (i+2) + '" name="Grafico ' + (i+1) + '"/>' +
+        '<xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr>' +
+        '<xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm>' +
+        '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">' +
+          '<c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"' +
+          ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId' + (i+1) + '"/>' +
+        '</a:graphicData></a:graphic>' +
+      '</xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor>';
+  });
+  return xml + "</xdr:wsDr>";
+}
+
+/* Data/hora como número de série do Excel, para poder ordenar e filtrar. */
+function serialData(d){
+  if (isNaN(d)) return null;
+  const dias = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000 + 25569;
+  return dias + (d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds()) / 86400;
+}
+
+const ALTURA_BLOCO = 18;   // linhas reservadas por pergunta na aba Resumo
+const COL_GRAFICO_INI = 5; // coluna F
+const COL_GRAFICO_FIM = 14;
+
 function montarXlsx(){
-  const cab = ["Nº","Data","Hora","Identificação","Curso e período"];
+  /* ---------------- aba Respostas ---------------- */
+  const cab = ["Nº","Data","Hora","Identificação","Curso e período","Respondidas"];
   PERGUNTAS.forEach((p,i) => {
     cab.push("P" + (i+1) + ". " + p.curto);
     if (p.aberta) cab.push("P" + (i+1) + ". Justificativa");
@@ -949,14 +1058,14 @@ function montarXlsx(){
 
   const linhas = [cab.map(t => ({ v:t, s:1 }))];
   respostas.forEach((r,i) => {
-    const d = new Date(r.criadoEm);
-    const p2 = n => String(n).padStart(2,"0");
+    const serial = serialData(new Date(r.criadoEm));
     const linha = [
-      { v:i+1, s:3 },
-      { v:isNaN(d) ? "" : p2(d.getDate()) + "/" + p2(d.getMonth()+1) + "/" + d.getFullYear(), s:3 },
-      { v:isNaN(d) ? "" : p2(d.getHours()) + ":" + p2(d.getMinutes()), s:3 },
+      { v:i+1, s:7 },
+      { v:serial == null ? "" : serial, s:9 },
+      { v:serial == null ? "" : serial, s:10 },
       { v:r.nome || "", s:2 },
-      { v:r.curso || "", s:2 }
+      { v:r.curso || "", s:2 },
+      { v:PERGUNTAS.filter(p => temResposta(r,p)).length, s:7 }
     ];
     PERGUNTAS.forEach(p => {
       const val = r[p.id];
@@ -966,31 +1075,56 @@ function montarXlsx(){
     linha.push({ v:r.obs || "", s:2 });
     linhas.push(linha);
   });
-  const larguras = cab.map((t,i) => i === 0 ? 5 : (i <= 2 ? 11 : (i <= 4 ? 22 : 34)));
+  const larguras = cab.map((t,i) => i === 0 ? 5 : (i <= 2 ? 11 : (i === 5 ? 12 : (i <= 4 ? 22 : 34))));
   const faixa = "A1:" + letraColuna(cab.length - 1) + "1";
 
-  // ---- aba Resumo ----
+  /* ---------------- aba Resumo, com um gráfico por pergunta ---------------- */
   const total = respostas.length;
   const res = [
     [{ v:"Resumo da pesquisa", s:1 }, { v:"", s:1 }, { v:"", s:1 }, { v:"", s:1 }],
     [{ v:"Pesquisa", s:4 }, TITULO],
-    [{ v:"Respostas coletadas", s:4 }, total],
-    [{ v:"Gerado em", s:4 }, dataHora(new Date().toISOString())],
-    []
+    [{ v:"Respostas coletadas", s:4 }, { v:total, s:7 }],
+    [{ v:"Gerado em", s:4 }, { v:serialData(new Date()), s:9 }],
+    [{ v:"Cada tabela tem o gráfico pronto ao lado, já em porcentagem.", s:6 }]
   ];
+  const graficos = [], ancoras = [];
+
   PERGUNTAS.forEach((p,i) => {
+    const linhaTitulo = res.length + 1;              // 1-based, onde começa o bloco
     const b = base(p);
+    const contagens = p.opcoes.map(op => contar(p, op));
+    const fracoes = contagens.map(c => b ? Math.round(c / b * 10000) / 10000 : 0);
+
     res.push([{ v:"P" + (i+1) + ". " + p.texto, s:4 }]);
     res.push([{ v:"Alternativa", s:5 }, { v:"Respostas", s:5 }, { v:"% da base", s:5 }, { v:"Base", s:5 }]);
-    p.opcoes.forEach(op => {
-      const cont = contar(p, op);
-      res.push([{ v:op, s:2 }, cont, b ? Math.round(cont / b * 1000) / 10 : 0, b]);
+    const primeiraOpcao = res.length + 1;
+    p.opcoes.forEach((op,j) => {
+      res.push([{ v:op, s:2 }, { v:contagens[j], s:7 }, { v:fracoes[j], s:8 }, { v:b, s:7 }]);
     });
+    const ultimaOpcao = res.length;
     if (p.tipo === "multipla"){
       res.push([{ v:"(base = estudantes que responderam esta pergunta; a soma passa de 100% porque é múltipla escolha)", s:6 }]);
     }
-    res.push([]);
+    while (res.length - linhaTitulo + 1 < ALTURA_BLOCO) res.push([]);
+
+    graficos.push(graficoXml(
+      "P" + (i+1) + ". " + p.curto + "  (n = " + b + ")",
+      p.opcoes, fracoes,
+      "Resumo!$A$" + primeiraOpcao + ":$A$" + ultimaOpcao,
+      "Resumo!$C$" + primeiraOpcao + ":$C$" + ultimaOpcao,
+      100000000 + i * 2, 100000001 + i * 2
+    ));
+    ancoras.push({
+      col1: COL_GRAFICO_INI, col2: COL_GRAFICO_FIM,
+      linha1: linhaTitulo - 1, linha2: linhaTitulo - 1 + (ALTURA_BLOCO - 2)
+    });
   });
+
+  /* ---------------- empacotamento ---------------- */
+  const tiposGrafico = graficos.map((g,i) =>
+    '<Override PartName="/xl/charts/chart' + (i+1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>').join("");
+  const relsDesenho = graficos.map((g,i) =>
+    '<Relationship Id="rId' + (i+1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart' + (i+1) + '.xml"/>').join("");
 
   const arquivos = [
     { nome:"[Content_Types].xml", dados:
@@ -1002,6 +1136,8 @@ function montarXlsx(){
       '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
       '<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
       '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+      '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>' +
+      tiposGrafico +
       "</Types>" },
     { nome:"_rels/.rels", dados:
       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -1023,6 +1159,11 @@ function montarXlsx(){
     { nome:"xl/styles.xml", dados:
       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<numFmts count="3">' +
+        '<numFmt numFmtId="164" formatCode="0.0%"/>' +
+        '<numFmt numFmtId="165" formatCode="dd/mm/yyyy"/>' +
+        '<numFmt numFmtId="166" formatCode="hh:mm"/>' +
+      "</numFmts>" +
       '<fonts count="4">' +
         '<font><sz val="11"/><color theme="1"/><name val="Calibri"/></font>' +
         '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>' +
@@ -1037,7 +1178,7 @@ function montarXlsx(){
       "</fills>" +
       '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
       '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-      '<cellXfs count="7">' +
+      '<cellXfs count="11">' +
         '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
         '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>' +
         '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>' +
@@ -1045,12 +1186,27 @@ function montarXlsx(){
         '<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>' +
         '<xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1" applyAlignment="1"><alignment vertical="center"/></xf>' +
         '<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="center"/></xf>' +
+        '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="center" horizontal="center"/></xf>' +
+        '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyAlignment="1"><alignment vertical="center" horizontal="center"/></xf>' +
+        '<xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyAlignment="1"><alignment vertical="center" horizontal="center"/></xf>' +
+        '<xf numFmtId="166" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyAlignment="1"><alignment vertical="center" horizontal="center"/></xf>' +
       "</cellXfs>" +
       '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
       "</styleSheet>" },
-    { nome:"xl/worksheets/sheet1.xml", dados: folha(linhas, larguras, true, faixa) },
-    { nome:"xl/worksheets/sheet2.xml", dados: folha(res, [58,12,12,10], false, null) }
+    { nome:"xl/worksheets/sheet1.xml", dados: folha(linhas, larguras, true, faixa, false) },
+    { nome:"xl/worksheets/sheet2.xml", dados: folha(res, [58,12,12,10], false, null, true) },
+    { nome:"xl/worksheets/_rels/sheet2.xml.rels", dados:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>' +
+      "</Relationships>" },
+    { nome:"xl/drawings/drawing1.xml", dados: desenhoXml(ancoras) },
+    { nome:"xl/drawings/_rels/drawing1.xml.rels", dados:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      relsDesenho + "</Relationships>" }
   ];
+  graficos.forEach((g,i) => arquivos.push({ nome:"xl/charts/chart" + (i+1) + ".xml", dados:g }));
   return zipar(arquivos);
 }
 

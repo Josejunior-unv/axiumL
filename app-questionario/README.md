@@ -70,14 +70,23 @@ ou na sala.
 
 ## 4. Levar os dados para o Excel
 
-No painel, toque em **Baixar Excel (.xlsx)**. O arquivo sai com duas abas:
+No painel, toque em **Baixar Excel (.xlsx)**. O arquivo sai com duas abas e os
+gráficos já montados:
 
 - **Respostas** — uma linha por estudante, uma coluna por pergunta. Cabeçalho
-  congelado e filtro já ligado. Nas perguntas de múltipla escolha as alternativas
-  vêm separadas por `|` na mesma célula.
-- **Resumo** — a contagem e a porcentagem de cada alternativa, pergunta por
-  pergunta, pronta para virar gráfico no Excel (selecione as colunas
-  *Alternativa* e *Respostas* → **Inserir → Gráfico**).
+  congelado e filtro ligado. Data e hora são valores de data de verdade (dá para
+  ordenar e filtrar por período), e a coluna *Respondidas* traz quantas das 10
+  perguntas aquele estudante respondeu. Nas perguntas de múltipla escolha as
+  alternativas vêm separadas por `|` na mesma célula.
+- **Resumo** — uma tabela por pergunta com a contagem, a porcentagem (formatada
+  como percentual de verdade, não texto) e a base, e **ao lado de cada tabela um
+  gráfico de barras pronto**, já em porcentagem, com o número de respondentes no
+  título (*n = 9*).
+
+Os gráficos são gráficos nativos do Excel, não imagens: clique com o botão
+direito para mudar cor, tipo ou título, e é só copiar e colar no Word do
+trabalho. Como estão ligados às células, se você corrigir um número na tabela o
+gráfico se atualiza sozinho.
 
 Também existe **Baixar CSV**, com separador `;` e acentuação preservada, caso
 você prefira abrir no Google Planilhas ou em outro programa.
