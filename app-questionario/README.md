@@ -81,7 +81,21 @@ resposta*, *Baixar Excel* e *Compartilhar*. Fecha tocando fora, no X ou com Esc.
 Ele some durante a coleta, para não disputar espaço com o botão **Salvar
 resposta**, que fica fixo no rodapé.
 
-## 4. Aplicar a pesquisa
+## 4. A gatinha
+
+Toda vez que um botão é apertado, uma gatinha aparece ao lado dele, bate a
+patinha junto e some sozinha. Ela é um desenho original em SVG, na paleta do
+app — **não é a Hello Kitty**, que é personagem registrado da Sanrio e não pode
+ser reproduzido num site publicado.
+
+O desenho tem `pointer-events: none`, então nunca rouba o toque: o botão recebe
+o clique normalmente mesmo com ela por cima. Também não aparece nas alternativas
+do questionário, que são tocadas o tempo todo e ficariam poluídas.
+
+No rodapé do painel há um interruptor para desligá-la. A escolha fica salva no
+aparelho — útil na hora de aplicar a pesquisa a sério.
+
+## 5. Aplicar a pesquisa
 
 1. Toque em **Nova resposta**.
 2. Preencha a identificação e o curso se quiser (os dois são opcionais — a pesquisa pode
@@ -96,7 +110,7 @@ resposta**, que fica fixo no rodapé.
 5. Repita para o próximo estudante. O painel mostra o total coletado e um resumo com
    as porcentagens de cada alternativa, que já atualiza a cada resposta.
 
-## 5. Levar os dados para o Excel
+## 6. Levar os dados para o Excel
 
 No painel, toque em **Baixar Excel (.xlsx)**. O arquivo sai com duas abas e os
 gráficos já montados:
@@ -131,7 +145,7 @@ você prefira abrir no Google Planilhas ou em outro programa.
 > os dados de navegação ou desinstalar o app — então **baixe a planilha antes de
 > usar "Apagar tudo"**.
 
-## 6. Dividir a coleta com o grupo
+## 7. Dividir a coleta com o grupo
 
 Dá para várias pessoas aplicarem a pesquisa ao mesmo tempo, cada uma no próprio
 celular ou tablet, e no fim juntar tudo numa planilha só.
@@ -161,7 +175,7 @@ recalculado em cima do total.
 > Cada resposta tem um código próprio, então nada é contado duas vezes, mesmo
 > que os arquivos se cruzem entre os colegas.
 
-## 7. Mudar as perguntas
+## 8. Mudar as perguntas
 
 Todo o questionário está em uma única lista no começo do `<script>` do
 `index.html`, na constante `PERGUNTAS`:

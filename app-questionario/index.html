@@ -355,6 +355,39 @@ main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
 @media (prefers-reduced-motion: reduce){
   #painel > *, #coleta > *, main:not([hidden]), .coleta, .status dd.pulsa{animation:none !important}
 }
+
+/* ---------- a gatinha que aparece quando um botão é apertado ---------- */
+#gata{position:fixed; z-index:90; width:70px; height:70px; pointer-events:none;
+  opacity:0; will-change:transform, opacity; filter:drop-shadow(0 6px 14px rgba(14,42,69,.3))}
+#gata.entra{animation:gata-entra .42s cubic-bezier(.32,.72,0,1) forwards}
+#gata.sai{animation:gata-sai .3s cubic-bezier(.32,.72,0,1) forwards}
+@keyframes gata-entra{
+  0%{opacity:0; transform:translateY(18px) scale(.55) rotate(-14deg)}
+  55%{opacity:1; transform:translateY(-5px) scale(1.08) rotate(5deg)}
+  100%{opacity:1; transform:translateY(0) scale(1) rotate(0)}
+}
+@keyframes gata-sai{ to{opacity:0; transform:translateY(12px) scale(.7) rotate(8deg)} }
+#gata .pata{transform-origin:24px 26px; animation:pata-bate .5s cubic-bezier(.32,.72,0,1) .28s}
+@keyframes pata-bate{
+  0%,100%{transform:translate(0,0) rotate(0)}
+  45%{transform:translate(-7px,9px) rotate(-26deg)}
+}
+#gata .rabo{transform-origin:54px 52px; animation:rabo-balanca .9s ease-in-out .3s 2}
+@keyframes rabo-balanca{ 0%,100%{transform:rotate(0)} 50%{transform:rotate(-16deg)} }
+.chave-gata{display:inline-flex; align-items:center; gap:8px; cursor:pointer;
+  font-family:var(--mono); font-size:11px; letter-spacing:.06em; color:var(--suave);
+  background:none; border:0; padding:6px 0}
+.chave-gata:hover{color:var(--realce)}
+.chave-gata i{width:26px; height:16px; border-radius:999px; background:var(--fio-forte);
+  position:relative; transition:background .2s ease; flex:none}
+.chave-gata i::after{content:""; position:absolute; top:2px; left:2px; width:12px; height:12px;
+  border-radius:50%; background:#fff; transition:transform .22s cubic-bezier(.32,.72,0,1)}
+.chave-gata.on i{background:var(--realce)}
+.chave-gata.on i::after{transform:translateX(10px)}
+@media (prefers-reduced-motion: reduce){
+  #gata.entra, #gata.sai, #gata .pata, #gata .rabo{animation:none}
+  #gata.entra{opacity:1}
+}
 [hidden]{display:none !important}
 @media (max-width:520px){
   .cartao-ident{grid-template-columns:1fr}
@@ -472,6 +505,9 @@ main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
         Apagar tudo
       </button>
       <span class="versao" id="versao"></span>
+      <button class="chave-gata" id="chave-gata" type="button" aria-pressed="true">
+        <i aria-hidden="true"></i><span id="chave-gata-txt">gatinha ligada</span>
+      </button>
     </div>
   </main>
 
@@ -557,6 +593,32 @@ main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
   </div>
 </dialog>
 
+<svg id="gata" viewBox="0 0 72 72" aria-hidden="true" focusable="false">
+  <!-- rabo -->
+  <path class="rabo" d="M54 52 q12 2 11 -10 q-1 -6 -6 -5" fill="none" stroke="#0E2A45" stroke-width="3.4" stroke-linecap="round"/>
+  <!-- corpo -->
+  <path d="M18 68 q0 -16 18 -16 q18 0 18 16 z" fill="#fff" stroke="#0E2A45" stroke-width="3"/>
+  <!-- orelhas -->
+  <path d="M13 28 L15 8 L32 20 Z" fill="#fff" stroke="#0E2A45" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M59 28 L57 8 L40 20 Z" fill="#fff" stroke="#0E2A45" stroke-width="3" stroke-linejoin="round"/>
+  <!-- cabeça -->
+  <ellipse cx="36" cy="34" rx="23" ry="20" fill="#fff" stroke="#0E2A45" stroke-width="3"/>
+  <!-- olhos fechados de contente -->
+  <path d="M25 33 q3.5 -4 7 0" fill="none" stroke="#0E2A45" stroke-width="3" stroke-linecap="round"/>
+  <path d="M40 33 q3.5 -4 7 0" fill="none" stroke="#0E2A45" stroke-width="3" stroke-linecap="round"/>
+  <!-- focinho e sorriso -->
+  <ellipse cx="36" cy="40" rx="2.6" ry="1.9" fill="#E9BA5E"/>
+  <path d="M31 44 q5 4 10 0" fill="none" stroke="#0E2A45" stroke-width="2.6" stroke-linecap="round"/>
+  <!-- bigodes -->
+  <path d="M6 34 l11 2 M6 42 l11 -1 M66 34 l-11 2 M66 42 l-11 -1"
+        stroke="#0E2A45" stroke-width="2.4" stroke-linecap="round"/>
+  <!-- laço na orelha direita -->
+  <path d="M57 14 q7 -6 9 0 q-7 5 -9 0 q-7 -6 -9 0 q7 5 9 0" fill="#E9BA5E" stroke="#0E2A45" stroke-width="2.4" stroke-linejoin="round"/>
+  <circle cx="57" cy="14" r="2.4" fill="#fff" stroke="#0E2A45" stroke-width="2"/>
+  <!-- patinha que bate -->
+  <ellipse class="pata" cx="24" cy="26" rx="7" ry="5.6" fill="#fff" stroke="#0E2A45" stroke-width="3" transform="rotate(-18 24 26)"/>
+</svg>
+
 <div id="aviso" role="status" aria-live="polite"></div>
 
 <script>
@@ -617,7 +679,7 @@ const PERGUNTAS = [
 const TITULO = "Uso da Tecnologia no Ensino Superior";
 const CHAVE = "pesquisa-tecnologia-es-v1";
 const CHAVE_ENVIADAS = CHAVE + ":enviadas";
-const VERSAO = "8 · ensino superior";
+const VERSAO = "9 · ensino superior";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
@@ -1853,7 +1915,63 @@ document.addEventListener("keydown", evento => {
 });
 
 /* =========================================================
-   10. LIGAÇÕES
+   10. A GATINHA
+   Aparece ao lado do botão apertado, bate a patinha e some.
+   Nunca intercepta toque: o SVG é pointer-events:none.
+   ========================================================= */
+const CHAVE_GATA = CHAVE + ":gata";
+const gata = $("#gata");
+let gataLigada = localStorage.getItem(CHAVE_GATA) !== "0";
+let gataTimer = null;
+
+function pintarChaveGata(){
+  const b = $("#chave-gata");
+  b.classList.toggle("on", gataLigada);
+  b.setAttribute("aria-pressed", gataLigada ? "true" : "false");
+  $("#chave-gata-txt").textContent = gataLigada ? "gatinha ligada" : "gatinha desligada";
+}
+
+function chamarGata(alvo){
+  if (!gataLigada || !alvo) return;
+  const r = alvo.getBoundingClientRect();
+  if (!r.width) return;
+  const L = 70, folga = 8;
+  // fica à direita do botão; se não couber, vai para a esquerda
+  let x = r.right + folga;
+  if (x + L > window.innerWidth - 6) x = r.left - L - folga;
+  x = Math.max(6, Math.min(x, window.innerWidth - L - 6));
+  const y = Math.max(6, Math.min(r.top + r.height / 2 - L / 2, window.innerHeight - L - 6));
+
+  gata.style.left = x + "px";
+  gata.style.top = y + "px";
+  gata.classList.remove("entra", "sai");
+  void gata.offsetWidth;            // reinicia a animação
+  gata.classList.add("entra");
+  clearTimeout(gataTimer);
+  gataTimer = setTimeout(() => {
+    gata.classList.remove("entra");
+    gata.classList.add("sai");
+  }, 1150);
+}
+
+// qualquer botão de verdade convoca a gatinha; as alternativas da coleta não,
+// porque são tocadas o tempo todo e atrapalhariam quem está respondendo
+document.addEventListener("click", evento => {
+  const alvo = evento.target.closest("button, .btn, .menu-item, .menu-barra");
+  if (alvo && alvo.id !== "chave-gata") chamarGata(alvo);
+}, true);
+
+$("#chave-gata").addEventListener("click", () => {
+  gataLigada = !gataLigada;
+  try{ localStorage.setItem(CHAVE_GATA, gataLigada ? "1" : "0"); }catch(e){}
+  pintarChaveGata();
+  if (gataLigada) chamarGata($("#chave-gata"));
+  else { gata.classList.remove("entra"); gata.classList.add("sai"); }
+});
+pintarChaveGata();
+
+/* =========================================================
+   11. LIGAÇÕES
    ========================================================= */
 $("#btn-nova").addEventListener("click", novaColeta);
 $("#btn-salvar").addEventListener("click", salvarColeta);
