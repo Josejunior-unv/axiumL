@@ -55,7 +55,7 @@
 *{box-sizing:border-box}
 body{margin:0; background:var(--papel); color:var(--tinta); font-family:var(--corpo);
   font-size:16px; line-height:1.55; -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent}
-.shell{max-width:980px; margin:0 auto; padding-inline:18px; padding-block:22px 44px}
+.shell{max-width:980px; margin:0 auto; padding-inline:18px; padding-block:22px 120px}
 h1,h2,h3{font-family:var(--display); font-weight:600; margin:0; text-wrap:balance; letter-spacing:-.012em}
 h1{font-size:clamp(28px,4.6vw,40px); line-height:1.1; font-weight:700}
 h2{font-size:21px}
@@ -236,7 +236,7 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:20px}
 .qr-caixa svg{width:190px; height:190px; background:#fff; border:1px solid var(--fio); border-radius:10px; padding:10px}
 .link-caixa{font-family:var(--mono); font-size:12.5px; color:var(--tinta); background:var(--superficie-3);
   border:1px solid var(--fio); border-radius:9px; padding:12px 14px; word-break:break-all; user-select:all}
-#aviso{position:fixed; left:50%; bottom:26px; transform:translate(-50%,14px); z-index:60;
+#aviso{position:fixed; left:50%; bottom:98px; transform:translate(-50%,14px); z-index:60;
   background:var(--marinho); color:var(--sobre-marinho); font-size:14.5px; font-weight:500;
   padding:14px 20px; border-radius:10px; box-shadow:var(--sombra); max-width:min(90vw,470px);
   border:1px solid var(--fio-marinho);
@@ -249,6 +249,61 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:20px}
 .rodape-nota p{max-width:54ch}
 .versao{font-family:var(--mono); font-size:10.5px; color:var(--suave); letter-spacing:.1em;
   text-transform:uppercase; width:100%}
+
+/* ---------- menu flutuante (morfose líquida) ---------- */
+.menu-flutuante{position:fixed; bottom:26px; left:50%; z-index:70; transform:translateX(-50%);
+  opacity:0; animation:menu-entra .45s cubic-bezier(.22,1,.36,1) .25s forwards}
+.menu-flutuante.escondido{opacity:0 !important; pointer-events:none; transform:translateX(-50%) translateY(14px)}
+@keyframes menu-entra{ from{opacity:0; transform:translateX(-50%) translateY(20px)} to{opacity:1; transform:translateX(-50%) translateY(0)} }
+.menu-morfo{position:relative; overflow:hidden; display:flex; flex-direction:column;
+  width:158px; height:48px; border-radius:72px; cursor:pointer;
+  background:var(--azul); border:1px solid var(--azul);
+  box-shadow:0 10px 30px -12px rgba(14,42,69,.55);
+  transition:width .8s cubic-bezier(.22,1,.36,1), height .15s cubic-bezier(.22,1,.36,1),
+             border-radius .8s cubic-bezier(.22,1,.36,1), transform .25s cubic-bezier(.22,1,.36,1)}
+.menu-morfo:hover{transform:scale(1.05)}
+.menu-flutuante.aberto .menu-morfo{width:286px; height:264px; border-radius:32px; cursor:default;
+  border-color:var(--marinho); transform:none;
+  transition:width .8s cubic-bezier(.22,1,.36,1), height .8s cubic-bezier(.22,1,.36,1),
+             border-radius .8s cubic-bezier(.22,1,.36,1)}
+/* o círculo escuro que sobe e engole a pílula */
+.menu-circulo{position:absolute; left:50%; width:200%; height:200%; border-radius:50%;
+  background:var(--marinho); transform:translateX(-50%); bottom:-200%;
+  transition:bottom .8s cubic-bezier(.22,1,.36,1)}
+.menu-flutuante.aberto .menu-circulo{bottom:-20%; transition-delay:.1s}
+.menu-lista{position:relative; z-index:2; display:flex; flex-direction:column; gap:22px;
+  align-items:center; justify-content:center; flex:0; overflow:hidden; pointer-events:none}
+.menu-flutuante.aberto .menu-lista{flex:1; pointer-events:auto}
+.menu-item{background:none; border:0; padding:0; cursor:pointer; color:var(--sobre-marinho);
+  font-family:var(--display); font-size:21px; font-weight:600; text-transform:uppercase;
+  letter-spacing:-.01em; line-height:1; height:1em; overflow:hidden; opacity:0;
+  transition:opacity .4s cubic-bezier(.22,1,.36,1)}
+.menu-flutuante.aberto .menu-item{opacity:1}
+.menu-flutuante.aberto .menu-item:nth-child(1){transition-delay:.40s}
+.menu-flutuante.aberto .menu-item:nth-child(2){transition-delay:.48s}
+.menu-flutuante.aberto .menu-item:nth-child(3){transition-delay:.56s}
+.menu-item:focus-visible{outline:2px solid var(--azul-fio); outline-offset:4px; border-radius:4px}
+.menu-linha{display:flex; justify-content:center}
+.menu-caixa{display:inline-block; overflow:hidden; height:1em}
+.menu-rolo{display:flex; flex-direction:column; transition:transform 0ms cubic-bezier(.22,1,.36,1)}
+.menu-item:hover .menu-rolo, .menu-item:focus-visible .menu-rolo{transition-duration:800ms; transform:translateY(-50%)}
+.menu-rolo > span{display:block; height:1em; line-height:1em}
+.menu-barra{position:relative; z-index:2; display:flex; align-items:center; justify-content:space-between;
+  width:100%; flex:none; height:48px; padding:0 20px; cursor:pointer;
+  transition:padding .8s cubic-bezier(.22,1,.36,1)}
+.menu-flutuante.aberto .menu-barra{padding:0 24px 24px}
+.menu-rotulo{font-family:var(--corpo); font-size:15px; font-weight:600; color:#fff; line-height:1}
+.menu-risca{position:relative; width:24px; height:24px; display:flex; align-items:center; justify-content:center}
+.menu-risca i{position:absolute; display:block; width:18px; height:2px; border-radius:999px; background:#fff;
+  transition:transform .4s cubic-bezier(.22,1,.36,1)}
+.menu-risca i:first-child{transform:translateY(-3px)}
+.menu-risca i:last-child{transform:translateY(3px)}
+.menu-flutuante.aberto .menu-risca i:first-child{transform:rotate(45deg)}
+.menu-flutuante.aberto .menu-risca i:last-child{transform:rotate(-45deg)}
+@media (prefers-reduced-motion: reduce){
+  .menu-flutuante{animation:none; opacity:1}
+  .menu-morfo, .menu-circulo, .menu-rolo, .menu-risca i, .menu-barra{transition:none !important}
+}
 [hidden]{display:none !important}
 @media (max-width:520px){
   .cartao-ident{grid-template-columns:1fr}
@@ -413,6 +468,22 @@ dialog p{color:var(--tinta-2); font-size:15px; margin-bottom:20px}
   </main>
 </div>
 
+<div class="menu-flutuante" id="menu-flutuante">
+  <div class="menu-morfo" id="menu-morfo">
+    <div class="menu-circulo"></div>
+    <div class="menu-lista" id="menu-lista">
+      <button class="menu-item" type="button" data-acao="nova" data-rotulo="Nova resposta"></button>
+      <button class="menu-item" type="button" data-acao="excel" data-rotulo="Baixar Excel"></button>
+      <button class="menu-item" type="button" data-acao="compartilhar" data-rotulo="Compartilhar"></button>
+    </div>
+    <div class="menu-barra" id="menu-barra" role="button" tabindex="0"
+         aria-expanded="false" aria-controls="menu-lista" aria-label="Abrir menu de atalhos">
+      <span class="menu-rotulo">Menu</span>
+      <span class="menu-risca" aria-hidden="true"><i></i><i></i></span>
+    </div>
+  </div>
+</div>
+
 <dialog id="dlg">
   <h3 id="dlg-tit"></h3>
   <p id="dlg-txt"></p>
@@ -495,7 +566,7 @@ const PERGUNTAS = [
 const TITULO = "Uso da Tecnologia no Ensino Superior";
 const CHAVE = "pesquisa-tecnologia-es-v1";
 const CHAVE_ENVIADAS = CHAVE + ":enviadas";
-const VERSAO = "5 · ensino superior";
+const VERSAO = "6 · ensino superior";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
@@ -590,6 +661,8 @@ function carimbo(){
 function mostrar(qual){
   $("#painel").hidden = qual !== "painel";
   $("#coleta").hidden = qual !== "coleta";
+  const m = document.getElementById("menu-flutuante");
+  if (m){ m.classList.toggle("escondido", qual !== "painel"); m.classList.remove("aberto"); }
   window.scrollTo(0,0);
 }
 
@@ -1643,7 +1716,72 @@ async function juntarArquivos(arquivos){
 }
 
 /* =========================================================
-   9. LIGAÇÕES
+   9. MENU FLUTUANTE
+   A pílula vira painel: um círculo escuro sobe por baixo e engole o
+   fundo azul. Cada letra dos itens rola para a sua cópia, uma atrás da
+   outra. Some durante a coleta, para não disputar com o botão Salvar.
+   ========================================================= */
+const menu = $("#menu-flutuante");
+
+function montarLetras(botao){
+  const texto = botao.dataset.rotulo;
+  botao.textContent = "";
+  botao.setAttribute("aria-label", texto);
+  const linha = elem("span","menu-linha");
+  [...texto].forEach((letra, i) => {
+    const caixa = elem("span","menu-caixa");
+    const rolo = elem("span","menu-rolo");
+    rolo.style.transitionDelay = (30 * i) + "ms";
+    const visivel = elem("span", null, letra === " " ? "\u00A0" : letra);
+    const copia = elem("span", null, letra === " " ? "\u00A0" : letra);
+    copia.setAttribute("aria-hidden","true");
+    rolo.appendChild(visivel); rolo.appendChild(copia);
+    caixa.appendChild(rolo); linha.appendChild(caixa);
+  });
+  botao.appendChild(linha);
+}
+
+function abrirMenu(abrir){
+  menu.classList.toggle("aberto", abrir);
+  $("#menu-barra").setAttribute("aria-expanded", abrir ? "true" : "false");
+  $("#menu-barra").setAttribute("aria-label", abrir ? "Fechar menu de atalhos" : "Abrir menu de atalhos");
+}
+
+document.querySelectorAll(".menu-item").forEach(botao => {
+  montarLetras(botao);
+  botao.addEventListener("click", evento => {
+    evento.stopPropagation();
+    abrirMenu(false);
+    const acao = botao.dataset.acao;
+    if (acao === "nova") novaColeta();
+    else if (acao === "excel"){
+      if (!respostas.length) return avisar("Nenhuma resposta coletada ainda.");
+      baixar("pesquisa-tecnologia_" + carimbo() + ".xlsx", montarXlsx());
+    }
+    else if (acao === "compartilhar") abrirCompartilhar();
+  });
+});
+
+$("#menu-morfo").addEventListener("click", () => { if (!menu.classList.contains("aberto")) abrirMenu(true); });
+$("#menu-barra").addEventListener("click", evento => {
+  evento.stopPropagation();
+  abrirMenu(!menu.classList.contains("aberto"));
+});
+$("#menu-barra").addEventListener("keydown", evento => {
+  if (evento.key === "Enter" || evento.key === " "){
+    evento.preventDefault();
+    abrirMenu(!menu.classList.contains("aberto"));
+  }
+});
+document.addEventListener("mousedown", evento => {
+  if (menu.classList.contains("aberto") && !menu.contains(evento.target)) abrirMenu(false);
+});
+document.addEventListener("keydown", evento => {
+  if (evento.key === "Escape" && menu.classList.contains("aberto")) abrirMenu(false);
+});
+
+/* =========================================================
+   10. LIGAÇÕES
    ========================================================= */
 $("#btn-nova").addEventListener("click", novaColeta);
 $("#btn-salvar").addEventListener("click", salvarColeta);

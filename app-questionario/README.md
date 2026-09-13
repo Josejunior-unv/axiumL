@@ -70,7 +70,16 @@ Pronto: o ícone verde de check aparece junto dos outros apps e abre em tela che
 A partir daí ele funciona mesmo sem sinal — útil para aplicar a pesquisa no pátio
 ou na sala.
 
-## 3. Aplicar a pesquisa
+## 3. Menu flutuante
+
+No painel, embaixo e no centro, há uma pílula azul escrita **Menu**. Tocando
+nela, um círculo escuro sobe e a transforma num painel com três atalhos: *Nova
+resposta*, *Baixar Excel* e *Compartilhar*. Fecha tocando fora, no X ou com Esc.
+
+Ele some durante a coleta, para não disputar espaço com o botão **Salvar
+resposta**, que fica fixo no rodapé.
+
+## 4. Aplicar a pesquisa
 
 1. Toque em **Nova resposta**.
 2. Preencha a identificação e o curso se quiser (os dois são opcionais — a pesquisa pode
@@ -85,7 +94,7 @@ ou na sala.
 5. Repita para o próximo estudante. O painel mostra o total coletado e um resumo com
    as porcentagens de cada alternativa, que já atualiza a cada resposta.
 
-## 4. Levar os dados para o Excel
+## 5. Levar os dados para o Excel
 
 No painel, toque em **Baixar Excel (.xlsx)**. O arquivo sai com duas abas e os
 gráficos já montados:
@@ -120,7 +129,7 @@ você prefira abrir no Google Planilhas ou em outro programa.
 > os dados de navegação ou desinstalar o app — então **baixe a planilha antes de
 > usar "Apagar tudo"**.
 
-## 5. Dividir a coleta com o grupo
+## 6. Dividir a coleta com o grupo
 
 Dá para várias pessoas aplicarem a pesquisa ao mesmo tempo, cada uma no próprio
 celular ou tablet, e no fim juntar tudo numa planilha só.
@@ -150,7 +159,7 @@ recalculado em cima do total.
 > Cada resposta tem um código próprio, então nada é contado duas vezes, mesmo
 > que os arquivos se cruzem entre os colegas.
 
-## 6. Mudar as perguntas
+## 7. Mudar as perguntas
 
 Todo o questionário está em uma única lista no começo do `<script>` do
 `index.html`, na constante `PERGUNTAS`:
