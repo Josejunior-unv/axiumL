@@ -88,6 +88,11 @@ p{margin:0}
 .ponto.on{background:#63D6A8}
 .status{display:grid; grid-template-columns:repeat(3,1fr); margin:26px -26px 0;
   border-top:1px solid var(--fio-marinho)}
+.status.com-banco{grid-template-columns:repeat(4,1fr)}
+#st-banco{color:var(--realce-claro)}
+.nota-banco{margin:0 -26px; padding:13px 26px; border-top:1px solid var(--fio-marinho);
+  font-size:13px; line-height:1.5; color:var(--sobre-marinho-2)}
+.nota-banco b{color:#fff; font-weight:600; font-variant-numeric:tabular-nums}
 .status > div{padding:16px 26px; border-left:1px solid var(--fio-marinho)}
 .status > div:first-child{border-left:0}
 .status dd{margin:0 0 2px; font-family:var(--mono); font-weight:600; font-size:26px;
@@ -97,7 +102,8 @@ p{margin:0}
 .status dt{font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--sobre-marinho-2)}
 @media (max-width:560px){
   .faixa{padding:22px 20px 0; border-radius:14px}
-  .status{grid-template-columns:1fr; margin-inline:-20px}
+  .status, .status.com-banco{grid-template-columns:1fr; margin-inline:-20px}
+  .nota-banco{margin-inline:-20px; padding:12px 20px}
   .status > div{border-left:0; border-top:1px solid var(--fio-marinho); display:flex;
     align-items:baseline; gap:12px; padding:12px 20px}
   .status > div:first-child{border-top:0}
@@ -426,11 +432,13 @@ main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
       <span class="selo"><span class="ponto" id="ponto-sinc"></span><span id="txt-sinc">armazenado no aparelho</span></span>
       </header>
 
-      <dl class="status">
+      <dl class="status" id="tira-status">
         <div><dd id="st-total">0</dd><dt>Respostas</dt></div>
+        <div id="cx-banco" hidden><dd id="st-banco">—</dd><dt>No banco</dt></div>
         <div><dd id="st-ultima"><small>—</small></dd><dt>Última coleta</dt></div>
         <div><dd>10</dd><dt>Perguntas</dt></div>
       </dl>
+      <p class="nota-banco" id="nota-banco" hidden></p>
     </div>
 
     <button class="btn btn-principal" id="btn-nova">
@@ -726,7 +734,7 @@ const CHAVE_FILA = CHAVE + ":fila";
 let CONFIG = { endpoint: "" };
 const CHAVE_SEGREDO = CHAVE + ":chaveLeitura";
 let modo = "painel";
-const VERSAO = "15 · ensino superior";
+const VERSAO = "17 · ensino superior";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
@@ -870,6 +878,8 @@ function renderPainel(){
   $("#btn-backup").disabled = n === 0;
   $("#conta-coletas").textContent = n === 1 ? "1 resposta" : n + " respostas";
 
+  pintarBanco();
+
   const lista = $("#lista-coletas");
   lista.innerHTML = "";
   if (!n){
@@ -911,6 +921,7 @@ function renderPainel(){
         if (pos >= 0) respostas.splice(pos, 1);
         enviadas.delete(alvo.id);
         gravarLocal(); renderPainel();
+        if (noServidor) contarNoServidor();
         if (bd) bd.doc("respostas/" + alvo.id).delete().catch(() => {});
         avisar("Resposta excluída.");
       });
@@ -1239,9 +1250,10 @@ async function esvaziarFila(){
   if (!fila.length) return;
   const sobrou = [];
   for (const r of fila){
-    try{ await enviarAoServidor(r); }catch(e){ sobrou.push(r); }
+    try{ await enviarAoServidor(r); enviadas.add(r.id); }catch(e){ sobrou.push(r); }
   }
   gravarFila(sobrou);
+  gravarLocal();
   if (fila.length && !sobrou.length && modo === "responder")
     $("#obrigado-txt").textContent = "Obrigado por participar da pesquisa. Sua resposta já chegou para quem está aplicando.";
 }
@@ -1283,6 +1295,66 @@ async function apagarNoServidor(corpo){
 }
 
 let buscando = false;
+/* Respostas colhidas antes de o banco existir ficaram só no aparelho. Ao abrir
+   o link de novo, sobem sozinhas em vez de morrer ali. */
+async function resgatarAntigas(){
+  if (!CONFIG.endpoint || !respostas.length) return 0;
+  const presas = respostas.filter(r => r && r.id && !enviadas.has(r.id));
+  if (!presas.length) return 0;
+  const fila = lerFila();
+  const naFila = new Set(fila.map(r => r && r.id));
+  presas.forEach(r => { if (!naFila.has(r.id)) fila.push(r); });
+  gravarFila(fila);
+  await esvaziarFila();
+  const sobrou = new Set(lerFila().map(r => r && r.id));
+  return presas.filter(r => !sobrou.has(r.id)).length;
+}
+
+/* O NÚMERO do banco é aberto: quem abre o painel vê quantas respostas já
+   entraram mesmo sem a chave de leitura. O conteúdo delas, não — para ler as
+   respostas ainda é preciso a chave. */
+let totalBanco = null, ultimaBanco = null;
+async function contarNoServidor(){
+  if (!CONFIG.endpoint) return;
+  try{
+    const sep = CONFIG.endpoint.indexOf("?") >= 0 ? "&" : "?";
+    const resp = await fetch(CONFIG.endpoint + sep + "contagem=1", { cache: "no-store" });
+    const dado = await resp.json();
+    if (!dado || !dado.ok) return;
+    totalBanco = Number(dado.total) || 0;
+    // só data e hora entram aqui; qualquer outra coisa é descartada
+    ultimaBanco = /^[\d\/: ]{1,24}$/.test(dado.ultima || "") ? dado.ultima : null;
+    pintarBanco();
+  }catch(e){}
+}
+function pintarBanco(){
+  const cx = $("#cx-banco"), nota = $("#nota-banco"), tira = $("#tira-status");
+  if (!cx || !nota) return;
+  if (!CONFIG.endpoint || totalBanco === null){ cx.hidden = true; nota.hidden = true; return; }
+  cx.hidden = false;
+  nota.hidden = false;
+  if (tira) tira.classList.add("com-banco");
+  animarNumero($("#st-banco"), totalBanco);
+
+  if (!chaveGuardada()){
+    // sem chave o selo nunca era atualizado e o painel parecia parado
+    $("#txt-sinc").textContent = totalBanco === 1 ? "1 resposta no banco" : totalBanco + " respostas no banco";
+    $("#ponto-sinc").classList.add("on");
+  }
+
+  if (!totalBanco){
+    nota.textContent = "Ainda não chegou nenhuma resposta pelo link. Assim que alguém responder, o número aparece aqui para todo mundo.";
+    return;
+  }
+  const gravadas = "<b>" + totalBanco + (totalBanco === 1 ? " resposta" : " respostas") + "</b> no banco";
+  const quando = ultimaBanco ? " Última: <b>" + ultimaBanco + "</b>." : "";
+  const faltam = totalBanco - respostas.length;
+  nota.innerHTML = faltam > 0
+    ? gravadas + ", <b>" + respostas.length + "</b> aqui. Toque em “Buscar respostas enviadas” para trazer "
+      + (faltam === 1 ? "a que falta" : "as " + faltam + " que faltam") + "." + quando
+    : gravadas + " — todas já estão aqui." + quando;
+}
+
 async function buscarDoServidor(silencioso){
   if (!CONFIG.endpoint){ if (!silencioso) avisar("Nenhum lugar de envio configurado ainda."); return; }
   if (buscando) return;
@@ -1308,6 +1380,7 @@ async function buscarDoServidor(silencioso){
     });
     if (novas){ ordenar(); gravarLocal(); renderPainel(); }
     marcarSinc("ok");
+    contarNoServidor();
     if (novas) avisar(novas === 1 ? "1 resposta nova." : novas + " respostas novas.");
     else if (!silencioso) avisar("Nenhuma resposta nova.");
   }catch(e){
@@ -2341,6 +2414,7 @@ $("#btn-limpar").addEventListener("click", async () => {
   const antigas = respostas.slice();
   respostas = []; enviadas.clear();
   gravarLocal(); renderPainel();
+  if (noServidor) contarNoServidor();
   if (bd) antigas.forEach(r => bd.doc("respostas/" + r.id).delete().catch(() => {}));
   avisar("Todas as respostas foram apagadas.");
 });
@@ -2372,13 +2446,17 @@ $("#btn-qr").addEventListener("click", () => {
 $("#btn-servidor").addEventListener("click", () => buscarDoServidor(false));
 $("#btn-outra").addEventListener("click", () => novaColeta());
 
-function entrarModoResponder(){
+async function entrarModoResponder(){
   modo = "responder";
   $("#btn-voltar").hidden = true;
   $("#btn-salvar").lastChild.textContent = " Enviar respostas";
   const m = document.getElementById("menu-flutuante");
   if (m) m.remove();                      // quem responde não precisa dos atalhos
   novaColeta();
+  const resgatadas = await resgatarAntigas();
+  if (resgatadas) avisar(resgatadas === 1
+    ? "1 resposta que estava guardada neste aparelho acabou de ser enviada."
+    : resgatadas + " respostas que estavam guardadas neste aparelho acabaram de ser enviadas.");
 }
 
 async function arrancar(){
@@ -2398,22 +2476,27 @@ async function arrancar(){
 
   const querPainel = location.hash.replace("#","") === "painel";
   if (CONFIG.endpoint && !querPainel){
-    entrarModoResponder();
+    await entrarModoResponder();
     esvaziarFila();
     return;
   }
   if (CONFIG.endpoint){
     $("#btn-servidor").hidden = false;
-    $("#txt-sinc").textContent = chaveGuardada() ? "buscando respostas…" : "toque em buscar para trazer";
+    $("#txt-sinc").textContent = chaveGuardada() ? "buscando respostas…" : "vendo quantas já entraram…";
     $("#ponto-sinc").classList.add("on");
-    // busca ao abrir, sempre que a aba volta ao primeiro plano e de meio em meio minuto
-    buscarDoServidor(true);
-    document.addEventListener("visibilitychange", () => { if (!document.hidden) buscarDoServidor(true); });
-    window.addEventListener("focus", () => buscarDoServidor(true));
-    setInterval(() => { if (!document.hidden) buscarDoServidor(true); }, 30000);
+    // a contagem roda para todo mundo; a busca das respostas só para quem tem a chave
+    const atualizar = () => { contarNoServidor(); buscarDoServidor(true); };
+    atualizar();
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) atualizar(); });
+    window.addEventListener("focus", atualizar);
+    setInterval(() => { if (!document.hidden) atualizar(); }, 30000);
   }
   esvaziarFila();
   mostrar("painel");
+  const resgatadas = await resgatarAntigas();
+  if (resgatadas) avisar(resgatadas + (resgatadas === 1
+    ? " resposta antiga deste aparelho foi enviada ao banco."
+    : " respostas antigas deste aparelho foram enviadas ao banco."));
 }
 
 lerLocal();

@@ -7,6 +7,7 @@
  *     sozinha, você não copia chave nenhuma.
  *  3. Settings -> Environment Variables -> CHAVE_LEITURA = uma senha sua.
  *     É ela que libera a leitura das respostas; sem ela ninguém baixa nada.
+ *     (A contagem, ?contagem=1, é aberta: todo mundo vê quantas já entraram.)
  *  4. Redeploy.
  *
  * O app descobre sozinho que ficou pronto e passa a enviar para cá.
@@ -62,6 +63,23 @@ module.exports = async (req, res) => {
       // o app pergunta primeiro se já dá para usar
       if (q.status) return res.json({ ok: true, pronto: pronto(), variavel: CRED ? CRED.veioDe : null });
       if (!pronto()) return res.json({ ok: false, erro: "banco ainda não conectado" });
+
+      /* A CONTAGEM é pública de propósito: quem abre o painel vê quantas
+         respostas já entraram mesmo sem a chave. Só sai o número e a data da
+         última — o conteúdo das respostas continua trancado pela CHAVE_LEITURA. */
+      if (q.contagem) {
+        const total = Number(await redis(["LLEN", LISTA])) || 0;
+        let ultima = null;
+        if (total) {
+          try {
+            const cab = JSON.parse((await redis(["GET", CABECALHO])) || "[]");
+            const fim = JSON.parse((await redis(["LINDEX", LISTA, "-1"])) || "[]");
+            const i = cab.indexOf("Data/Hora");
+            ultima = String(fim[i >= 0 ? i : 0] || "") || null;
+          } catch (e) {}
+        }
+        return res.json({ ok: true, total, ultima });
+      }
 
       const esperada = process.env.CHAVE_LEITURA;
       if (!esperada) return res.json({ ok: false, erro: "defina CHAVE_LEITURA nas variáveis de ambiente" });

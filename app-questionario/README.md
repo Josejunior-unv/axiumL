@@ -75,9 +75,21 @@ ali, qualquer pessoa baixaria todas as respostas. Você digita a chave uma vez,
 ao tocar em **Buscar respostas enviadas**, e ela fica guardada só no seu
 aparelho.
 
+**O número do banco é público; o conteúdo não.** Quem abrir o `#painel` vê na
+hora a lajota **No banco** com quantas respostas já foram gravadas e a data da
+última, sem digitar chave nenhuma — é o `?contagem=1` da API, que devolve só o
+número e a data. Para ler as respostas, baixar a planilha ou apagar qualquer
+coisa continua sendo preciso a `CHAVE_LEITURA`.
+
 **O painel se atualiza sozinho:** ao abrir, ao voltar para a aba e de meio em
-meio minuto enquanto estiver aberto. O selo do topo conta quando foi a última
-vez. O botão **Buscar respostas enviadas** continua ali para forçar na hora.
+meio minuto enquanto estiver aberto. Nessa mesma batida a contagem é refeita,
+com chave ou sem. O selo do topo conta quando foi a última vez. O botão
+**Buscar respostas enviadas** continua ali para forçar na hora.
+
+**Resposta presa num aparelho sobe sozinha.** Quem coletou antes de o banco
+existir tem essas respostas guardadas só no navegador. Basta abrir o link de
+novo: o app percebe, manda as antigas para o banco e avisa na tela. Não
+duplica se o link for aberto mais de uma vez.
 
 **Qualquer cópia do app manda para o mesmo banco.** O `endpoint` do
 `config.json` é um endereço absoluto de propósito: quem abrir pelo link da
