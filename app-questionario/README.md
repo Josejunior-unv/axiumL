@@ -19,10 +19,51 @@ planilha do Excel (`.xlsx`).
 | `vercel.json` | Cabeçalhos de cache, se publicar na Vercel |
 | `icones/` | Ícone do app na tela inicial |
 | `QUESTIONARIO.md` | O questionário em texto, para conferir ou imprimir |
+| `config.json` | Onde as respostas vão parar (veja abaixo) |
+| `apps-script.gs` | O script que grava as respostas na sua planilha do Google |
 
 ---
 
-## 1. Colocar o app no ar
+## 1. Receber as respostas na sua planilha
+
+Sem isto, cada resposta fica guardada no aparelho de quem respondeu e você
+precisa juntar os arquivos na mão. Configurando, **você manda um link, a pessoa
+responde e a resposta cai direto numa planilha sua** — leva uns 3 minutos, uma
+vez só.
+
+1. Crie uma planilha em **sheets.new**
+2. Menu **Extensões → Apps Script**
+3. Apague o que estiver lá e cole o conteúdo de `apps-script.gs`
+4. Troque `CHAVE_LEITURA` por qualquer senha sua
+5. **Implantar → Nova implantação → App da Web**
+   · *Executar como:* Eu · *Quem pode acessar:* **Qualquer pessoa**
+6. Copie o endereço que termina em `/exec`
+7. Abra `config.json` neste repositório e preencha:
+
+```json
+{ "endpoint": "https://script.google.com/.../exec", "chaveLeitura": "sua-senha" }
+```
+
+Pronto. A partir daí o app tem **dois lados**:
+
+| Endereço | Quem usa | O que vê |
+| --- | --- | --- |
+| `.../app-questionario/` | quem você convidar | só o questionário; responde, envia e agradece |
+| `.../app-questionario/#painel` | você | o painel, o resumo e os botões de baixar |
+
+O link de compartilhar já entrega o endereço de responder, nunca o `#painel`.
+
+**Sem internet na hora de responder?** A resposta fica guardada no aparelho da
+pessoa e sobe sozinha quando a conexão voltar.
+
+**Trazer as respostas para o painel:** no painel, toque em **Buscar respostas
+enviadas**. Elas entram na lista, sem repetir as que já estavam, e aí o *Baixar
+Excel* sai com todo mundo junto, com os gráficos e as fórmulas.
+
+> Deixando `endpoint` vazio, o app volta a funcionar como antes: tudo no
+> aparelho e a junção feita pelos arquivos de cópia.
+
+## 2. Colocar o app no ar
 
 O tablet precisa baixar o app de um endereço `https://` para poder instalá-lo.
 Duas opções, as duas gratuitas.
@@ -60,7 +101,7 @@ mostra qual versão está rodando.
 > para o tablet e abrir o `index.html` direto. Nesse modo o app funciona e
 > exporta a planilha normalmente, só não instala como ícone na tela inicial.
 
-## 2. Instalar no tablet
+## 3. Instalar no tablet
 
 **Android / Chrome** — abra o endereço, toque no menu **⋮** e escolha
 **Instalar aplicativo** (ou *Adicionar à tela inicial*).
@@ -72,7 +113,7 @@ Pronto: o ícone verde de check aparece junto dos outros apps e abre em tela che
 A partir daí ele funciona mesmo sem sinal — útil para aplicar a pesquisa no pátio
 ou na sala.
 
-## 3. Menu flutuante
+## 4. Menu flutuante
 
 No painel, embaixo e no centro, há uma pílula azul escrita **Menu**. Tocando
 nela, um círculo escuro sobe e a transforma num painel com três atalhos: *Nova
@@ -81,7 +122,7 @@ resposta*, *Baixar Excel* e *Compartilhar*. Fecha tocando fora, no X ou com Esc.
 Ele some durante a coleta, para não disputar espaço com o botão **Salvar
 resposta**, que fica fixo no rodapé.
 
-## 4. A gatinha
+## 5. A gatinha
 
 Toda vez que um botão é apertado, uma gatinha chega e **aperta junto**: a
 patinha dela encosta exatamente no ponto em que o dedo tocou, afunda no mesmo
@@ -99,7 +140,7 @@ do questionário, que são tocadas o tempo todo e ficariam poluídas.
 No rodapé do painel há um interruptor para desligá-la. A escolha fica salva no
 aparelho — útil na hora de aplicar a pesquisa a sério.
 
-## 5. Aplicar a pesquisa
+## 6. Aplicar a pesquisa
 
 1. Toque em **Nova resposta**.
 2. Preencha a identificação e o curso se quiser (os dois são opcionais — a pesquisa pode
@@ -114,7 +155,7 @@ aparelho — útil na hora de aplicar a pesquisa a sério.
 5. Repita para o próximo estudante. O painel mostra o total coletado e um resumo com
    as porcentagens de cada alternativa, que já atualiza a cada resposta.
 
-## 6. Levar os dados para o Excel
+## 7. Levar os dados para o Excel
 
 No painel, toque em **Baixar Excel (.xlsx)**. O arquivo sai com duas abas e os
 gráficos já montados:
@@ -149,7 +190,7 @@ você prefira abrir no Google Planilhas ou em outro programa.
 > os dados de navegação ou desinstalar o app — então **baixe a planilha antes de
 > usar "Apagar tudo"**.
 
-## 7. Dividir a coleta com o grupo
+## 8. Dividir a coleta com o grupo
 
 Dá para várias pessoas aplicarem a pesquisa ao mesmo tempo, cada uma no próprio
 celular ou tablet, e no fim juntar tudo numa planilha só.
@@ -179,7 +220,7 @@ recalculado em cima do total.
 > Cada resposta tem um código próprio, então nada é contado duas vezes, mesmo
 > que os arquivos se cruzem entre os colegas.
 
-## 8. Mudar as perguntas
+## 9. Mudar as perguntas
 
 Todo o questionário está em uma única lista no começo do `<script>` do
 `index.html`, na constante `PERGUNTAS`:

@@ -1,0 +1,5 @@
+{
+  "_comentario": "Cole aqui o endereço /exec do Apps Script para as respostas virem parar na sua planilha. Deixe vazio e o app volta a guardar tudo só no aparelho.",
+  "endpoint": "",
+  "chaveLeitura": ""
+}

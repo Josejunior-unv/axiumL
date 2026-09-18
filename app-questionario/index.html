@@ -393,6 +393,14 @@ main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
   #gata.entra, #gata.sai, #gata .pata, #gata .rabo{animation:none}
   #gata.entra{opacity:1}
 }
+
+.agradece{text-align:center; padding:44px 26px; max-width:520px; margin:40px auto}
+.agradece h2{margin-bottom:10px}
+.agradece p{color:var(--tinta-2); margin-bottom:26px}
+.tique-grande{width:74px; height:74px; color:var(--azul); margin-bottom:18px;
+  animation:tique-entra .6s cubic-bezier(.32,.72,0,1)}
+@keyframes tique-entra{ from{opacity:0; transform:scale(.6)} to{opacity:1; transform:none} }
+.selo.enviando{color:var(--realce-claro)}
 [hidden]{display:none !important}
 @media (max-width:520px){
   .cartao-ident{grid-template-columns:1fr}
@@ -434,6 +442,10 @@ main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
       <button class="btn" id="btn-xlsx" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
         Baixar Excel (.xlsx)
+      </button>
+      <button class="btn" id="btn-servidor" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 4v5h-5"/></svg>
+        Buscar respostas enviadas
       </button>
       <button class="btn" id="btn-csv" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
@@ -517,6 +529,20 @@ main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
         <span id="figura-txt">trocar figura</span>
         <input type="file" id="figura-gata" accept="image/*">
       </label>
+    </div>
+  </main>
+
+  <!-- ===================== OBRIGADO ===================== -->
+  <main id="obrigado" hidden>
+    <div class="cartao agradece">
+      <svg class="tique-grande" viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="32" cy="32" r="29" fill="none" stroke="currentColor" stroke-width="3" opacity=".25"/>
+        <path d="M19 33.5 L28 42.5 L45.5 23" fill="none" stroke="currentColor" stroke-width="4.5"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h2>Resposta enviada</h2>
+      <p id="obrigado-txt">Obrigado por participar da pesquisa. Sua resposta já chegou para quem está aplicando.</p>
+      <button class="btn btn-principal" id="btn-outra">Responder de novo</button>
     </div>
   </main>
 
@@ -694,7 +720,12 @@ const PERGUNTAS = [
 const TITULO = "Uso da Tecnologia no Ensino Superior";
 const CHAVE = "pesquisa-tecnologia-es-v1";
 const CHAVE_ENVIADAS = CHAVE + ":enviadas";
-const VERSAO = "10 · ensino superior";
+const CHAVE_FILA = CHAVE + ":fila";
+// Quando config.json traz um endereço, o app vira duas coisas: o link que
+// você manda (só o questionário, que envia e agradece) e o painel, em #painel.
+let CONFIG = { endpoint: "", chaveLeitura: "" };
+let modo = "painel";
+const VERSAO = "11 · ensino superior";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
@@ -789,6 +820,7 @@ function carimbo(){
 function mostrar(qual){
   $("#painel").hidden = qual !== "painel";
   $("#coleta").hidden = qual !== "coleta";
+  $("#obrigado").hidden = qual !== "obrigado";
   const m = document.getElementById("menu-flutuante");
   if (m){ m.classList.toggle("escondido", qual !== "painel"); m.classList.remove("aberto"); }
   window.scrollTo(0,0);
@@ -1037,6 +1069,23 @@ async function salvarColeta(){
     }
   }
   rascunho.criadoEm = new Date().toISOString();
+
+  if (modo === "responder"){
+    const r = rascunho;
+    rascunho = null;
+    $("#btn-salvar").disabled = true;
+    try{
+      await enviarAoServidor(r);
+      $("#obrigado-txt").textContent = "Obrigado por participar da pesquisa. Sua resposta já chegou para quem está aplicando.";
+    }catch(e){
+      const fila = lerFila(); fila.push(r); gravarFila(fila);
+      $("#obrigado-txt").textContent = "Obrigado! Você está sem internet agora, então a resposta ficou guardada neste aparelho e será enviada assim que a conexão voltar.";
+    }
+    $("#btn-salvar").disabled = false;
+    mostrar("obrigado");
+    return;
+  }
+
   respostas.push(rascunho);
   ordenar();
   gravarLocal();
@@ -1081,6 +1130,96 @@ async function ligarBanco(){
     $("#ponto-sinc").classList.remove("on");
     $("#txt-sinc").textContent = "armazenado no aparelho";
   });
+}
+
+/* =========================================================
+   6b. ENVIO PARA A PLANILHA DE QUEM APLICOU A PESQUISA
+   ========================================================= */
+function cabecalhoEnvio(){
+  const c = ["Data/Hora", "Identificação", "Curso e período"];
+  PERGUNTAS.forEach((p,i) => {
+    c.push("P" + (i+1) + ". " + p.curto);
+    if (p.aberta) c.push("P" + (i+1) + ". Justificativa");
+  });
+  c.push("Observações", "ID");
+  return c;
+}
+function linhaEnvio(r){
+  const l = [dataHora(r.criadoEm), r.nome || "", r.curso || ""];
+  PERGUNTAS.forEach(p => {
+    const v = r[p.id];
+    l.push(Array.isArray(v) ? v.join(" | ") : (v || ""));
+    if (p.aberta) l.push(r[p.id + "_texto"] || "");
+  });
+  l.push(r.obs || "", r.id);
+  return l;
+}
+function respostaDeLinha(linha){
+  const r = { id: String(linha[linha.length - 1] || novoId()), nome: linha[1] || "", curso: linha[2] || "", obs: "" };
+  // a planilha guarda a data já formatada; devolve para ISO só para ordenar
+  const m = String(linha[0] || "").match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/);
+  r.criadoEm = m ? new Date(+m[3], +m[2]-1, +m[1], +m[4], +m[5]).toISOString() : new Date().toISOString();
+  let i = 3;
+  PERGUNTAS.forEach(p => {
+    const v = String(linha[i++] || "");
+    r[p.id] = p.tipo === "multipla" ? (v ? v.split(" | ") : []) : v;
+    if (p.aberta) r[p.id + "_texto"] = String(linha[i++] || "");
+  });
+  r.obs = String(linha[i] || "");
+  return normalizar(r);
+}
+
+async function enviarAoServidor(r){
+  if (!CONFIG.endpoint) throw new Error("sem endereço");
+  // sem cabeçalho de tipo: assim o navegador não pede permissão antes (preflight),
+  // que o Apps Script não responde
+  const resp = await fetch(CONFIG.endpoint, {
+    method: "POST",
+    body: JSON.stringify({ cabecalho: cabecalhoEnvio(), linha: linhaEnvio(r) })
+  });
+  const dado = await resp.json();
+  if (!dado.ok) throw new Error(dado.erro || "recusado");
+  return dado;
+}
+
+function lerFila(){ try{ return JSON.parse(localStorage.getItem(CHAVE_FILA) || "[]"); }catch(e){ return []; } }
+function gravarFila(f){ try{ localStorage.setItem(CHAVE_FILA, JSON.stringify(f)); }catch(e){} }
+
+async function esvaziarFila(){
+  if (!CONFIG.endpoint) return;
+  const fila = lerFila();
+  if (!fila.length) return;
+  const sobrou = [];
+  for (const r of fila){
+    try{ await enviarAoServidor(r); }catch(e){ sobrou.push(r); }
+  }
+  gravarFila(sobrou);
+  if (fila.length && !sobrou.length && modo === "responder")
+    $("#obrigado-txt").textContent = "Obrigado por participar da pesquisa. Sua resposta já chegou para quem está aplicando.";
+}
+window.addEventListener("online", esvaziarFila);
+
+async function buscarDoServidor(){
+  if (!CONFIG.endpoint || !CONFIG.chaveLeitura) return avisar("Configure o endereço e a chave em config.json.");
+  avisar("Buscando respostas enviadas…");
+  try{
+    const resp = await fetch(CONFIG.endpoint + "?chave=" + encodeURIComponent(CONFIG.chaveLeitura));
+    const dado = await resp.json();
+    if (!dado.ok) throw new Error(dado.erro || "recusado");
+    const linhas = (dado.valores || []).slice(1);   // fora o cabeçalho
+    const jaTem = new Set(respostas.map(r => r.id));
+    let novas = 0;
+    linhas.forEach(linha => {
+      if (!linha || !linha.length) return;
+      const r = respostaDeLinha(linha);
+      if (jaTem.has(r.id)) return;
+      respostas.push(r); jaTem.add(r.id); novas++;
+    });
+    if (novas){ ordenar(); gravarLocal(); renderPainel(); }
+    avisar(novas ? (novas === 1 ? "1 resposta nova." : novas + " respostas novas.") : "Nenhuma resposta nova.");
+  }catch(e){
+    avisar("Não consegui buscar: " + e.message);
+  }
 }
 
 /* =========================================================
@@ -1788,7 +1927,7 @@ function svgDoQr(texto){
 
 function abrirCompartilhar(){
   const dlg = $("#dlg-share");
-  const url = location.href.split("#")[0];
+  const url = location.href.split("#")[0].split("?")[0];   // sem #painel: é o link de responder
   $("#link-txt").textContent = url;
   // o QR só faz sentido quando o app está num endereço que outra pessoa alcança
   const svg = location.protocol.startsWith("http") ? svgDoQr(url) : null;
@@ -2101,10 +2240,44 @@ $("#btn-qr").addEventListener("click", () => {
   if (svg) baixar("qr-da-pesquisa.svg", new Blob([svg], { type:"image/svg+xml" }));
 });
 
+$("#btn-servidor").addEventListener("click", buscarDoServidor);
+$("#btn-outra").addEventListener("click", () => novaColeta());
+
+function entrarModoResponder(){
+  modo = "responder";
+  $("#btn-voltar").hidden = true;
+  $("#btn-salvar").lastChild.textContent = " Enviar respostas";
+  const m = document.getElementById("menu-flutuante");
+  if (m) m.remove();                      // quem responde não precisa dos atalhos
+  novaColeta();
+}
+
+async function arrancar(){
+  try{
+    const r = await fetch("config.json", { cache: "no-store" });
+    if (r.ok) CONFIG = Object.assign(CONFIG, await r.json());
+  }catch(e){}
+
+  const querPainel = location.hash.replace("#","") === "painel";
+  if (CONFIG.endpoint && !querPainel){
+    entrarModoResponder();
+    esvaziarFila();
+    return;
+  }
+  if (CONFIG.endpoint){
+    $("#btn-servidor").hidden = false;
+    $("#txt-sinc").textContent = "respostas chegam na planilha";
+    $("#ponto-sinc").classList.add("on");
+  }
+  esvaziarFila();
+  mostrar("painel");
+}
+
 lerLocal();
 ordenar();
 renderPainel();
 ligarBanco();
+arrancar();
 // resolvido no carregamento: assim o download acontece dentro do toque do usuário
 capacidade("downloads").then(s => { salvador = s; });
 
