@@ -75,6 +75,16 @@ ali, qualquer pessoa baixaria todas as respostas. Você digita a chave uma vez,
 ao tocar em **Buscar respostas enviadas**, e ela fica guardada só no seu
 aparelho.
 
+**O painel se atualiza sozinho:** ao abrir, ao voltar para a aba e de meio em
+meio minuto enquanto estiver aberto. O selo do topo conta quando foi a última
+vez. O botão **Buscar respostas enviadas** continua ali para forçar na hora.
+
+**Qualquer cópia do app manda para o mesmo banco.** O `endpoint` do
+`config.json` é um endereço absoluto de propósito: quem abrir pelo link da
+Vercel, pelo do GitHub Pages ou por um arquivo solto no tablet cai no mesmo
+lugar. Com endereço relativo só o link da Vercel funcionaria — nos outros a
+resposta ficaria presa no aparelho de quem respondeu.
+
 **Sem internet na hora de responder?** A resposta fica guardada no aparelho da
 pessoa e sobe sozinha quando a conexão voltar.
 
