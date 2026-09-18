@@ -8,6 +8,7 @@
  *  3. Settings -> Environment Variables -> CHAVE_LEITURA = uma senha sua.
  *     É ela que libera a leitura das respostas; sem ela ninguém baixa nada.
  *     (A contagem, ?contagem=1, é aberta: todo mundo vê quantas já entraram.)
+ *     Apagar arquiva em pesquisa:apagadas; ?apagadas=1 lê esse arquivo morto.
  *  4. Redeploy.
  *
  * O app descobre sozinho que ficou pronto e passa a enviar para cá.
@@ -37,6 +38,9 @@ const TOKEN_KV = CRED && CRED.token;
 const LISTA = "pesquisa:linhas";
 const CABECALHO = "pesquisa:cabecalho";
 const IDS = "pesquisa:ids";
+/* Apagar não destrói: a linha sai das respostas e vai para cá, o arquivo morto.
+   Só o "apagar de vez", feito de propósito no painel, joga fora mesmo. */
+const APAGADAS = "pesquisa:apagadas";
 
 const pronto = () => !!(URL_KV && TOKEN_KV);
 
@@ -69,6 +73,7 @@ module.exports = async (req, res) => {
          última — o conteúdo das respostas continua trancado pela CHAVE_LEITURA. */
       if (q.contagem) {
         const total = Number(await redis(["LLEN", LISTA])) || 0;
+        const apagadas = Number(await redis(["LLEN", APAGADAS])) || 0;
         let ultima = null;
         if (total) {
           try {
@@ -78,7 +83,7 @@ module.exports = async (req, res) => {
             ultima = String(fim[i >= 0 ? i : 0] || "") || null;
           } catch (e) {}
         }
-        return res.json({ ok: true, total, ultima });
+        return res.json({ ok: true, total, apagadas, ultima });
       }
 
       const esperada = process.env.CHAVE_LEITURA;
@@ -86,7 +91,7 @@ module.exports = async (req, res) => {
       if (q.chave !== esperada) return res.json({ ok: false, erro: "chave inválida" });
 
       const cab = await redis(["GET", CABECALHO]);
-      const linhas = await redis(["LRANGE", LISTA, "0", "-1"]);
+      const linhas = await redis(["LRANGE", q.apagadas ? APAGADAS : LISTA, "0", "-1"]);
       const valores = [];
       if (cab) valores.push(JSON.parse(cab));
       (linhas || []).forEach(l => { try { valores.push(JSON.parse(l)); } catch (e) {} });
@@ -106,8 +111,11 @@ module.exports = async (req, res) => {
         if (corpo.chave !== esperada) return res.json({ ok: false, erro: "chave inválida" });
 
         if (corpo.tudo) {
-          await redis(["DEL", LISTA, IDS, CABECALHO]);
-          return res.json({ ok: true, apagadas: "tudo" });
+          const linhas = await redis(["LRANGE", LISTA, "0", "-1"]) || [];
+          // guarda antes de tirar da lista: nada some de verdade por aqui
+          if (linhas.length) await redis(["RPUSH", APAGADAS].concat(linhas));
+          await redis(["DEL", LISTA, IDS]);   // o cabeçalho fica: o arquivo morto precisa dele
+          return res.json({ ok: true, apagadas: linhas.length });
         }
         const id = String(corpo.id || "");
         if (!id) return res.json({ ok: false, erro: "sem id" });
@@ -115,8 +123,49 @@ module.exports = async (req, res) => {
         const alvo = linhas.find(l => {
           try { const a = JSON.parse(l); return String(a[a.length - 1]) === id; } catch (e) { return false; }
         });
-        if (alvo) await redis(["LREM", LISTA, "1", alvo]);
+        if (alvo) {
+          await redis(["RPUSH", APAGADAS, alvo]);
+          await redis(["LREM", LISTA, "1", alvo]);
+        }
         await redis(["SREM", IDS, id]);   // libera o código, caso a pessoa responda de novo
+        return res.json({ ok: true, apagadas: alvo ? 1 : 0 });
+      }
+
+      // devolve uma resposta do arquivo morto para a lista
+      if (corpo.acao === "restaurar") {
+        const esperada = process.env.CHAVE_LEITURA;
+        if (!esperada) return res.json({ ok: false, erro: "defina CHAVE_LEITURA nas variáveis de ambiente" });
+        if (corpo.chave !== esperada) return res.json({ ok: false, erro: "chave inválida" });
+        const id = String(corpo.id || "");
+        if (!id) return res.json({ ok: false, erro: "sem id" });
+        const linhas = await redis(["LRANGE", APAGADAS, "0", "-1"]) || [];
+        const alvo = linhas.find(l => {
+          try { const a = JSON.parse(l); return String(a[a.length - 1]) === id; } catch (e) { return false; }
+        });
+        if (!alvo) return res.json({ ok: false, erro: "não está no arquivo" });
+        await redis(["LREM", APAGADAS, "1", alvo]);
+        await redis(["SADD", IDS, id]);
+        await redis(["RPUSH", LISTA, alvo]);
+        return res.json({ ok: true, restauradas: 1 });
+      }
+
+      // este sim joga fora: só sai do arquivo morto, e a pedido
+      if (corpo.acao === "apagar-de-vez") {
+        const esperada = process.env.CHAVE_LEITURA;
+        if (!esperada) return res.json({ ok: false, erro: "defina CHAVE_LEITURA nas variáveis de ambiente" });
+        if (corpo.chave !== esperada) return res.json({ ok: false, erro: "chave inválida" });
+        if (corpo.tudo) {
+          const quantas = Number(await redis(["LLEN", APAGADAS])) || 0;
+          await redis(["DEL", APAGADAS]);
+          return res.json({ ok: true, apagadas: quantas });
+        }
+        const id = String(corpo.id || "");
+        if (!id) return res.json({ ok: false, erro: "sem id" });
+        const linhas = await redis(["LRANGE", APAGADAS, "0", "-1"]) || [];
+        const alvo = linhas.find(l => {
+          try { const a = JSON.parse(l); return String(a[a.length - 1]) === id; } catch (e) { return false; }
+        });
+        if (alvo) await redis(["LREM", APAGADAS, "1", alvo]);
         return res.json({ ok: true, apagadas: alvo ? 1 : 0 });
       }
 

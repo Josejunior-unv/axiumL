@@ -103,12 +103,28 @@ pessoa e sobe sozinha quando a conexão voltar.
 **Reenvio não duplica:** cada resposta tem um código próprio, e o servidor
 recusa a segunda gravação do mesmo código.
 
-**Apagar apaga de verdade.** A lixeira de cada resposta e o *Apagar tudo*
-alcançam o banco, não só o aparelho — apagar só aqui faria a resposta voltar na
-busca seguinte. Apagar exige a mesma chave da leitura, e o servidor tenta lá
-primeiro: se não conseguir, nada some da tela, para o que você vê continuar
-sendo verdade. Cuidado com o *Apagar tudo* quando o banco está ligado: ele leva
-junto o que as outras pessoas enviaram.
+**Apagar alcança o banco, não só o aparelho.** A lixeira de cada resposta e o
+*Apagar tudo* mexem lá — apagar só aqui faria a resposta voltar na busca
+seguinte. Apagar exige a mesma chave da leitura, e o servidor tenta lá primeiro:
+se não conseguir, nada some da tela, para o que você vê continuar sendo verdade.
+O *Apagar tudo* leva junto o que as outras pessoas enviaram.
+
+**Mas apagar não destrói.** A resposta sai da lista, do resumo e de todas as
+contas e vai para a seção **Respostas apagadas**, que só aparece quando há
+alguma. No banco ela muda de lugar: sai de `pesquisa:linhas` e vai para
+`pesquisa:apagadas`. De lá dá para:
+
+- **devolver à lista** (a setinha) — volta a contar no resumo e na planilha;
+- **jogar fora de vez** (o ×) — aí sim some para sempre, do aparelho e do banco.
+
+O arquivo é compartilhado: o que uma pessoa apagou some para todo mundo, e o
+registro chega em todos os painéis na busca seguinte. Resposta apagada sem
+internet fica guardada só naquele aparelho e nenhuma sincronização a varre
+embora.
+
+**A planilha ganha uma aba `Apagadas`** quando há alguma, com a data da coleta,
+a data em que foi apagada e todas as respostas dadas. O `Resumo` avisa quantas
+foram apagadas e deixa claro que elas estão fora das contas.
 
 > Sem nenhuma das duas opções, o app volta a funcionar como antes: tudo no
 > aparelho e a junção feita pelos arquivos de cópia.
@@ -206,8 +222,8 @@ aparelho — útil na hora de aplicar a pesquisa a sério.
 
 ## 7. Levar os dados para o Excel
 
-No painel, toque em **Baixar Excel (.xlsx)**. O arquivo sai com duas abas e os
-gráficos já montados:
+No painel, toque em **Baixar Excel (.xlsx)**. O arquivo sai com duas abas — três
+quando há respostas apagadas — e os gráficos já montados:
 
 - **Respostas** — uma linha por estudante, uma coluna por pergunta. Cabeçalho
   congelado e filtro ligado. Data e hora são valores de data de verdade (dá para
@@ -218,6 +234,9 @@ gráficos já montados:
   como percentual de verdade, não texto) e a base, e **ao lado de cada tabela um
   gráfico de barras pronto**, já em porcentagem, com o número de respondentes no
   título (*n = 9*).
+- **Apagadas** — só existe quando alguma resposta foi apagada. Traz a data da
+  coleta, a data em que foi apagada e todas as respostas dadas, como valor puro:
+  é registro, não entra em conta nenhuma.
 
 Os números do Resumo são **fórmulas ligadas à aba Respostas**, não valores
 colados: `CONT.SE` para contar cada alternativa, `CONT.VALORES` para a base e uma

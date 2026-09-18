@@ -167,6 +167,13 @@ p{margin:0}
 .icone-btn:hover{background:var(--alerta-fraco); color:var(--alerta)}
 .icone-btn:focus-visible{outline:2px solid var(--azul-claro); outline-offset:1px}
 .icone-btn svg{width:17px; height:17px}
+.apagadas-nota{font-size:14px; color:var(--suave); margin-bottom:14px; line-height:1.5}
+.apagadas-nota strong{color:var(--tinta); font-weight:600}
+.coleta.apagada .coleta-nome{color:var(--suave); text-decoration:line-through;
+  text-decoration-color:var(--fio-forte)}
+.coleta.apagada .coleta-n{color:var(--suave)}
+.icone-btn.devolver:hover{background:var(--azul-fraco); color:var(--azul)}
+#btn-esvaziar{margin-top:14px}
 .vazio{border:1px dashed var(--fio-forte); border-radius:var(--raio); padding:30px 20px; text-align:center;
   color:var(--suave); background:var(--superficie-3); font-size:15px}
 
@@ -515,6 +522,21 @@ main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
       <div id="lista-coletas"></div>
     </section>
 
+    <section class="secao" id="secao-apagadas" hidden>
+      <div class="secao-cab">
+        <h2>Respostas apagadas</h2>
+        <span class="conta" id="conta-apagadas"></span>
+      </div>
+      <p class="apagadas-nota">Apagar tira a resposta da lista de cima, do resumo e das contas — mas não joga fora.
+        Ela fica guardada aqui e sai numa aba própria da planilha, chamada <strong>Apagadas</strong>.
+        Dá para devolver à lista ou, aí sim, jogar fora de vez.</p>
+      <div id="lista-apagadas"></div>
+      <button class="btn btn-perigo" id="btn-esvaziar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>
+        Jogar fora de vez
+      </button>
+    </section>
+
     <section class="secao">
       <div class="secao-cab">
         <h2>Resumo ao vivo</h2>
@@ -734,12 +756,13 @@ const CHAVE_FILA = CHAVE + ":fila";
 let CONFIG = { endpoint: "" };
 const CHAVE_SEGREDO = CHAVE + ":chaveLeitura";
 let modo = "painel";
-const VERSAO = "17 · ensino superior";
+const VERSAO = "18 · ensino superior";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
    ========================================================= */
 let respostas = [];        // coletas salvas
+let apagadas = [];         // arquivo morto: saíram da lista, mas não se perderam
 let rascunho = null;       // coleta em andamento
 let bd = null;             // banco compartilhado (quando disponível)
 let salvador = null;       // capacidade de download (quando disponível)
@@ -750,13 +773,14 @@ function lerLocal(){
     const bruto = localStorage.getItem(CHAVE);
     const dados = bruto ? JSON.parse(bruto) : null;
     respostas = Array.isArray(dados && dados.respostas) ? dados.respostas : [];
+    apagadas = Array.isArray(dados && dados.apagadas) ? dados.apagadas : [];
     const env = JSON.parse(localStorage.getItem(CHAVE_ENVIADAS) || "[]");
     if (Array.isArray(env)) env.forEach(id => enviadas.add(id));
-  }catch(e){ respostas = []; }
+  }catch(e){ respostas = []; apagadas = []; }
 }
 function gravarLocal(){
   try{
-    localStorage.setItem(CHAVE, JSON.stringify({ versao:1, respostas }));
+    localStorage.setItem(CHAVE, JSON.stringify({ versao:1, respostas, apagadas }));
     localStorage.setItem(CHAVE_ENVIADAS, JSON.stringify([...enviadas]));
   }catch(e){ avisar("Não foi possível salvar no aparelho. Baixe a planilha para não perder os dados."); }
 }
@@ -904,8 +928,8 @@ function renderPainel(){
       excluir.addEventListener("click", async () => {
         const noServidor = !!CONFIG.endpoint;
         const ok = await confirmar("Excluir resposta " + (i+1) + "?",
-          noServidor ? "Ela sai da lista e também do banco, de vez."
-                     : "Essa coleta será removida da lista e da planilha.", "Excluir");
+          noServidor ? "Ela sai da lista, do resumo e das contas, e vai para “Respostas apagadas”. De lá dá para devolver."
+                     : "Ela sai da lista e do resumo, e vai para “Respostas apagadas”. De lá dá para devolver.", "Apagar");
         if (!ok) return;
         const alvo = respostas[i];
         // apaga lá primeiro: se falhar, nada some aqui e a tela continua verdadeira
@@ -920,17 +944,112 @@ function renderPainel(){
         const pos = respostas.indexOf(alvo);
         if (pos >= 0) respostas.splice(pos, 1);
         enviadas.delete(alvo.id);
+        arquivar([alvo], noServidor);           // sai da lista, não do mundo
         gravarLocal(); renderPainel();
         if (noServidor) contarNoServidor();
         if (bd) bd.doc("respostas/" + alvo.id).delete().catch(() => {});
-        avisar("Resposta excluída.");
+        avisar("Resposta apagada — guardada em “Respostas apagadas”.");
       });
       linha.appendChild(excluir);
       caixa.appendChild(linha);
     });
     lista.appendChild(caixa);
   }
+  renderApagadas();
   renderResumo();
+}
+
+/* =========================================================
+   ARQUIVO MORTO — apagar tira da lista, não do mundo
+   ========================================================= */
+function arquivar(quais, noBanco){
+  const jaTem = new Set(apagadas.map(r => r && r.id));
+  quais.forEach(r => {
+    if (!r || jaTem.has(r.id)) return;
+    // noBanco marca quem o servidor também guarda; sem isso a resposta é só
+    // daqui e nenhuma sincronização pode varrê-la embora
+    apagadas.push(Object.assign({}, r, { apagadaEm: new Date().toISOString(), noBanco: !!noBanco }));
+    jaTem.add(r.id);
+  });
+}
+
+async function devolver(alvo){
+  // só fala com o servidor se a resposta estiver lá; a apagada offline volta sozinha
+  if (CONFIG.endpoint && alvo.noBanco){
+    try{
+      const feito = await mandarAcao({ acao:"restaurar", id:alvo.id }, "Devolver");
+      if (!feito) return;
+      enviadas.add(alvo.id);          // voltou para o banco, não precisa reenviar
+    }catch(e){ return avisar("Não consegui devolver no banco: " + e.message); }
+  }
+  const pos = apagadas.indexOf(alvo);
+  if (pos >= 0) apagadas.splice(pos, 1);
+  const volta = Object.assign({}, alvo);
+  delete volta.apagadaEm; delete volta.noBanco;
+  if (!respostas.some(r => r.id === volta.id)) respostas.push(volta);
+  ordenar(); gravarLocal(); renderPainel();
+  if (CONFIG.endpoint) contarNoServidor();
+  avisar("Resposta devolvida à lista.");
+}
+
+async function jogarFora(alvo){
+  const ok = await confirmar("Jogar fora de vez?",
+    "Esta resposta some para sempre, do aparelho e do banco. Não dá para desfazer.", "Jogar fora");
+  if (!ok) return;
+  if (CONFIG.endpoint && alvo.noBanco){
+    try{
+      const feito = await mandarAcao({ acao:"apagar-de-vez", id:alvo.id }, "Jogar fora");
+      if (!feito) return;
+    }catch(e){ return avisar("Não consegui jogar fora no banco: " + e.message); }
+  }
+  const pos = apagadas.indexOf(alvo);
+  if (pos >= 0) apagadas.splice(pos, 1);
+  gravarLocal(); renderPainel();
+  if (CONFIG.endpoint) contarNoServidor();
+  avisar("Jogada fora de vez.");
+}
+
+function renderApagadas(){
+  const secao = $("#secao-apagadas");
+  if (!secao) return;
+  const n = apagadas.length;
+  secao.hidden = n === 0;
+  if (!n) return;
+  $("#conta-apagadas").textContent = n === 1 ? "1 resposta guardada" : n + " respostas guardadas";
+
+  const lista = $("#lista-apagadas");
+  lista.innerHTML = "";
+  const caixa = elem("div","coletas");
+  apagadas.forEach((r,i) => {
+    const linha = elem("div","coleta apagada");
+    linha.style.animationDelay = Math.min(i * 28, 400) + "ms";
+    linha.appendChild(elem("span","coleta-n", String(i+1).padStart(2,"0")));
+    const txt = elem("div","coleta-txt");
+    txt.appendChild(elem("div","coleta-nome", r.curso || "Sem curso informado"));
+    const meta = ["coletada em " + dataHora(r.criadoEm)];
+    if (r.apagadaEm) meta.push("apagada em " + dataHora(r.apagadaEm));
+    txt.appendChild(elem("div","coleta-meta", meta.join("  ·  ")));
+    linha.appendChild(txt);
+
+    const voltar = elem("button","icone-btn devolver");
+    voltar.type = "button";
+    voltar.title = "Devolver à lista";
+    voltar.setAttribute("aria-label","Devolver a resposta " + (i+1) + " à lista");
+    voltar.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 103-6.7"/><path d="M3 4v5h5"/></svg>';
+    voltar.addEventListener("click", () => devolver(r));
+    linha.appendChild(voltar);
+
+    const fora = elem("button","icone-btn");
+    fora.type = "button";
+    fora.title = "Jogar fora de vez";
+    fora.setAttribute("aria-label","Jogar fora de vez a resposta " + (i+1));
+    fora.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    fora.addEventListener("click", () => jogarFora(r));
+    linha.appendChild(fora);
+
+    caixa.appendChild(linha);
+  });
+  lista.appendChild(caixa);
 }
 
 let numeroAtual = 0;
@@ -1280,19 +1399,20 @@ function esquecerChave(msg){
   if (/chave/i.test(msg || "")){ try{ localStorage.removeItem(CHAVE_SEGREDO); }catch(e){} }
 }
 
-/* Apagar precisa alcançar o servidor: apagar só no aparelho faz a resposta
-   voltar na busca seguinte. */
-async function apagarNoServidor(corpo){
-  const chave = await pedirChave("Apagar");
+/* Apagar, devolver e jogar fora precisam alcançar o servidor: mexer só no
+   aparelho faz a resposta voltar na busca seguinte. */
+async function mandarAcao(corpo, rotulo){
+  const chave = await pedirChave(rotulo || "Confirmar");
   if (!chave) return false;
   const resp = await fetch(CONFIG.endpoint, {
     method: "POST",
-    body: JSON.stringify(Object.assign({ acao: "apagar", chave }, corpo))
+    body: JSON.stringify(Object.assign({ chave }, corpo))
   });
   const dado = await resp.json();
   if (!dado.ok){ esquecerChave(dado.erro); throw new Error(dado.erro || "recusado"); }
   return true;
 }
+const apagarNoServidor = corpo => mandarAcao(Object.assign({ acao:"apagar" }, corpo), "Apagar");
 
 let buscando = false;
 /* Respostas colhidas antes de o banco existir ficaram só no aparelho. Ao abrir
@@ -1313,7 +1433,7 @@ async function resgatarAntigas(){
 /* O NÚMERO do banco é aberto: quem abre o painel vê quantas respostas já
    entraram mesmo sem a chave de leitura. O conteúdo delas, não — para ler as
    respostas ainda é preciso a chave. */
-let totalBanco = null, ultimaBanco = null;
+let totalBanco = null, ultimaBanco = null, apagadasBanco = 0;
 async function contarNoServidor(){
   if (!CONFIG.endpoint) return;
   try{
@@ -1322,6 +1442,7 @@ async function contarNoServidor(){
     const dado = await resp.json();
     if (!dado || !dado.ok) return;
     totalBanco = Number(dado.total) || 0;
+    apagadasBanco = Number(dado.apagadas) || 0;
     // só data e hora entram aqui; qualquer outra coisa é descartada
     ultimaBanco = /^[\d\/: ]{1,24}$/.test(dado.ultima || "") ? dado.ultima : null;
     pintarBanco();
@@ -1348,11 +1469,14 @@ function pintarBanco(){
   }
   const gravadas = "<b>" + totalBanco + (totalBanco === 1 ? " resposta" : " respostas") + "</b> no banco";
   const quando = ultimaBanco ? " Última: <b>" + ultimaBanco + "</b>." : "";
+  const guardadas = apagadasBanco
+    ? " <b>" + apagadasBanco + "</b> " + (apagadasBanco === 1 ? "apagada guardada" : "apagadas guardadas") + " à parte."
+    : "";
   const faltam = totalBanco - respostas.length;
   nota.innerHTML = faltam > 0
     ? gravadas + ", <b>" + respostas.length + "</b> aqui. Toque em “Buscar respostas enviadas” para trazer "
-      + (faltam === 1 ? "a que falta" : "as " + faltam + " que faltam") + "." + quando
-    : gravadas + " — todas já estão aqui." + quando;
+      + (faltam === 1 ? "a que falta" : "as " + faltam + " que faltam") + "." + guardadas + quando
+    : gravadas + " — todas já estão aqui." + guardadas + quando;
 }
 
 async function buscarDoServidor(silencioso){
@@ -1378,7 +1502,36 @@ async function buscarDoServidor(silencioso){
       if (jaTem.has(r.id)) return;
       respostas.push(r); jaTem.add(r.id); novas++;
     });
-    if (novas){ ordenar(); gravarLocal(); renderPainel(); }
+    /* o arquivo morto vem junto: quem apagou num aparelho não vê a resposta
+       reaparecer no outro, e quem nunca apagou nada recebe o registro igual */
+    let mexeu = novas > 0;
+    try{
+      const r2 = await fetch(CONFIG.endpoint + "?apagadas=1&chave=" + encodeURIComponent(chave));
+      const d2 = await r2.json();
+      if (d2.ok){
+        const guardadas = d2.valores || [];
+        const cab2 = guardadas[0] || null;
+        const doBanco = guardadas.slice(1).filter(l => l && l.length)
+          .map(l => Object.assign(respostaDeLinha(l, cab2), { noBanco:true }));
+        const idsBanco = new Set(doBanco.map(r => r.id));
+
+        // o que foi apagado em outro aparelho sai da lista daqui também
+        const sobreviventes = respostas.filter(r => !idsBanco.has(r.id));
+        if (sobreviventes.length !== respostas.length){ respostas = sobreviventes; mexeu = true; }
+
+        // o que foi jogado fora de vez lá sai daqui — mas só mexe no que o banco
+        // conhecia; o que foi apagado offline é só deste aparelho e fica
+        const antes = apagadas.length;
+        apagadas = apagadas.filter(r => !r.noBanco || idsBanco.has(r.id));
+        const tenho = new Set(apagadas.map(r => r.id));
+        doBanco.forEach(r => {
+          if (tenho.has(r.id)) return;
+          apagadas.push(r); tenho.add(r.id);
+        });
+        if (apagadas.length !== antes) mexeu = true;
+      }
+    }catch(e){}
+    if (mexeu){ ordenar(); gravarLocal(); renderPainel(); }
     marcarSinc("ok");
     contarNoServidor();
     if (novas) avisar(novas === 1 ? "1 resposta nova." : novas + " respostas novas.");
@@ -1687,6 +1840,38 @@ function montarXlsx(){
   const larguras = cab.map((t,i) => i === 0 ? 5 : (i <= 2 ? 11 : (i === 4 ? 12 : (i === 3 ? 22 : 34))));
   const faixa = "A1:" + letraColuna(cab.length - 1) + "1";
 
+  /* ---------------- aba Apagadas: o registro do que saiu da lista ----------------
+     Vai como valor puro, sem fórmula: é um registro do que foi apagado, não
+     uma tabela que o resumo precise recalcular. */
+  const temArquivo = apagadas.length > 0;
+  const cabA = ["Nº","Coletada em","Apagada em","Curso e período","Respondidas"];
+  PERGUNTAS.forEach((p,i) => {
+    cabA.push("P" + (i+1) + ". " + p.curto);
+    if (p.aberta) cabA.push("P" + (i+1) + ". Justificativa");
+  });
+  cabA.push("Observações do entrevistador");
+  const linhasA = [cabA.map(t => ({ v:t, s:1 }))];
+  apagadas.forEach((r,i) => {
+    const feita = serialData(new Date(r.criadoEm));
+    const fora = r.apagadaEm ? serialData(new Date(r.apagadaEm)) : null;
+    const linha = [
+      { v:i+1, s:7 },
+      { v:feita == null ? "" : feita, s:11 },
+      { v:fora == null ? "" : fora, s:11 },
+      { v:r.curso || "", s:2 },
+      { v:PERGUNTAS.filter(p => temResposta(r,p)).length, s:7 }
+    ];
+    PERGUNTAS.forEach(p => {
+      const val = r[p.id];
+      linha.push({ v:Array.isArray(val) ? val.join(" | ") : (val || ""), s:2 });
+      if (p.aberta) linha.push({ v:r[p.id + "_texto"] || "", s:2 });
+    });
+    linha.push({ v:r.obs || "", s:2 });
+    linhasA.push(linha);
+  });
+  const largurasA = cabA.map((t,i) => i === 0 ? 5 : (i <= 2 ? 16 : (i === 4 ? 12 : (i === 3 ? 22 : 34))));
+  const faixaA = "A1:" + letraColuna(cabA.length - 1) + "1";
+
   /* ---------------- aba Resumo, com um gráfico por pergunta ---------------- */
   const total = respostas.length;
   const res = [
@@ -1696,6 +1881,9 @@ function montarXlsx(){
     [{ v:"Gerado em", s:4 }, { v:serialData(new Date()), s:9 }],
     [{ v:"Cada tabela tem o gráfico pronto ao lado, já em porcentagem.", s:6 }]
   ];
+  if (temArquivo) res.splice(4, 0,
+    [{ v:"Respostas apagadas", s:4 }, { v:apagadas.length, s:7 }],
+    [{ v:"Fora das contas acima; o registro delas está na aba Apagadas.", s:6 }]);
   const graficos = [], ancoras = [];
 
   PERGUNTAS.forEach((p,i) => {
@@ -1756,6 +1944,7 @@ function montarXlsx(){
       '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
       '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
       '<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+      (temArquivo ? '<Override PartName="/xl/worksheets/sheet3.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' : "") +
       '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
       '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>' +
       tiposGrafico +
@@ -1768,7 +1957,8 @@ function montarXlsx(){
     { nome:"xl/workbook.xml", dados:
       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
-      '<sheets><sheet name="Respostas" sheetId="1" r:id="rId1"/><sheet name="Resumo" sheetId="2" r:id="rId2"/></sheets>' +
+      '<sheets><sheet name="Respostas" sheetId="1" r:id="rId1"/><sheet name="Resumo" sheetId="2" r:id="rId2"/>' +
+      (temArquivo ? '<sheet name="Apagadas" sheetId="3" r:id="rId4"/>' : "") + "</sheets>" +
       '<calcPr calcId="171027" fullCalcOnLoad="1"/>' +
       "</workbook>" },
     { nome:"xl/_rels/workbook.xml.rels", dados:
@@ -1777,14 +1967,16 @@ function montarXlsx(){
       '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
       '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>' +
       '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+      (temArquivo ? '<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet3.xml"/>' : "") +
       "</Relationships>" },
     { nome:"xl/styles.xml", dados:
       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
-      '<numFmts count="3">' +
+      '<numFmts count="4">' +
         '<numFmt numFmtId="164" formatCode="0.0%"/>' +
         '<numFmt numFmtId="165" formatCode="dd/mm/yyyy"/>' +
         '<numFmt numFmtId="166" formatCode="hh:mm"/>' +
+        '<numFmt numFmtId="167" formatCode="dd/mm/yyyy\\ hh:mm"/>' +
       "</numFmts>" +
       '<fonts count="4">' +
         '<font><sz val="11"/><color theme="1"/><name val="Calibri"/></font>' +
@@ -1800,7 +1992,7 @@ function montarXlsx(){
       "</fills>" +
       '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
       '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-      '<cellXfs count="11">' +
+      '<cellXfs count="12">' +
         '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
         '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>' +
         '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>' +
@@ -1812,6 +2004,7 @@ function montarXlsx(){
         '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyAlignment="1"><alignment vertical="center" horizontal="center"/></xf>' +
         '<xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyAlignment="1"><alignment vertical="center" horizontal="center"/></xf>' +
         '<xf numFmtId="166" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyAlignment="1"><alignment vertical="center" horizontal="center"/></xf>' +
+        '<xf numFmtId="167" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyAlignment="1"><alignment vertical="center" horizontal="center"/></xf>' +
       "</cellXfs>" +
       '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
       "</styleSheet>" },
@@ -1828,6 +2021,7 @@ function montarXlsx(){
       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
       relsDesenho + "</Relationships>" }
   ];
+  if (temArquivo) arquivos.push({ nome:"xl/worksheets/sheet3.xml", dados: folha(linhasA, largurasA, true, faixaA, false) });
   graficos.forEach((g,i) => arquivos.push({ nome:"xl/charts/chart" + (i+1) + ".xml", dados:g }));
   return zipar(arquivos);
 }
@@ -2399,9 +2593,9 @@ $("#btn-limpar").addEventListener("click", async () => {
   const noServidor = !!CONFIG.endpoint;
   const ok = await confirmar("Apagar todas as respostas?",
     (respostas.length === 1 ? "A única coleta será removida" : "As " + respostas.length + " coletas serão removidas") +
-    (noServidor ? " daqui e do banco, de vez. Isso apaga a pesquisa inteira, inclusive o que outras pessoas enviaram."
-                : " deste aparelho.") +
-    " Baixe a planilha antes, se ainda não baixou.", "Apagar tudo");
+    (noServidor ? " da lista e do banco — inclusive o que outras pessoas enviaram."
+                : " da lista deste aparelho.") +
+    " Elas não se perdem: vão para “Respostas apagadas”, e de lá dá para devolver.", "Apagar tudo");
   if (!ok) return;
   if (noServidor){
     try{
@@ -2413,10 +2607,29 @@ $("#btn-limpar").addEventListener("click", async () => {
   }
   const antigas = respostas.slice();
   respostas = []; enviadas.clear();
+  arquivar(antigas, noServidor);
   gravarLocal(); renderPainel();
   if (noServidor) contarNoServidor();
   if (bd) antigas.forEach(r => bd.doc("respostas/" + r.id).delete().catch(() => {}));
-  avisar("Todas as respostas foram apagadas.");
+  avisar("As respostas foram para “Respostas apagadas”. Nada se perdeu.");
+});
+$("#btn-esvaziar").addEventListener("click", async () => {
+  const n = apagadas.length;
+  if (!n) return;
+  const ok = await confirmar("Jogar fora as " + n + (n === 1 ? " resposta guardada?" : " respostas guardadas?"),
+    "Elas somem para sempre, do aparelho e do banco, e saem da aba Apagadas da planilha. Não dá para desfazer.",
+    "Jogar fora");
+  if (!ok) return;
+  if (CONFIG.endpoint){
+    try{
+      const feito = await mandarAcao({ acao:"apagar-de-vez", tudo:true }, "Jogar fora");
+      if (!feito) return;
+    }catch(e){ return avisar("Não consegui jogar fora no banco: " + e.message); }
+  }
+  apagadas = [];
+  gravarLocal(); renderPainel();
+  if (CONFIG.endpoint) contarNoServidor();
+  avisar("Arquivo esvaziado.");
 });
 $("#btn-compartilhar").addEventListener("click", abrirCompartilhar);
 $("#btn-share-fechar").addEventListener("click", () => $("#dlg-share").close());
