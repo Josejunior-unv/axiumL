@@ -1,4 +1,4 @@
 {
-  "_comentario": "Onde as respostas vão parar. Vazio: o app procura sozinho por /api/respostas (banco da Vercel) e, se não achar, guarda tudo no aparelho. Para usar a planilha do Google, cole aqui o endereço /exec do Apps Script. A chave de leitura NÃO fica aqui: este arquivo é público. Você digita a chave uma vez no painel.",
-  "endpoint": ""
+  "_comentario": "Endereço absoluto de propósito: assim QUALQUER cópia do app manda para o mesmo banco — o link da Vercel, o do GitHub Pages, um arquivo solto no tablet. A chave de leitura NÃO fica aqui: este arquivo é público, e você digita a chave uma vez no painel.",
+  "endpoint": "https://analisededados.vercel.app/api/respostas"
 }

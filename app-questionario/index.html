@@ -726,7 +726,7 @@ const CHAVE_FILA = CHAVE + ":fila";
 let CONFIG = { endpoint: "" };
 const CHAVE_SEGREDO = CHAVE + ":chaveLeitura";
 let modo = "painel";
-const VERSAO = "14 · ensino superior";
+const VERSAO = "15 · ensino superior";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
@@ -1250,16 +1250,19 @@ window.addEventListener("online", esvaziarFila);
 window.addEventListener("hashchange", () => location.reload());
 
 // a chave nunca vai no config.json, que é público: ela fica só neste aparelho
-async function pedirChave(rotulo){
-  let chave = "";
-  try{ chave = localStorage.getItem(CHAVE_SEGREDO) || ""; }catch(e){}
+function chaveGuardada(){
+  try{ return localStorage.getItem(CHAVE_SEGREDO) || ""; }catch(e){ return ""; }
+}
+async function pedirChave(rotulo, silencioso){
+  const chave = chaveGuardada();
   if (chave) return chave;
-  chave = await perguntarTexto("Chave de leitura",
+  if (silencioso) return null;
+  const digitada = await perguntarTexto("Chave de leitura",
     "É a senha que você definiu ao ligar o banco. Ela fica guardada só neste aparelho.",
     rotulo || "Confirmar");
-  if (!chave) return null;
-  try{ localStorage.setItem(CHAVE_SEGREDO, chave); }catch(e){}
-  return chave;
+  if (!digitada) return null;
+  try{ localStorage.setItem(CHAVE_SEGREDO, digitada); }catch(e){}
+  return digitada;
 }
 function esquecerChave(msg){
   if (/chave/i.test(msg || "")){ try{ localStorage.removeItem(CHAVE_SEGREDO); }catch(e){} }
@@ -1279,11 +1282,15 @@ async function apagarNoServidor(corpo){
   return true;
 }
 
-async function buscarDoServidor(){
-  if (!CONFIG.endpoint) return avisar("Nenhum lugar de envio configurado ainda.");
-  const chave = await pedirChave("Buscar");
+let buscando = false;
+async function buscarDoServidor(silencioso){
+  if (!CONFIG.endpoint){ if (!silencioso) avisar("Nenhum lugar de envio configurado ainda."); return; }
+  if (buscando) return;
+  const chave = await pedirChave("Buscar", silencioso);
   if (!chave) return;
-  avisar("Buscando respostas enviadas…");
+  buscando = true;
+  marcarSinc("buscando");
+  if (!silencioso) avisar("Buscando respostas enviadas…");
   try{
     const resp = await fetch(CONFIG.endpoint + "?chave=" + encodeURIComponent(chave));
     const dado = await resp.json();
@@ -1300,12 +1307,39 @@ async function buscarDoServidor(){
       respostas.push(r); jaTem.add(r.id); novas++;
     });
     if (novas){ ordenar(); gravarLocal(); renderPainel(); }
-    avisar(novas ? (novas === 1 ? "1 resposta nova." : novas + " respostas novas.") : "Nenhuma resposta nova.");
+    marcarSinc("ok");
+    if (novas) avisar(novas === 1 ? "1 resposta nova." : novas + " respostas novas.");
+    else if (!silencioso) avisar("Nenhuma resposta nova.");
   }catch(e){
     esquecerChave(e.message);
-    avisar("Não consegui buscar: " + e.message);
+    marcarSinc("erro");
+    if (!silencioso || /chave/i.test(e.message)) avisar("Não consegui buscar: " + e.message);
+  }finally{
+    buscando = false;
   }
 }
+
+/* O selo do topo passa a contar o que está acontecendo com a busca. */
+let horaSinc = null;
+function marcarSinc(estado){
+  const ponto = $("#ponto-sinc"), txt = $("#txt-sinc");
+  if (!ponto) return;
+  if (estado === "buscando"){ txt.textContent = "buscando respostas…"; ponto.classList.add("on"); return; }
+  if (estado === "erro"){ txt.textContent = "não consegui buscar"; ponto.classList.remove("on"); return; }
+  horaSinc = new Date();
+  ponto.classList.add("on");
+  contarSinc();
+}
+function contarSinc(){
+  if (!horaSinc || modo !== "painel" || !CONFIG.endpoint) return;
+  const seg = Math.round((Date.now() - horaSinc) / 1000);
+  const txt = $("#txt-sinc");
+  if (!txt) return;
+  txt.textContent = seg < 10 ? "atualizado agora"
+    : seg < 60 ? "atualizado há " + seg + "s"
+    : "atualizado há " + Math.round(seg / 60) + " min";
+}
+setInterval(contarSinc, 5000);
 
 /* =========================================================
    7. GERAÇÃO DO ARQUIVO .XLSX (sem bibliotecas externas)
@@ -2334,7 +2368,8 @@ $("#btn-qr").addEventListener("click", () => {
   if (svg) baixar("qr-da-pesquisa.svg", new Blob([svg], { type:"image/svg+xml" }));
 });
 
-$("#btn-servidor").addEventListener("click", buscarDoServidor);
+// sem a seta, o evento do clique chegaria como "silencioso" e o botão não faria nada
+$("#btn-servidor").addEventListener("click", () => buscarDoServidor(false));
 $("#btn-outra").addEventListener("click", () => novaColeta());
 
 function entrarModoResponder(){
@@ -2369,8 +2404,13 @@ async function arrancar(){
   }
   if (CONFIG.endpoint){
     $("#btn-servidor").hidden = false;
-    $("#txt-sinc").textContent = "respostas chegam na planilha";
+    $("#txt-sinc").textContent = chaveGuardada() ? "buscando respostas…" : "toque em buscar para trazer";
     $("#ponto-sinc").classList.add("on");
+    // busca ao abrir, sempre que a aba volta ao primeiro plano e de meio em meio minuto
+    buscarDoServidor(true);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) buscarDoServidor(true); });
+    window.addEventListener("focus", () => buscarDoServidor(true));
+    setInterval(() => { if (!document.hidden) buscarDoServidor(true); }, 30000);
   }
   esvaziarFila();
   mostrar("painel");
