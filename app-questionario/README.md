@@ -24,43 +24,64 @@ planilha do Excel (`.xlsx`).
 
 ---
 
-## 1. Receber as respostas na sua planilha
+## 1. Receber as respostas
 
-Sem isto, cada resposta fica guardada no aparelho de quem respondeu e você
-precisa juntar os arquivos na mão. Configurando, **você manda um link, a pessoa
-responde e a resposta cai direto numa planilha sua** — leva uns 3 minutos, uma
-vez só.
+Sem isto, cada resposta fica no aparelho de quem respondeu. Configurando, **você
+manda um link, a pessoa responde e a resposta cai num lugar seu**. Há dois
+caminhos; escolha um.
+
+### Opção A — banco da própria Vercel (menos passos)
+
+Tudo dentro do painel onde o site já está. Você não copia endereço nenhum.
+
+1. No projeto da Vercel: **Storage → Create Database → Upstash for Redis**,
+   e conecte ao projeto. A Vercel injeta as chaves sozinha.
+2. **Settings → Environment Variables →** `CHAVE_LEITURA` = uma senha sua.
+3. **Redeploy.**
+
+Pronto. O app pergunta sozinho a `/api/respostas` se o banco está de pé e,
+estando, passa a enviar para lá. O arquivo `api/respostas.js` é a função que
+grava; ela precisa ficar na **raiz do repositório**, que é a pasta padrão da
+importação.
+
+### Opção B — planilha do Google
+
+Quando você prefere ver as respostas caindo numa planilha, ao vivo.
 
 1. Crie uma planilha em **sheets.new**
-2. Menu **Extensões → Apps Script**
-3. Apague o que estiver lá e cole o conteúdo de `apps-script.gs`
-4. Troque `CHAVE_LEITURA` por qualquer senha sua
-5. **Implantar → Nova implantação → App da Web**
+2. **Extensões → Apps Script**, apague tudo e cole o `apps-script.gs`
+3. Troque `CHAVE_LEITURA` por uma senha sua
+4. **Implantar → Nova implantação → App da Web**
    · *Executar como:* Eu · *Quem pode acessar:* **Qualquer pessoa**
-6. Copie o endereço que termina em `/exec`
-7. Abra `config.json` neste repositório e preencha:
+5. Copie o endereço que termina em `/exec` e ponha no `config.json`:
 
 ```json
-{ "endpoint": "https://script.google.com/.../exec", "chaveLeitura": "sua-senha" }
+{ "endpoint": "https://script.google.com/.../exec" }
 ```
 
-Pronto. A partir daí o app tem **dois lados**:
+### Como o app fica depois
 
 | Endereço | Quem usa | O que vê |
 | --- | --- | --- |
 | `.../app-questionario/` | quem você convidar | só o questionário; responde, envia e agradece |
 | `.../app-questionario/#painel` | você | o painel, o resumo e os botões de baixar |
 
-O link de compartilhar já entrega o endereço de responder, nunca o `#painel`.
+O botão de compartilhar entrega sempre o endereço de responder, nunca o
+`#painel`.
+
+**A chave de leitura não fica em arquivo nenhum do repositório.** O
+`config.json` é servido para todo mundo que abre o link; se a senha estivesse
+ali, qualquer pessoa baixaria todas as respostas. Você digita a chave uma vez,
+ao tocar em **Buscar respostas enviadas**, e ela fica guardada só no seu
+aparelho.
 
 **Sem internet na hora de responder?** A resposta fica guardada no aparelho da
 pessoa e sobe sozinha quando a conexão voltar.
 
-**Trazer as respostas para o painel:** no painel, toque em **Buscar respostas
-enviadas**. Elas entram na lista, sem repetir as que já estavam, e aí o *Baixar
-Excel* sai com todo mundo junto, com os gráficos e as fórmulas.
+**Reenvio não duplica:** cada resposta tem um código próprio, e o servidor
+recusa a segunda gravação do mesmo código.
 
-> Deixando `endpoint` vazio, o app volta a funcionar como antes: tudo no
+> Sem nenhuma das duas opções, o app volta a funcionar como antes: tudo no
 > aparelho e a junção feita pelos arquivos de cópia.
 
 ## 2. Colocar o app no ar

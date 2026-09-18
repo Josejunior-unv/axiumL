@@ -394,6 +394,7 @@ main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
   #gata.entra{opacity:1}
 }
 
+#dlg-campo{margin:-8px 0 20px}
 .agradece{text-align:center; padding:44px 26px; max-width:520px; margin:40px auto}
 .agradece h2{margin-bottom:10px}
 .agradece p{color:var(--tinta-2); margin-bottom:26px}
@@ -609,6 +610,10 @@ main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
 <dialog id="dlg">
   <h3 id="dlg-tit"></h3>
   <p id="dlg-txt"></p>
+  <div class="campo" id="dlg-campo" hidden>
+    <label for="dlg-entrada">Chave de leitura</label>
+    <input id="dlg-entrada" type="text" autocomplete="off" spellcheck="false" placeholder="a senha que você definiu">
+  </div>
   <div class="dlg-acoes">
     <button class="btn" id="dlg-nao">Cancelar</button>
     <button class="btn btn-perigo" id="dlg-sim">Confirmar</button>
@@ -723,9 +728,10 @@ const CHAVE_ENVIADAS = CHAVE + ":enviadas";
 const CHAVE_FILA = CHAVE + ":fila";
 // Quando config.json traz um endereço, o app vira duas coisas: o link que
 // você manda (só o questionário, que envia e agradece) e o painel, em #painel.
-let CONFIG = { endpoint: "", chaveLeitura: "" };
+let CONFIG = { endpoint: "" };
+const CHAVE_SEGREDO = CHAVE + ":chaveLeitura";
 let modo = "painel";
-const VERSAO = "11 · ensino superior";
+const VERSAO = "12 · ensino superior";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
@@ -803,6 +809,37 @@ function confirmar(titulo, texto, rotulo){
     else resolve(true);
   });
 }
+function perguntarTexto(titulo, texto, rotulo, valor){
+  return new Promise(resolve => {
+    const dlg = $("#dlg"), campo = $("#dlg-campo"), entrada = $("#dlg-entrada");
+    $("#dlg-tit").textContent = titulo;
+    $("#dlg-txt").textContent = texto;
+    $("#dlg-sim").textContent = rotulo || "Confirmar";
+    $("#dlg-sim").classList.remove("btn-perigo");
+    campo.hidden = false;
+    entrada.value = valor || "";
+    const sim = () => fechar(entrada.value.trim() || null);
+    const nao = () => fechar(null);
+    const tecla = e => { if (e.key === "Enter"){ e.preventDefault(); sim(); } };
+    function fechar(v){
+      $("#dlg-sim").removeEventListener("click", sim);
+      $("#dlg-nao").removeEventListener("click", nao);
+      entrada.removeEventListener("keydown", tecla);
+      dlg.removeEventListener("cancel", nao);
+      campo.hidden = true;
+      $("#dlg-sim").classList.add("btn-perigo");
+      if (dlg.open) dlg.close();
+      resolve(v);
+    }
+    $("#dlg-sim").addEventListener("click", sim);
+    $("#dlg-nao").addEventListener("click", nao);
+    entrada.addEventListener("keydown", tecla);
+    dlg.addEventListener("cancel", nao);
+    if (typeof dlg.showModal === "function"){ dlg.showModal(); setTimeout(() => entrada.focus(), 60); }
+    else resolve(null);
+  });
+}
+
 function dataHora(iso){
   const d = new Date(iso);
   if (isNaN(d)) return "";
@@ -1200,10 +1237,20 @@ async function esvaziarFila(){
 window.addEventListener("online", esvaziarFila);
 
 async function buscarDoServidor(){
-  if (!CONFIG.endpoint || !CONFIG.chaveLeitura) return avisar("Configure o endereço e a chave em config.json.");
+  if (!CONFIG.endpoint) return avisar("Nenhum lugar de envio configurado ainda.");
+  // a chave nunca vai no config.json, que é público: ela fica só neste aparelho
+  let chave = "";
+  try{ chave = localStorage.getItem(CHAVE_SEGREDO) || ""; }catch(e){}
+  if (!chave){
+    chave = await perguntarTexto("Chave de leitura",
+      "É a senha que você definiu ao ligar o banco. Ela fica guardada só neste aparelho.",
+      "Buscar");
+    if (!chave) return;
+    try{ localStorage.setItem(CHAVE_SEGREDO, chave); }catch(e){}
+  }
   avisar("Buscando respostas enviadas…");
   try{
-    const resp = await fetch(CONFIG.endpoint + "?chave=" + encodeURIComponent(CONFIG.chaveLeitura));
+    const resp = await fetch(CONFIG.endpoint + "?chave=" + encodeURIComponent(chave));
     const dado = await resp.json();
     if (!dado.ok) throw new Error(dado.erro || "recusado");
     const linhas = (dado.valores || []).slice(1);   // fora o cabeçalho
@@ -1218,6 +1265,7 @@ async function buscarDoServidor(){
     if (novas){ ordenar(); gravarLocal(); renderPainel(); }
     avisar(novas ? (novas === 1 ? "1 resposta nova." : novas + " respostas novas.") : "Nenhuma resposta nova.");
   }catch(e){
+    if (/chave/i.test(e.message)){ try{ localStorage.removeItem(CHAVE_SEGREDO); }catch(x){} }
     avisar("Não consegui buscar: " + e.message);
   }
 }
@@ -2257,6 +2305,15 @@ async function arrancar(){
     const r = await fetch("config.json", { cache: "no-store" });
     if (r.ok) CONFIG = Object.assign(CONFIG, await r.json());
   }catch(e){}
+
+  // sem endereço no config: procura o banco da própria Vercel em /api/respostas
+  if (!CONFIG.endpoint){
+    try{
+      const r = await fetch("/api/respostas?status=1", { cache: "no-store" });
+      const d = await r.json();
+      if (d && d.pronto) CONFIG.endpoint = "/api/respostas";
+    }catch(e){}
+  }
 
   const querPainel = location.hash.replace("#","") === "painel";
   if (CONFIG.endpoint && !querPainel){
