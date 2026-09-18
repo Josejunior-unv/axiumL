@@ -748,6 +748,9 @@ const PERGUNTAS = [
 ];
 
 const TITULO = "Uso da Tecnologia no Ensino Superior";
+// campo opcional: quem não informa continua valendo em tudo, só ganha nome
+const CURSO_VAZIO = "Curso não informado";
+const cursoDe = r => (r && r.curso ? String(r.curso).trim() : "") || CURSO_VAZIO;
 const CHAVE = "pesquisa-tecnologia-es-v1";
 const CHAVE_ENVIADAS = CHAVE + ":enviadas";
 const CHAVE_FILA = CHAVE + ":fila";
@@ -756,7 +759,7 @@ const CHAVE_FILA = CHAVE + ":fila";
 let CONFIG = { endpoint: "" };
 const CHAVE_SEGREDO = CHAVE + ":chaveLeitura";
 let modo = "painel";
-const VERSAO = "18 · ensino superior";
+const VERSAO = "19 · ensino superior";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
@@ -915,7 +918,7 @@ function renderPainel(){
       linha.style.animationDelay = Math.min(i * 28, 400) + "ms";
       linha.appendChild(elem("span","coleta-n", String(i+1).padStart(2,"0")));
       const txt = elem("div","coleta-txt");
-      txt.appendChild(elem("div","coleta-nome", r.curso || "Sem curso informado"));
+      txt.appendChild(elem("div","coleta-nome", cursoDe(r)));
       const respondidas = PERGUNTAS.filter(p => temResposta(r,p)).length;
       const meta = [dataHora(r.criadoEm), respondidas + "/10"].filter(Boolean).join("  ·  ");
       txt.appendChild(elem("div","coleta-meta", meta));
@@ -1025,7 +1028,7 @@ function renderApagadas(){
     linha.style.animationDelay = Math.min(i * 28, 400) + "ms";
     linha.appendChild(elem("span","coleta-n", String(i+1).padStart(2,"0")));
     const txt = elem("div","coleta-txt");
-    txt.appendChild(elem("div","coleta-nome", r.curso || "Sem curso informado"));
+    txt.appendChild(elem("div","coleta-nome", cursoDe(r)));
     const meta = ["coletada em " + dataHora(r.criadoEm)];
     if (r.apagadaEm) meta.push("apagada em " + dataHora(r.apagadaEm));
     txt.appendChild(elem("div","coleta-meta", meta.join("  ·  ")));
@@ -1080,6 +1083,21 @@ function contar(p, opcao){
     return p.tipo === "multipla" ? Array.isArray(v) && v.includes(opcao) : v === opcao;
   }).length;
 }
+/* Uma linha por curso, do mais frequente para o menos, com quem não informou
+   sempre por último — mas presente: essas respostas contam em tudo. */
+function porCurso(){
+  const conta = new Map();
+  respostas.forEach(r => {
+    const c = cursoDe(r);
+    conta.set(c, (conta.get(c) || 0) + 1);
+  });
+  return [...conta.keys()].sort((a,b) => {
+    if (a === CURSO_VAZIO) return 1;
+    if (b === CURSO_VAZIO) return -1;
+    return conta.get(b) - conta.get(a) || a.localeCompare(b, "pt");
+  }).map(c => ({ curso:c, quantas:conta.get(c) }));
+}
+
 function base(p){
   // quem de fato respondeu esta pergunta — vale para escolha única também,
   // porque uma resposta pode ter sido salva incompleta
@@ -1090,6 +1108,37 @@ function renderResumo(){
   const alvo = $("#resumo");
   alvo.innerHTML = "";
   const total = respostas.length;
+
+  const cursos = porCurso();
+  if (cursos.length){
+    const bloco = elem("div","resumo-q");
+    const cab = elem("div","pergunta-cab");
+    cab.appendChild(elem("span","chave","Curso"));
+    cab.appendChild(elem("span","rotulo-curto","quem respondeu"));
+    bloco.appendChild(cab);
+    bloco.appendChild(elem("p","resumo-tit","Distribuição por curso e período"));
+    const barras = elem("div","barras");
+    cursos.forEach((c,j) => {
+      const pct = total ? Math.round(c.quantas / total * 100) : 0;
+      const linha = elem("div","barra");
+      const rot = elem("div","barra-rot", c.curso);
+      rot.title = c.curso;
+      linha.appendChild(rot);
+      const dir = elem("div","barra-dir");
+      const trilho = elem("div","trilho");
+      const pre = elem("div","preenche");
+      pre.style.width = "0%";
+      setTimeout(() => { pre.style.width = pct + "%"; }, Math.min(60 + j * 8, 900));
+      trilho.appendChild(pre);
+      dir.appendChild(trilho);
+      dir.appendChild(elem("span","barra-num", c.quantas + " · " + pct + "%"));
+      linha.appendChild(dir);
+      barras.appendChild(linha);
+    });
+    bloco.appendChild(barras);
+    alvo.appendChild(bloco);
+  }
+
   PERGUNTAS.forEach((p,i) => {
     const bloco = elem("div","resumo-q");
     const cab = elem("div","pergunta-cab");
@@ -1826,7 +1875,7 @@ function montarXlsx(){
       { v:i+1, s:7 },
       { v:serial == null ? "" : serial, s:9 },
       { v:serial == null ? "" : serial, s:10 },
-      { v:r.curso || "", s:2 },
+      { v:cursoDe(r), s:2 },
       { v:{ f:formulaRespondidas(i + 2), v:PERGUNTAS.filter(p => temResposta(r,p)).length }, s:7 }
     ];
     PERGUNTAS.forEach(p => {
@@ -1858,7 +1907,7 @@ function montarXlsx(){
       { v:i+1, s:7 },
       { v:feita == null ? "" : feita, s:11 },
       { v:fora == null ? "" : fora, s:11 },
-      { v:r.curso || "", s:2 },
+      { v:cursoDe(r), s:2 },
       { v:PERGUNTAS.filter(p => temResposta(r,p)).length, s:7 }
     ];
     PERGUNTAS.forEach(p => {
@@ -1885,6 +1934,45 @@ function montarXlsx(){
     [{ v:"Respostas apagadas", s:4 }, { v:apagadas.length, s:7 }],
     [{ v:"Fora das contas acima; o registro delas está na aba Apagadas.", s:6 }]);
   const graficos = [], ancoras = [];
+
+  /* ---------------- distribuição por curso, com gráfico próprio ----------------
+     Vem antes das perguntas de propósito: é o retrato de quem respondeu. Quem
+     deixou o campo em branco aparece como "Curso não informado" e conta igual
+     nas tabelas de todas as perguntas. */
+  const cursos = porCurso();
+  if (cursos.length){
+    const linhaTitulo = res.length + 1;
+    const faixaCurso = "Respostas!$D$2:$D$" + LINHA_FIM;
+    res.push([{ v:"Distribuição por curso e período", s:4 }]);
+    res.push([{ v:"Curso e período", s:5 }, { v:"Respostas", s:5 }, { v:"% do total", s:5 }, { v:"Base", s:5 }]);
+    const primeira = res.length + 1;
+    const fracoesCurso = cursos.map(c => total ? Math.round(c.quantas / total * 10000) / 10000 : 0);
+    cursos.forEach((c,j) => {
+      const linha = res.length + 1;
+      res.push([
+        { v:c.curso, s:2 },
+        { v:{ f:'COUNTIF(' + faixaCurso + ',$A' + linha + ')', v:c.quantas }, s:7 },
+        { v:{ f:'IF($D' + linha + '=0,0,$B' + linha + '/$D' + linha + ')', v:fracoesCurso[j] }, s:8 },
+        { v:{ f:'COUNTA(' + faixaCurso + ')', v:total }, s:7 }
+      ]);
+    });
+    const ultima = res.length;
+    res.push([{ v:"Quem não informou o curso entra como “" + CURSO_VAZIO + "” e conta igual em todas as tabelas abaixo.", s:6 }]);
+    const altura = Math.max(ALTURA_BLOCO, cursos.length + 4);
+    while (res.length - linhaTitulo + 1 < altura) res.push([]);
+
+    graficos.push(graficoXml(
+      "Respostas por curso  (n = " + total + ")",
+      cursos.map(c => c.curso), fracoesCurso,
+      "Resumo!$A$" + primeira + ":$A$" + ultima,
+      "Resumo!$C$" + primeira + ":$C$" + ultima,
+      200000001, 200000002
+    ));
+    ancoras.push({
+      col1: COL_GRAFICO_INI, col2: COL_GRAFICO_FIM,
+      linha1: linhaTitulo - 1, linha2: linhaTitulo - 1 + (altura - 2)
+    });
+  }
 
   PERGUNTAS.forEach((p,i) => {
     const linhaTitulo = res.length + 1;              // 1-based, onde começa o bloco
@@ -2039,7 +2127,7 @@ function montarCsv(){
   };
   const linhas = [cab.map(campo).join(";")];
   respostas.forEach((r,i) => {
-    const col = [i+1, dataHora(r.criadoEm), r.curso || ""];
+    const col = [i+1, dataHora(r.criadoEm), cursoDe(r)];
     PERGUNTAS.forEach(p => {
       const v = r[p.id];
       col.push(Array.isArray(v) ? v.join(" | ") : (v || ""));

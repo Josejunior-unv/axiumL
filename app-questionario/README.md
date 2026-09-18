@@ -97,6 +97,12 @@ Vercel, pelo do GitHub Pages ou por um arquivo solto no tablet cai no mesmo
 lugar. Com endereço relativo só o link da Vercel funcionaria — nos outros a
 resposta ficaria presa no aparelho de quem respondeu.
 
+**Curso e período é campo opcional.** Quem deixa em branco aparece como
+**Curso não informado** — no painel, na planilha e no CSV — e continua contando
+normalmente em tudo: entra na tabela de cursos, nas contagens de cada pergunta,
+nas porcentagens e em todos os gráficos. Em branco é resposta válida, não
+resposta descartada.
+
 **Sem internet na hora de responder?** A resposta fica guardada no aparelho da
 pessoa e sobe sozinha quando a conexão voltar.
 
@@ -125,6 +131,11 @@ embora.
 **A planilha ganha uma aba `Apagadas`** quando há alguma, com a data da coleta,
 a data em que foi apagada e todas as respostas dadas. O `Resumo` avisa quantas
 foram apagadas e deixa claro que elas estão fora das contas.
+
+**A aba `Respostas` só traz o que não foi apagado.** As contagens, as
+porcentagens e os gráficos do `Resumo` são fórmulas sobre essa aba, então tudo
+o que foi apagado sai das contas junto — nada de resposta antiga voltando a
+pesar no resultado.
 
 > Sem nenhuma das duas opções, o app volta a funcionar como antes: tudo no
 > aparelho e a junção feita pelos arquivos de cópia.
@@ -230,10 +241,11 @@ quando há respostas apagadas — e os gráficos já montados:
   ordenar e filtrar por período), e a coluna *Respondidas* traz quantas das 10
   perguntas aquele estudante respondeu. Nas perguntas de múltipla escolha as
   alternativas vêm separadas por `|` na mesma célula.
-- **Resumo** — uma tabela por pergunta com a contagem, a porcentagem (formatada
-  como percentual de verdade, não texto) e a base, e **ao lado de cada tabela um
-  gráfico de barras pronto**, já em porcentagem, com o número de respondentes no
-  título (*n = 9*).
+- **Resumo** — começa pela **distribuição por curso e período**, com tabela e
+  gráfico próprios, e segue com uma tabela por pergunta trazendo a contagem, a
+  porcentagem (formatada como percentual de verdade, não texto) e a base, e **ao
+  lado de cada tabela um gráfico de barras pronto**, já em porcentagem, com o
+  número de respondentes no título (*n = 9*).
 - **Apagadas** — só existe quando alguma resposta foi apagada. Traz a data da
   coleta, a data em que foi apagada e todas as respostas dadas, como valor puro:
   é registro, não entra em conta nenhuma.
