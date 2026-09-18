@@ -9,7 +9,7 @@ direto aqui no GitHub.
 
 ---
 
-**Estudante (opcional):** ____________________  **Curso e período (opcional):** ____________
+**Curso e período (opcional):** _______________________________
 **Data:** ____/____/______
 
 ### P1. Idade
@@ -122,6 +122,7 @@ Em P3, P5 e P6 a base é o número de estudantes que responderam aquela pergunta
 a soma das porcentagens passa de 100% — é múltipla escolha, então cada estudante
 conta em mais de uma alternativa.
 
-O campo **Curso e período** permite ainda cruzar as respostas por área (usando o
-filtro da planilha), mostrando, por exemplo, se estudantes de cursos diferentes
-enfrentam desafios diferentes.
+A pesquisa é **anônima**: não há campo de nome. O único dado de identificação é
+o **curso e período**, opcional, que serve para cruzar as respostas por área
+(usando o filtro da planilha) e ver, por exemplo, se estudantes de cursos
+diferentes enfrentam desafios diferentes.

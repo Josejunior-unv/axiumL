@@ -171,8 +171,7 @@ aparelho — útil na hora de aplicar a pesquisa a sério.
 ## 6. Aplicar a pesquisa
 
 1. Toque em **Nova resposta**.
-2. Preencha a identificação e o curso se quiser (os dois são opcionais — a pesquisa pode
-   ser anônima).
+2. Preencha o curso e o período, se quiser (é opcional).
 3. Marque as alternativas de cada estudante. A barra no topo mostra quantas das 10
    já foram respondidas, e a faixa verde na lateral marca as concluídas.
    - **P3** aceita quantas marcações quiser.

@@ -190,7 +190,7 @@ p{margin:0}
 .voltar:hover{color:var(--azul)}
 .voltar:focus-visible{outline:2px solid var(--azul-claro); outline-offset:2px; border-radius:6px}
 
-.cartao-ident{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+.cartao-ident{display:grid; grid-template-columns:1fr; gap:14px}
 .campo{display:flex; flex-direction:column; gap:7px}
 .campo label{font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--suave)}
 .campo input, .campo textarea{font-family:var(--corpo); font-size:16px; color:var(--tinta); background:var(--superficie-3);
@@ -404,7 +404,6 @@ main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
 .selo.enviando{color:var(--realce-claro)}
 [hidden]{display:none !important}
 @media (max-width:520px){
-  .cartao-ident{grid-template-columns:1fr}
   .barra{grid-template-columns:1fr; gap:6px}
   .barra-rot{white-space:normal}
   .pergunta{padding:18px}
@@ -562,10 +561,6 @@ main:not([hidden]){animation:troca .4s cubic-bezier(.32,.72,0,1)}
 
     <div class="cartao">
       <div class="cartao-ident">
-        <div class="campo">
-          <label for="ident-nome">Identificação (opcional)</label>
-          <input id="ident-nome" type="text" autocomplete="off" placeholder="Nome ou código do estudante">
-        </div>
         <div class="campo">
           <label for="ident-curso">Curso e período (opcional)</label>
           <input id="ident-curso" type="text" autocomplete="off" placeholder="Ex.: Engenharia — 4º período">
@@ -731,7 +726,7 @@ const CHAVE_FILA = CHAVE + ":fila";
 let CONFIG = { endpoint: "" };
 const CHAVE_SEGREDO = CHAVE + ":chaveLeitura";
 let modo = "painel";
-const VERSAO = "13 · ensino superior";
+const VERSAO = "14 · ensino superior";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
@@ -886,9 +881,9 @@ function renderPainel(){
       linha.style.animationDelay = Math.min(i * 28, 400) + "ms";
       linha.appendChild(elem("span","coleta-n", String(i+1).padStart(2,"0")));
       const txt = elem("div","coleta-txt");
-      txt.appendChild(elem("div","coleta-nome", r.nome || "Resposta anônima"));
+      txt.appendChild(elem("div","coleta-nome", r.curso || "Sem curso informado"));
       const respondidas = PERGUNTAS.filter(p => temResposta(r,p)).length;
-      const meta = [r.curso, dataHora(r.criadoEm), respondidas + "/10"].filter(Boolean).join("  ·  ");
+      const meta = [dataHora(r.criadoEm), respondidas + "/10"].filter(Boolean).join("  ·  ");
       txt.appendChild(elem("div","coleta-meta", meta));
       linha.appendChild(txt);
       const excluir = elem("button","icone-btn");
@@ -1003,9 +998,8 @@ function renderResumo(){
    5. FORMULÁRIO DE COLETA
    ========================================================= */
 function novaColeta(){
-  rascunho = { id:novoId(), criadoEm:new Date().toISOString(), nome:"", curso:"", obs:"", p4_texto:"" };
+  rascunho = { id:novoId(), criadoEm:new Date().toISOString(), curso:"", obs:"", p4_texto:"" };
   PERGUNTAS.forEach(p => { rascunho[p.id] = p.tipo === "multipla" ? [] : ""; });
-  $("#ident-nome").value = "";
   $("#ident-curso").value = "";
   $("#obs").value = "";
   montarPerguntas();
@@ -1099,7 +1093,6 @@ function atualizarProgresso(){
 }
 
 async function salvarColeta(){
-  rascunho.nome = $("#ident-nome").value.trim();
   rascunho.curso = $("#ident-curso").value.trim();
   rascunho.obs = $("#obs").value.trim();
 
@@ -1186,7 +1179,7 @@ async function ligarBanco(){
    6b. ENVIO PARA A PLANILHA DE QUEM APLICOU A PESQUISA
    ========================================================= */
 function cabecalhoEnvio(){
-  const c = ["Data/Hora", "Identificação", "Curso e período"];
+  const c = ["Data/Hora", "Curso e período"];
   PERGUNTAS.forEach((p,i) => {
     c.push("P" + (i+1) + ". " + p.curto);
     if (p.aberta) c.push("P" + (i+1) + ". Justificativa");
@@ -1195,7 +1188,7 @@ function cabecalhoEnvio(){
   return c;
 }
 function linhaEnvio(r){
-  const l = [dataHora(r.criadoEm), r.nome || "", r.curso || ""];
+  const l = [dataHora(r.criadoEm), r.curso || ""];
   PERGUNTAS.forEach(p => {
     const v = r[p.id];
     l.push(Array.isArray(v) ? v.join(" | ") : (v || ""));
@@ -1204,18 +1197,23 @@ function linhaEnvio(r){
   l.push(r.obs || "", r.id);
   return l;
 }
-function respostaDeLinha(linha){
-  const r = { id: String(linha[linha.length - 1] || novoId()), nome: linha[1] || "", curso: linha[2] || "", obs: "" };
+/* Casa pelo nome da coluna, não pela posição: assim linhas gravadas com um
+   desenho antigo de colunas continuam sendo lidas certo. */
+function respostaDeLinha(linha, cabecalho){
+  const cab = Array.isArray(cabecalho) && cabecalho.length ? cabecalho : cabecalhoEnvio();
+  const pegar = nome => {
+    const i = cab.indexOf(nome);
+    return i >= 0 ? String(linha[i] == null ? "" : linha[i]) : "";
+  };
+  const r = { id: pegar("ID") || String(linha[linha.length - 1] || novoId()), curso: pegar("Curso e período"), obs: pegar("Observações") };
   // a planilha guarda a data já formatada; devolve para ISO só para ordenar
-  const m = String(linha[0] || "").match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/);
+  const m = pegar("Data/Hora").match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/);
   r.criadoEm = m ? new Date(+m[3], +m[2]-1, +m[1], +m[4], +m[5]).toISOString() : new Date().toISOString();
-  let i = 3;
-  PERGUNTAS.forEach(p => {
-    const v = String(linha[i++] || "");
+  PERGUNTAS.forEach((p,i) => {
+    const v = pegar("P" + (i+1) + ". " + p.curto);
     r[p.id] = p.tipo === "multipla" ? (v ? v.split(" | ") : []) : v;
-    if (p.aberta) r[p.id + "_texto"] = String(linha[i++] || "");
+    if (p.aberta) r[p.id + "_texto"] = pegar("P" + (i+1) + ". Justificativa");
   });
-  r.obs = String(linha[i] || "");
   return normalizar(r);
 }
 
@@ -1290,12 +1288,14 @@ async function buscarDoServidor(){
     const resp = await fetch(CONFIG.endpoint + "?chave=" + encodeURIComponent(chave));
     const dado = await resp.json();
     if (!dado.ok) throw new Error(dado.erro || "recusado");
-    const linhas = (dado.valores || []).slice(1);   // fora o cabeçalho
+    const todos = dado.valores || [];
+    const cabecalho = todos[0] || null;
+    const linhas = todos.slice(1);
     const jaTem = new Set(respostas.map(r => r.id));
     let novas = 0;
     linhas.forEach(linha => {
       if (!linha || !linha.length) return;
-      const r = respostaDeLinha(linha);
+      const r = respostaDeLinha(linha, cabecalho);
       if (jaTem.has(r.id)) return;
       respostas.push(r); jaTem.add(r.id); novas++;
     });
@@ -1534,7 +1534,7 @@ const LINHA_FIM = 1000;  // até onde as fórmulas olham, para caber respostas a
 function montarXlsx(){
   /* ---------------- onde cada pergunta cai na aba Respostas ---------------- */
   const colunaDa = {};
-  let proxima = 6;  // Nº, Data, Hora, Identificação, Curso, Respondidas
+  let proxima = 5;  // Nº, Data, Hora, Curso, Respondidas
   PERGUNTAS.forEach(p => { colunaDa[p.id] = proxima++; if (p.aberta) proxima++; });
 
   // as colunas de alternativa, agrupadas em intervalos contíguos (a justificativa fica de fora)
@@ -1552,7 +1552,7 @@ function montarXlsx(){
   };
 
   /* ---------------- aba Respostas ---------------- */
-  const cab = ["Nº","Data","Hora","Identificação","Curso e período","Respondidas"];
+  const cab = ["Nº","Data","Hora","Curso e período","Respondidas"];
   PERGUNTAS.forEach((p,i) => {
     cab.push("P" + (i+1) + ". " + p.curto);
     if (p.aberta) cab.push("P" + (i+1) + ". Justificativa");
@@ -1566,7 +1566,6 @@ function montarXlsx(){
       { v:i+1, s:7 },
       { v:serial == null ? "" : serial, s:9 },
       { v:serial == null ? "" : serial, s:10 },
-      { v:r.nome || "", s:2 },
       { v:r.curso || "", s:2 },
       { v:{ f:formulaRespondidas(i + 2), v:PERGUNTAS.filter(p => temResposta(r,p)).length }, s:7 }
     ];
@@ -1578,7 +1577,7 @@ function montarXlsx(){
     linha.push({ v:r.obs || "", s:2 });
     linhas.push(linha);
   });
-  const larguras = cab.map((t,i) => i === 0 ? 5 : (i <= 2 ? 11 : (i === 5 ? 12 : (i <= 4 ? 22 : 34))));
+  const larguras = cab.map((t,i) => i === 0 ? 5 : (i <= 2 ? 11 : (i === 4 ? 12 : (i === 3 ? 22 : 34))));
   const faixa = "A1:" + letraColuna(cab.length - 1) + "1";
 
   /* ---------------- aba Resumo, com um gráfico por pergunta ---------------- */
@@ -1727,7 +1726,7 @@ function montarXlsx(){
 }
 
 function montarCsv(){
-  const cab = ["Nº","Data/Hora","Identificação","Curso e período"];
+  const cab = ["Nº","Data/Hora","Curso e período"];
   PERGUNTAS.forEach((p,i) => {
     cab.push("P" + (i+1) + ". " + p.curto);
     if (p.aberta) cab.push("P" + (i+1) + ". Justificativa");
@@ -1739,7 +1738,7 @@ function montarCsv(){
   };
   const linhas = [cab.map(campo).join(";")];
   respostas.forEach((r,i) => {
-    const col = [i+1, dataHora(r.criadoEm), r.nome || "", r.curso || ""];
+    const col = [i+1, dataHora(r.criadoEm), r.curso || ""];
     PERGUNTAS.forEach(p => {
       const v = r[p.id];
       col.push(Array.isArray(v) ? v.join(" | ") : (v || ""));
@@ -2050,7 +2049,6 @@ function normalizar(r){
   const limpo = {
     id: String(r.id).slice(0, 60),
     criadoEm: typeof r.criadoEm === "string" ? r.criadoEm : new Date().toISOString(),
-    nome: soTexto(r.nome),
     curso: soTexto(r.curso || r.turma),
     obs: soTexto(r.obs)
   };
