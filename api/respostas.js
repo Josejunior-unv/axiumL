@@ -12,8 +12,27 @@
  * O app descobre sozinho que ficou pronto e passa a enviar para cá.
  */
 
-const URL_KV = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const TOKEN_KV = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+/* A Vercel injeta as credenciais do banco com nomes que variam conforme a
+   integração. Em vez de chutar um nome, procura qualquer par URL/TOKEN. */
+function acharCredenciais(){
+  const e = process.env;
+  const conhecidos = [
+    ["KV_REST_API_URL", "KV_REST_API_TOKEN"],
+    ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]
+  ];
+  for (const [u, t] of conhecidos)
+    if (e[u] && e[t]) return { url: e[u], token: e[t], veioDe: u };
+  for (const chave of Object.keys(e)){
+    if (!/REST_(API_)?URL$/.test(chave)) continue;
+    const tok = chave.replace(/URL$/, "TOKEN");
+    if (e[chave] && e[tok] && /^https?:\/\//.test(e[chave]))
+      return { url: e[chave], token: e[tok], veioDe: chave };
+  }
+  return null;
+}
+const CRED = acharCredenciais();
+const URL_KV = CRED && CRED.url;
+const TOKEN_KV = CRED && CRED.token;
 const LISTA = "pesquisa:linhas";
 const CABECALHO = "pesquisa:cabecalho";
 const IDS = "pesquisa:ids";
@@ -41,7 +60,7 @@ module.exports = async (req, res) => {
     if (req.method === "GET") {
       const q = req.query || {};
       // o app pergunta primeiro se já dá para usar
-      if (q.status) return res.json({ ok: true, pronto: pronto() });
+      if (q.status) return res.json({ ok: true, pronto: pronto(), variavel: CRED ? CRED.veioDe : null });
       if (!pronto()) return res.json({ ok: false, erro: "banco ainda não conectado" });
 
       const esperada = process.env.CHAVE_LEITURA;
