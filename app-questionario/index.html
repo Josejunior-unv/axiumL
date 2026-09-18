@@ -731,7 +731,7 @@ const CHAVE_FILA = CHAVE + ":fila";
 let CONFIG = { endpoint: "" };
 const CHAVE_SEGREDO = CHAVE + ":chaveLeitura";
 let modo = "painel";
-const VERSAO = "12 · ensino superior";
+const VERSAO = "13 · ensino superior";
 
 /* =========================================================
    2. ESTADO E ARMAZENAMENTO
@@ -897,10 +897,23 @@ function renderPainel(){
       excluir.setAttribute("aria-label","Excluir resposta " + (i+1));
       excluir.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>';
       excluir.addEventListener("click", async () => {
-        const ok = await confirmar("Excluir resposta " + (i+1) + "?", "Essa coleta será removida da lista e da planilha.", "Excluir");
+        const noServidor = !!CONFIG.endpoint;
+        const ok = await confirmar("Excluir resposta " + (i+1) + "?",
+          noServidor ? "Ela sai da lista e também do banco, de vez."
+                     : "Essa coleta será removida da lista e da planilha.", "Excluir");
         if (!ok) return;
         const alvo = respostas[i];
-        respostas.splice(i,1);
+        // apaga lá primeiro: se falhar, nada some aqui e a tela continua verdadeira
+        if (noServidor){
+          try{
+            const feito = await apagarNoServidor({ id: alvo.id });
+            if (!feito) return;
+          }catch(e){
+            return avisar("Não consegui apagar no banco: " + e.message);
+          }
+        }
+        const pos = respostas.indexOf(alvo);
+        if (pos >= 0) respostas.splice(pos, 1);
         enviadas.delete(alvo.id);
         gravarLocal(); renderPainel();
         if (bd) bd.doc("respostas/" + alvo.id).delete().catch(() => {});
@@ -1235,19 +1248,43 @@ async function esvaziarFila(){
     $("#obrigado-txt").textContent = "Obrigado por participar da pesquisa. Sua resposta já chegou para quem está aplicando.";
 }
 window.addEventListener("online", esvaziarFila);
+// pôr ou tirar o #painel no endereço não recarrega a página sozinho
+window.addEventListener("hashchange", () => location.reload());
+
+// a chave nunca vai no config.json, que é público: ela fica só neste aparelho
+async function pedirChave(rotulo){
+  let chave = "";
+  try{ chave = localStorage.getItem(CHAVE_SEGREDO) || ""; }catch(e){}
+  if (chave) return chave;
+  chave = await perguntarTexto("Chave de leitura",
+    "É a senha que você definiu ao ligar o banco. Ela fica guardada só neste aparelho.",
+    rotulo || "Confirmar");
+  if (!chave) return null;
+  try{ localStorage.setItem(CHAVE_SEGREDO, chave); }catch(e){}
+  return chave;
+}
+function esquecerChave(msg){
+  if (/chave/i.test(msg || "")){ try{ localStorage.removeItem(CHAVE_SEGREDO); }catch(e){} }
+}
+
+/* Apagar precisa alcançar o servidor: apagar só no aparelho faz a resposta
+   voltar na busca seguinte. */
+async function apagarNoServidor(corpo){
+  const chave = await pedirChave("Apagar");
+  if (!chave) return false;
+  const resp = await fetch(CONFIG.endpoint, {
+    method: "POST",
+    body: JSON.stringify(Object.assign({ acao: "apagar", chave }, corpo))
+  });
+  const dado = await resp.json();
+  if (!dado.ok){ esquecerChave(dado.erro); throw new Error(dado.erro || "recusado"); }
+  return true;
+}
 
 async function buscarDoServidor(){
   if (!CONFIG.endpoint) return avisar("Nenhum lugar de envio configurado ainda.");
-  // a chave nunca vai no config.json, que é público: ela fica só neste aparelho
-  let chave = "";
-  try{ chave = localStorage.getItem(CHAVE_SEGREDO) || ""; }catch(e){}
-  if (!chave){
-    chave = await perguntarTexto("Chave de leitura",
-      "É a senha que você definiu ao ligar o banco. Ela fica guardada só neste aparelho.",
-      "Buscar");
-    if (!chave) return;
-    try{ localStorage.setItem(CHAVE_SEGREDO, chave); }catch(e){}
-  }
+  const chave = await pedirChave("Buscar");
+  if (!chave) return;
   avisar("Buscando respostas enviadas…");
   try{
     const resp = await fetch(CONFIG.endpoint + "?chave=" + encodeURIComponent(chave));
@@ -1265,7 +1302,7 @@ async function buscarDoServidor(){
     if (novas){ ordenar(); gravarLocal(); renderPainel(); }
     avisar(novas ? (novas === 1 ? "1 resposta nova." : novas + " respostas novas.") : "Nenhuma resposta nova.");
   }catch(e){
-    if (/chave/i.test(e.message)){ try{ localStorage.removeItem(CHAVE_SEGREDO); }catch(x){} }
+    esquecerChave(e.message);
     avisar("Não consegui buscar: " + e.message);
   }
 }
@@ -2254,10 +2291,21 @@ $("#btn-voltar").addEventListener("click", async () => {
 $("#btn-xlsx").addEventListener("click", () => baixar("pesquisa-tecnologia_" + carimbo() + ".xlsx", montarXlsx()));
 $("#btn-csv").addEventListener("click", () => baixar("pesquisa-tecnologia_" + carimbo() + ".csv", montarCsv()));
 $("#btn-limpar").addEventListener("click", async () => {
+  const noServidor = !!CONFIG.endpoint;
   const ok = await confirmar("Apagar todas as respostas?",
     (respostas.length === 1 ? "A única coleta será removida" : "As " + respostas.length + " coletas serão removidas") +
-    " deste aparelho. Baixe a planilha antes, se ainda não baixou.", "Apagar tudo");
+    (noServidor ? " daqui e do banco, de vez. Isso apaga a pesquisa inteira, inclusive o que outras pessoas enviaram."
+                : " deste aparelho.") +
+    " Baixe a planilha antes, se ainda não baixou.", "Apagar tudo");
   if (!ok) return;
+  if (noServidor){
+    try{
+      const feito = await apagarNoServidor({ tudo: true });
+      if (!feito) return;
+    }catch(e){
+      return avisar("Não consegui apagar no banco: " + e.message);
+    }
+  }
   const antigas = respostas.slice();
   respostas = []; enviadas.clear();
   gravarLocal(); renderPainel();

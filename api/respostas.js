@@ -79,7 +79,30 @@ module.exports = async (req, res) => {
       if (!pronto()) return res.json({ ok: false, erro: "banco ainda não conectado" });
       let corpo = req.body;
       if (typeof corpo === "string") corpo = JSON.parse(corpo);
-      if (!corpo || !Array.isArray(corpo.linha) || !Array.isArray(corpo.cabecalho))
+      if (!corpo) return res.json({ ok: false, erro: "formato inesperado" });
+
+      // apagar exige a mesma chave da leitura: ninguém apaga a pesquisa alheia
+      if (corpo.acao === "apagar") {
+        const esperada = process.env.CHAVE_LEITURA;
+        if (!esperada) return res.json({ ok: false, erro: "defina CHAVE_LEITURA nas variáveis de ambiente" });
+        if (corpo.chave !== esperada) return res.json({ ok: false, erro: "chave inválida" });
+
+        if (corpo.tudo) {
+          await redis(["DEL", LISTA, IDS, CABECALHO]);
+          return res.json({ ok: true, apagadas: "tudo" });
+        }
+        const id = String(corpo.id || "");
+        if (!id) return res.json({ ok: false, erro: "sem id" });
+        const linhas = await redis(["LRANGE", LISTA, "0", "-1"]) || [];
+        const alvo = linhas.find(l => {
+          try { const a = JSON.parse(l); return String(a[a.length - 1]) === id; } catch (e) { return false; }
+        });
+        if (alvo) await redis(["LREM", LISTA, "1", alvo]);
+        await redis(["SREM", IDS, id]);   // libera o código, caso a pessoa responda de novo
+        return res.json({ ok: true, apagadas: alvo ? 1 : 0 });
+      }
+
+      if (!Array.isArray(corpo.linha) || !Array.isArray(corpo.cabecalho))
         return res.json({ ok: false, erro: "formato inesperado" });
 
       const id = String(corpo.linha[corpo.linha.length - 1] || "");

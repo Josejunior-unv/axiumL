@@ -81,6 +81,13 @@ pessoa e sobe sozinha quando a conexão voltar.
 **Reenvio não duplica:** cada resposta tem um código próprio, e o servidor
 recusa a segunda gravação do mesmo código.
 
+**Apagar apaga de verdade.** A lixeira de cada resposta e o *Apagar tudo*
+alcançam o banco, não só o aparelho — apagar só aqui faria a resposta voltar na
+busca seguinte. Apagar exige a mesma chave da leitura, e o servidor tenta lá
+primeiro: se não conseguir, nada some da tela, para o que você vê continuar
+sendo verdade. Cuidado com o *Apagar tudo* quando o banco está ligado: ele leva
+junto o que as outras pessoas enviaram.
+
 > Sem nenhuma das duas opções, o app volta a funcionar como antes: tudo no
 > aparelho e a junção feita pelos arquivos de cópia.
 
