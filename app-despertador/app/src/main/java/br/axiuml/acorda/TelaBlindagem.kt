@@ -16,7 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Warning
@@ -72,7 +72,7 @@ fun TelaBlindagem(aoVoltar: () -> Unit) {
         topBar = {
             TopAppBar(
                 title = { Text("Proteção e ajustes") },
-                navigationIcon = { IconButton(onClick = aoVoltar) { Icon(Icons.Default.ArrowBack, contentDescription = "Voltar") } },
+                navigationIcon = { IconButton(onClick = aoVoltar) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar") } },
             )
         },
     ) { pad ->

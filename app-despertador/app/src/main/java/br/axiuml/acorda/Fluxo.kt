@@ -86,9 +86,9 @@ object Fluxo {
         val s = Armazem.sessao(ctx)
         val perdido = if (ligou) Regras.perdido(Armazem.agendamentos(ctx).values, agora) else null
         when {
-            s?.fase == Fase.TOCANDO -> Agenda.tocarJa(ctx, s.alarmeId, s.teste, 2_000)
-            s?.fase == Fase.CONFIRMANDO && s.teste -> Armazem.salvarSessao(ctx, null)
-            s?.fase == Fase.CONFIRMANDO -> {
+            s != null && s.fase == Fase.TOCANDO -> Agenda.tocarJa(ctx, s.alarmeId, s.teste, 2_000)
+            s != null && s.teste -> Armazem.salvarSessao(ctx, null)
+            s != null -> {
                 Agenda.marcarPrazo(ctx, s.alarmeId, maxOf(s.prazo, agora + 2_000))
                 Notificacoes.mostrarConfirmacao(ctx, s, Armazem.alarme(ctx, s.alarmeId))
             }

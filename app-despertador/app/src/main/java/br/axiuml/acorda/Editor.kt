@@ -25,7 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.AlertDialog
@@ -148,7 +148,7 @@ fun TelaEditor(id: Long?, aoVoltar: () -> Unit) {
         topBar = {
             TopAppBar(
                 title = { Text(if (original == null) "Novo alarme" else "Editar alarme") },
-                navigationIcon = { IconButton(onClick = aoVoltar) { Icon(Icons.Default.ArrowBack, contentDescription = "Voltar") } },
+                navigationIcon = { IconButton(onClick = aoVoltar) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar") } },
                 actions = { TextButton(onClick = salvar) { Text("Salvar", fontWeight = FontWeight.Bold) } },
             )
         },
@@ -397,7 +397,7 @@ private fun CadastroCodigo(aoLer: (String) -> Unit, aoCancelar: () -> Unit) {
         topBar = {
             TopAppBar(
                 title = { Text("Cadastrar código") },
-                navigationIcon = { IconButton(onClick = aoCancelar) { Icon(Icons.Default.ArrowBack, contentDescription = "Voltar") } },
+                navigationIcon = { IconButton(onClick = aoCancelar) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar") } },
             )
         },
     ) { pad ->

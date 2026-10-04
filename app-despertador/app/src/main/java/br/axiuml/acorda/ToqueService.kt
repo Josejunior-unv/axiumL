@@ -83,7 +83,7 @@ class ToqueService : Service() {
         val alarme = s?.let { Armazem.alarme(this, it.alarmeId) }
         if (!primeiroPlano(Notificacoes.tocando(this, s, alarme))) {
             // Sem direito a tocar daqui (ex.: reiniciado pelo sistema): pede ao AlarmManager, que tem.
-            if (s?.fase == Fase.TOCANDO) Agenda.tocarJa(this, s.alarmeId, s.teste, 3_000)
+            if (s != null && s.fase == Fase.TOCANDO) Agenda.tocarJa(this, s.alarmeId, s.teste, 3_000)
             stopSelf()
             return START_NOT_STICKY
         }
