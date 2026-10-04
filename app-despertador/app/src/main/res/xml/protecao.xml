@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nenhuma política de verdade: o app só quer ser administrador para não poder ser
+     desinstalado nem forçado a parar enquanto a proteção estiver ligada. -->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies />
+</device-admin>

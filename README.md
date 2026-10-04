@@ -1,12 +1,16 @@
 # axiumL — Projeto de vídeos com Manim
 
-Este repositório guarda dois projetos:
+Este repositório guarda três projetos:
 
 - **`scenes/`** — os vídeos de matemática feitos com Manim (descrito abaixo).
 - **`app-questionario/`** — app de tablet para aplicar a pesquisa *Uso da
   Tecnologia no Ensino Superior* e exportar as respostas para o Excel.
   No ar em **https://analisededados.vercel.app/**.
   Veja [`app-questionario/README.md`](app-questionario/README.md).
+- **`app-despertador/`** — *Acorda!*, despertador Android que só desliga com
+  uma tarefa e trava 1 hora antes de tocar. APK em
+  **https://github.com/Josejunior-unv/axiumL/releases/latest/download/acorda.apk**.
+  Veja [`app-despertador/README.md`](app-despertador/README.md).
 
 ---
 

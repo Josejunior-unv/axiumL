@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Sinos -->
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M30,37 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 z" />
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M62,37 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 z" />
+    <!-- Pés -->
+    <path
+        android:pathData="M41,75 L35,82 M67,75 L73,82"
+        android:strokeWidth="4"
+        android:strokeColor="#FFB300"
+        android:strokeLineCap="round" />
+    <!-- Corpo e mostrador -->
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M32,58 a22,22 0 1,0 44,0 a22,22 0 1,0 -44,0 z" />
+    <path
+        android:fillColor="#FFF8E1"
+        android:pathData="M37,58 a17,17 0 1,0 34,0 a17,17 0 1,0 -34,0 z" />
+    <!-- Ponteiros -->
+    <path
+        android:pathData="M54,58 L54,46 M54,58 L62,63"
+        android:strokeWidth="3"
+        android:strokeColor="#1B1F3B"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M51.5,58 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0 z" />
+</vector>

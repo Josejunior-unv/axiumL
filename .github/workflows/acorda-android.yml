@@ -1,0 +1,70 @@
+name: App Acorda! (Android)
+
+# Compila o APK do despertador e publica num link fixo para baixar direto no celular:
+# https://github.com/Josejunior-unv/axiumL/releases/latest/download/acorda.apk
+on:
+  push:
+    paths:
+      - "app-despertador/**"
+      - ".github/workflows/acorda-android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: acorda-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app-despertador
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Testes das regras do despertar
+        run: ./gradlew --no-daemon --stacktrace :nucleo:test
+
+      - name: Compilar o APK
+        env:
+          VERSAO_CODIGO: ${{ github.run_number }}
+        run: ./gradlew --no-daemon --stacktrace :app:assembleRelease
+
+      - name: Separar o APK
+        run: cp app/build/outputs/apk/release/app-release.apk ../acorda.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acorda-apk
+          path: acorda.apk
+
+      - name: Publicar para baixar no celular
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          versao="1.${{ github.run_number }}"
+          cat > notas.md <<NOTAS
+          **Acorda!** versão $versao — despertador que só desliga com uma tarefa.
+
+          **Para instalar:** abra este link no celular Android, baixe o \`acorda.apk\` e toque nele.
+          Se o Android pedir, permita "instalar apps desconhecidos" para o navegador.
+          Versões novas instalam por cima, sem perder os alarmes.
+
+          Commit: ${{ github.sha }}
+          NOTAS
+          gh release create "acorda-v$versao" acorda.apk \
+            --target "${{ github.sha }}" \
+            --title "Acorda! $versao" \
+            --notes-file notas.md \
+            --latest
