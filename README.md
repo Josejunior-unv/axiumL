@@ -1,8 +1,11 @@
 # axiumL — Projeto de vídeos com Manim
 
-Este repositório guarda dois projetos:
+Este repositório guarda três projetos:
 
 - **`scenes/`** — os vídeos de matemática feitos com Manim (descrito abaixo).
+- **`reels-trafego-pago/`** — série de 10 Reels animados sobre tráfego pago
+  (motion em HTML + GSAP, renderizado em MP4). Veja
+  [`reels-trafego-pago/README.md`](reels-trafego-pago/README.md).
 - **`app-questionario/`** — app de tablet para aplicar a pesquisa *Uso da
   Tecnologia no Ensino Superior* e exportar as respostas para o Excel.
   No ar em **https://analisededados.vercel.app/**.

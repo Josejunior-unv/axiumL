@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Reels — Tráfego Pago</title>
+<link rel="stylesheet" href="core.css">
+<script src="../node_modules/gsap/dist/gsap.min.js"></script>
+<script src="../node_modules/gsap/dist/DrawSVGPlugin.min.js"></script>
+<script src="../node_modules/gsap/dist/MotionPathPlugin.min.js"></script>
+<script src="../node_modules/gsap/dist/CustomEase.min.js"></script>
+</head>
+<body>
+<div id="stage">
+  <canvas id="bg" width="1080" height="1920"></canvas>
+  <div id="cam"><div id="layer"></div></div>
+  <div id="hud"></div>
+  <canvas id="fx" width="1080" height="1920"></canvas>
+</div>
+<script src="../config.js"></script>
+<script src="icons.js"></script>
+<script src="core.js"></script>
+<script>
+  // Carrega o roteiro pedido em ?v=01 (ou abre o 01 por padrão) e monta a timeline
+  const id = new URLSearchParams(location.search).get('v') || '01';
+  const s = document.createElement('script');
+  s.src = '../videos/' + id + '.js';
+  s.onload = () => Engine.boot();
+  document.head.appendChild(s);
+</script>
+</body>
+</html>
