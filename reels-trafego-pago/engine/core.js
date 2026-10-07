@@ -27,108 +27,74 @@
   const rand = rng(1337);
 
   // ---------- fundo ----------
-  const BG = {
-    base: "#05050b", c1: "#7c3aed", c2: "#ff2e88", c3: "#22d3ee",
-    blob: 0.55, grid: 0.55, speed: 0.12, part: 1, horizon: 1420, flash: 0, vig: 0.85, zoom: 1,
+  // c1 = cor chapada do fundo, c2 = formas grandes, c3 = anel/detalhe
+  const BG = { c1: "#ffd23f", c2: "#ffb703", c3: "#ffffff", deco: 1, flash: 0 };
+  const PAL = ["#ffd23f", "#ff5e5b", "#00c2a8", "#3da5ff", "#b8f35a", "#ffffff", "#ff8a3d", "#ff7eb6"];
+  const INK = "#17171c";
+  // fundos prontos (cor chapada + tom das formas grandes)
+  const P = {
+    yellow: { c1: "#ffd23f", c2: "#ffbe0b", c3: "#ffffff" }, orange: { c1: "#ff8a3d", c2: "#ff7020", c3: "#ffd23f" },
+    coral: { c1: "#ff5e5b", c2: "#ff4643", c3: "#ffd23f" }, teal: { c1: "#00c2a8", c2: "#00ab94", c3: "#ffd23f" },
+    sky: { c1: "#3da5ff", c2: "#2190f2", c3: "#ffd23f" }, green: { c1: "#4cd47f", c2: "#33c46a", c3: "#ffffff" },
+    lime: { c1: "#b8f35a", c2: "#a3e33f", c3: "#ffffff" }, pink: { c1: "#ff8fbf", c2: "#ff75ae", c3: "#ffd23f" },
+    cream: { c1: "#fff6e5", c2: "#ffe7b8", c3: "#ff5e5b" },
   };
-  function rgb(c) {
-    if (c[0] === "#") {
-      const n = parseInt(c.slice(1), 16);
-      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-    }
-    const m = c.match(/[\d.]+/g).map(Number);
-    return [m[0], m[1], m[2]];
-  }
-  const rgba = (c, a) => { const [r, g, b] = rgb(c); return `rgba(${r},${g},${b},${a})`; };
 
   const pr = rng(42);
-  const parts = Array.from({ length: 70 }, () => ({
-    x: pr() * W, y: pr() * H, v: 25 + pr() * 90, s: 1.5 + pr() * 4.5, k: Math.floor(pr() * 3),
-    ph: pr() * 6.28, dx: (pr() - 0.5) * 30,
+  // confete só nas laterais, para não brigar com o texto
+  const confetti = Array.from({ length: 16 }, (_, i) => ({
+    x: i % 2 ? 20 + pr() * 90 : W - 20 - pr() * 90, y: pr() * H, v: 18 + pr() * 40, s: 18 + pr() * 18, k: i % 5,
+    col: PAL[Math.floor(pr() * PAL.length)], rot: pr() * 6.28, rs: (pr() - 0.5) * 2.2, ph: pr() * 6.28, dx: 10 + pr() * 20,
   }));
+
+  function shape(c, k, s) {
+    c.beginPath();
+    if (k === 0) c.rect(-s / 2, -s / 3, s, s * 0.66);
+    else if (k === 1) c.arc(0, 0, s / 2, 0, 6.283);
+    else if (k === 2) { c.moveTo(0, -s / 2); c.lineTo(s / 2, s / 2.4); c.lineTo(-s / 2, s / 2.4); c.closePath(); }
+    else if (k === 3) { c.moveTo(-s, 0); for (let i = 1; i <= 4; i++) c.lineTo(-s + i * (s / 2), i % 2 ? -s / 3 : 0); }
+    else { const a = s / 6; c.rect(-a, -s / 2, 2 * a, s); c.rect(-s / 2, -a, s, 2 * a); }
+  }
 
   function drawBG(t) {
     const c = bgc;
-    c.globalCompositeOperation = "source-over";
-    c.fillStyle = BG.base; c.fillRect(0, 0, W, H);
-    const cols = [BG.c1, BG.c2, BG.c3];
+    c.globalAlpha = 1;
+    c.fillStyle = BG.c1; c.fillRect(0, 0, W, H);
 
-    // manchas de cor
-    c.globalCompositeOperation = "lighter";
-    const blobs = [
-      [0.22, 0.28, 0.33, 0.21, 0.0, 820], [0.8, 0.55, 0.27, 0.17, 2.1, 760], [0.45, 0.85, 0.21, 0.29, 4.2, 900],
-    ];
-    blobs.forEach(([bx, by, fx, fy, ph, r], i) => {
-      const x = W * (bx + 0.16 * Math.sin(t * fx + ph));
-      const y = H * (by + 0.1 * Math.cos(t * fy + ph));
-      const rr = r * BG.zoom * (1 + 0.08 * Math.sin(t * 0.7 + i));
-      const g = c.createRadialGradient(x, y, 0, x, y, rr);
-      g.addColorStop(0, rgba(cols[i], 0.42 * BG.blob));
-      g.addColorStop(0.45, rgba(cols[i], 0.16 * BG.blob));
-      g.addColorStop(1, rgba(cols[i], 0));
-      c.fillStyle = g; c.fillRect(0, 0, W, H);
-    });
+    // retícula de pontinhos andando na diagonal
+    c.fillStyle = "rgba(23,23,28,0.07)";
+    const g = 54, off = (t * 14) % g;
+    for (let y = -g; y < H + g; y += g)
+      for (let x = -g; x < W + g; x += g) { c.beginPath(); c.arc(x + off, y + off, 3.2, 0, 6.283); c.fill(); }
 
-    // piso em perspectiva (estilo synthwave)
-    c.globalCompositeOperation = "source-over";
-    if (BG.grid > 0.01) {
-      const hz = BG.horizon, vx = W / 2;
-      c.lineWidth = 2;
-      for (let k = -14; k <= 14; k++) {
-        const g = c.createLinearGradient(0, hz, 0, H);
-        g.addColorStop(0, rgba(BG.c1, 0)); g.addColorStop(1, rgba(BG.c1, 0.5 * BG.grid));
-        c.strokeStyle = g;
-        c.beginPath(); c.moveTo(vx + k * 26, hz); c.lineTo(vx + k * 230, H + 40); c.stroke();
-      }
-      const N = 14, off = (t * BG.speed) % 1;
-      for (let i = 0; i < N; i++) {
-        const p = ((i + off) / N);
-        const y = hz + (H - hz) * Math.pow(p, 2.3);
-        c.strokeStyle = rgba(BG.c1, Math.min(1, p * 1.2) * 0.5 * BG.grid);
-        c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke();
-      }
-      const hg = c.createLinearGradient(0, hz - 140, 0, hz + 60);
-      hg.addColorStop(0, rgba(BG.c2, 0)); hg.addColorStop(0.7, rgba(BG.c2, 0.22 * BG.grid)); hg.addColorStop(1, rgba(BG.c2, 0));
-      c.fillStyle = hg; c.fillRect(0, hz - 140, W, 200);
+    c.globalAlpha = BG.deco;
+    // formas grandes nos cantos
+    c.fillStyle = BG.c2;
+    c.beginPath(); c.arc(W * 0.98 + 18 * Math.sin(t * 0.6), H * 0.1 + 22 * Math.cos(t * 0.5), 300, 0, 6.283); c.fill();
+    c.beginPath(); c.arc(W * 0.0 + 20 * Math.cos(t * 0.45), H * 0.93 + 18 * Math.sin(t * 0.55), 360, 0, 6.283); c.fill();
+    // anel tracejado girando
+    c.save(); c.translate(W * 0.9, H * 0.82); c.rotate(t * 0.35);
+    c.strokeStyle = BG.c3; c.lineWidth = 18; c.setLineDash([34, 26]); c.lineCap = "round";
+    c.beginPath(); c.arc(0, 0, 120, 0, 6.283); c.stroke(); c.restore();
+    c.setLineDash([]);
+
+    // confete
+    c.lineJoin = "round"; c.lineCap = "round";
+    for (const p of confetti) {
+      const y = ((p.y - t * p.v) % (H + 120) + H + 120) % (H + 120) - 60;
+      const x = p.x + Math.sin(t * 0.9 + p.ph) * p.dx;
+      c.save(); c.translate(x, y); c.rotate(p.rot + t * p.rs);
+      shape(c, p.k, p.s);
+      if (p.k === 3) { c.strokeStyle = INK; c.lineWidth = 12; c.stroke(); c.strokeStyle = p.col; c.lineWidth = 6; c.stroke(); }
+      else { c.fillStyle = p.col; c.fill(); c.strokeStyle = INK; c.lineWidth = 4; c.stroke(); }
+      c.restore();
     }
-
-    // partículas subindo
-    c.globalCompositeOperation = "lighter";
-    for (const p of parts) {
-      const y = ((p.y - t * p.v) % (H + 80) + H + 80) % (H + 80) - 40;
-      const x = p.x + Math.sin(t * 0.8 + p.ph) * p.dx;
-      const a = (0.35 + 0.35 * Math.sin(t * 2.2 + p.ph)) * BG.part;
-      c.fillStyle = rgba(cols[p.k], a * 0.25);
-      c.beginPath(); c.arc(x, y, p.s * 3.2, 0, 6.283); c.fill();
-      c.fillStyle = rgba("#ffffff", a * 0.8);
-      c.beginPath(); c.arc(x, y, p.s * 0.6, 0, 6.283); c.fill();
-    }
-    c.globalCompositeOperation = "source-over";
+    c.globalAlpha = 1;
   }
 
-  // granulação pré-gerada (4 variações) + vinheta + flash
-  const grains = Array.from({ length: 4 }, (_, k) => {
-    const cv = document.createElement("canvas"); cv.width = cv.height = 256;
-    const x = cv.getContext("2d"), id = x.createImageData(256, 256), r = rng(900 + k);
-    for (let i = 0; i < id.data.length; i += 4) {
-      const v = r() > 0.5 ? 255 : 0;
-      id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = r() * 10;
-    }
-    x.putImageData(id, 0, 0);
-    return fxc.createPattern(cv, "repeat");
-  });
-  function drawFX(t, frame) {
+  function drawFX() {
     const c = fxc;
     c.clearRect(0, 0, W, H);
-    const v = c.createRadialGradient(W / 2, H / 2, H * 0.28, W / 2, H / 2, H * 0.75);
-    v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, `rgba(0,0,0,${BG.vig})`);
-    c.fillStyle = v; c.fillRect(0, 0, W, H);
-    c.save();
-    const g = Math.floor(frame / 3);
-    c.scale(2, 2);
-    c.translate((g * 73) % 256, (g * 151) % 256);
-    c.fillStyle = grains[g % 4]; c.fillRect(-256, -256, W / 2 + 512, H / 2 + 512);
-    c.restore();
     if (BG.flash > 0.001) { c.fillStyle = `rgba(255,255,255,${BG.flash})`; c.fillRect(0, 0, W, H); }
   }
 
@@ -141,7 +107,7 @@
     (parent || layer).appendChild(d);
     return d;
   }
-  function icon(name, size = 80, color = "#fff", sw = 2.2, fill = "none") {
+  function icon(name, size = 80, color = "#17171c", sw = 2.4, fill = "none") {
     const d = document.createElement("span");
     d.className = "ico";
     d.style.width = d.style.height = size + "px";
@@ -267,8 +233,8 @@
     cue(o.cue || "hit", t, o.vol ?? 1);
   }
   function glitch(node, t, d = 0.4) {
-    tl.fromTo(node, { textShadow: "14px 0 0 rgba(255,46,136,.9), -14px 0 0 rgba(34,211,238,.9)", x: -10 },
-      { textShadow: "0px 0 0 rgba(255,46,136,0), 0px 0 0 rgba(34,211,238,0)", x: 0, duration: d, ease: "steps(6)", immediateRender: false }, t);
+    tl.fromTo(node, { textShadow: "14px 0 0 rgba(255,94,91,.95), -14px 0 0 rgba(61,165,255,.95)", x: -10 },
+      { textShadow: "0px 0 0 rgba(255,94,91,0), 0px 0 0 rgba(61,165,255,0)", x: 0, duration: d, ease: "steps(6)", immediateRender: false }, t);
     cue("glitch", t, 0.7);
   }
   function mark(node, t, d = 0.5) {
@@ -290,7 +256,10 @@
     tl.fromTo(p, { drawSVG: o.from ?? "0%" }, { drawSVG: "100%", duration: d, ease: o.ease || "power2.inOut", stagger: o.stagger ?? 0.08 }, t);
     return t + d;
   }
-  function bgTo(t, props, d = 1) { tl.to(BG, { ...props, duration: d, ease: "power2.inOut" }, t); }
+  function bgTo(t, props, d = 0.5) {
+    if (typeof props === "string") props = P[props];
+    tl.to(BG, { ...props, duration: d, ease: "power3.inOut" }, t);
+  }
   function float(node, t0, t1, amp = 14, period = 2.4) {
     const n = Math.max(1, Math.floor((t1 - t0) / period));
     for (let i = 0; i < n; i++) {
@@ -328,9 +297,10 @@
     const c = el(s, "center");
     const row = el(c, "", "", { display: "flex", gap: "44px", marginBottom: "80px" });
     const names = ["heart", "send", "bookmark"];
-    const badges = names.map((n) => {
-      const b = el(row, "badge", "", { width: "150px", height: "150px", borderRadius: "44px" });
-      const ic = icon(n, 78, "#fff", 2.4);
+    const bcol = ["#ff5e5b", "#3da5ff", "#ffffff"];
+    const badges = names.map((n, i) => {
+      const b = el(row, "badge", "", { width: "150px", height: "150px", borderRadius: "44px", background: bcol[i] });
+      const ic = icon(n, 78, "#17171c", 2.6);
       b.appendChild(ic);
       return b;
     });
@@ -338,7 +308,7 @@
     cue("pop", start + 0.17, 0.7); cue("pop", start + 0.29, 0.7);
     badges.forEach((b, i) => draw(b, start + 0.15 + i * 0.12, 0.6));
     // o salvar "pisca" no final
-    tl.to(badges[2].querySelector("svg"), { attr: { fill: "#fff" }, duration: 0.25 }, start + 1.3);
+    tl.to(badges[2].querySelector("svg"), { attr: { fill: "#ffd23f" }, duration: 0.25 }, start + 1.3);
     pulse(badges[2], start + 1.3, 1.22, 0.35);
     cue("ding", start + 1.3, 0.8);
 
@@ -346,12 +316,11 @@
     const d1 = wordsIn(tx, start + 0.35, { stagger: 0.07, cue: "whoosh" });
     const sb = text(c, o.sub || "e manda pra quem [b:investe em anúncio]", "p p-l", { marginTop: "48px", maxWidth: "860px" });
     wordsIn(sb, d1 + 0.05, { stagger: 0.04, dur: 0.5, cue: false });
-    const nx = el(c, "chip", `${icon("play", 34, "#fff", 2.6).outerHTML}<span>${o.next || "Segue pra ver o próximo"}</span>`,
-      { marginTop: "70px", fontSize: "38px", padding: "20px 34px", borderColor: "color-mix(in srgb, var(--a2) 70%, transparent)",
-        background: "color-mix(in srgb, var(--a2) 18%, transparent)" });
+    const nx = el(c, "chip", `${icon("play", 34, "#fff", 2.6, "#fff").outerHTML}<span>${o.next || "Segue pra ver o próximo"}</span>`,
+      { marginTop: "70px", fontSize: "38px", padding: "20px 34px", background: "#17171c", color: "#fff" });
     inn(nx, d1 + 0.6, { from: "up", dur: 0.6, cue: "pop" });
     if (CONFIG.handle) {
-      const hd = el(c, "", CONFIG.handle, { marginTop: "34px", fontFamily: "Inter", fontWeight: 800, fontSize: "44px", color: "rgba(255,255,255,.8)" });
+      const hd = el(c, "", CONFIG.handle, { marginTop: "34px", fontFamily: "Inter", fontWeight: 800, fontSize: "44px", color: "#17171c" });
       inn(hd, d1 + 0.8, { from: "fade", dur: 0.6 });
     }
     float(row, start + 1.2, end, 10, 2);
@@ -398,7 +367,7 @@
       const th = V.theme || {};
       if (th.a1) document.documentElement.style.setProperty("--a1", th.a1);
       if (th.a2) document.documentElement.style.setProperty("--a2", th.a2);
-      Object.assign(BG, th.bg || {});
+      Object.assign(BG, typeof th.bg === "string" ? P[th.bg] : th.bg || {});
       V.build(E);
       const dur = V.duration || tl.duration();
       tl.set({}, {}, dur);
@@ -411,6 +380,6 @@
 
   const E = (window.E = {
     W, H, tl, BG, layer, el, icon, text, scene, wordsIn, in: inn, out, shake, flash, punch, glitch, mark, counter, draw,
-    bgTo, float, pulse, hook, cta, cue, rand, rng, at,
+    bgTo, float, pulse, hook, cta, cue, rand, rng, at, P,
   });
 })();

@@ -1,7 +1,7 @@
 # Reels — Tráfego Pago (série de 10 vídeos)
 
 10 vídeos verticais (1080×1920, 30 fps, ~30 s, com trilha e efeitos sonoros) para Instagram/TikTok,
-feitos com motion design em código: HTML + GSAP, renderizados quadro a quadro no Chromium e montados com ffmpeg.
+feitos com motion design em código (visual colorido e alegre: fundos chapados, texto escuro, cartões tipo adesivo): HTML + GSAP, renderizados quadro a quadro no Chromium e montados com ffmpeg.
 A trilha e os efeitos são sintetizados em Python (sem problema de direito autoral).
 
 | EP | Tema | Arquivo de roteiro |
