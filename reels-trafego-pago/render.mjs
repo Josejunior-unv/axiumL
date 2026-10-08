@@ -5,7 +5,7 @@
 //   node render.mjs 03 --stills 0.5,4,9   -> só tira prints desses segundos (para conferir)
 //   node render.mjs --mute       -> sem trilha/efeitos
 import { spawn, spawnSync } from "node:child_process";
-import { mkdirSync, writeFileSync, readdirSync, existsSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -36,9 +36,28 @@ for (const id of ids) {
   const page = await browser.newPage({ viewport: { width: 1080, height: 1920 }, deviceScaleFactor: 1 });
   page.on("pageerror", (e) => console.error(`[${id}] erro na página:`, e.message));
   page.on("console", (m) => m.type() === "error" && console.error(`[${id}]`, m.text()));
-  await page.goto(pathToFileURL(path.join(ROOT, "engine", "stage.html")).href + "?v=" + id);
+  const stage = pathToFileURL(path.join(ROOT, "engine", "stage.html")).href + "?v=" + id;
+
+  // Episódios narrados: gera a voz primeiro, porque a duração de cada fala define a timeline
+  await page.goto(stage + "&probe=1");
+  await page.waitForFunction(() => window.__ready === true, null, { timeout: 30000 });
+  const probe = await page.evaluate(() => window.__probe);
+  let voiceDir = null;
+  if (probe.narr) {
+    voiceDir = path.join(TMP, "narr", id);
+    mkdirSync(voiceDir, { recursive: true });
+    const falas = path.join(voiceDir, "falas.json");
+    writeFileSync(falas, JSON.stringify(probe.narr));
+    console.log(`[${id}] narração (${probe.voz})`);
+    const py = spawnSync("python3", [path.join(ROOT, "audio", "narrar.py"), falas, voiceDir, probe.voz], { stdio: "inherit" });
+    if (py.status !== 0) throw new Error("falha ao gerar a narração");
+    const dur = readFileSync(path.join(voiceDir, "duracoes.json"), "utf8");
+    await page.addInitScript(`window.NARR_DUR = ${dur};`);
+  }
+  await page.goto(stage);
   await page.waitForFunction(() => window.__ready === true, null, { timeout: 30000 });
   const info = await page.evaluate(() => window.__info());
+  info.voiceDir = voiceDir;
   const name = `${id}-${info.slug}`;
 
   if (stills) {

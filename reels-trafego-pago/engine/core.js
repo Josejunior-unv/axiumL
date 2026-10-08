@@ -203,10 +203,15 @@
   function scene(start, end, o = {}) {
     const s = el(layer, "scene");
     tl.set(s, { visibility: "visible" }, start);
+    if (o.enter === "whip") tl.fromTo(s, { xPercent: 110, skewX: 12 }, { xPercent: 0, skewX: 0, duration: 0.45, ease: "expo.out" }, start);
+    if (o.dolly) dolly(s, start, end ?? start + 4, o.dolly);
     if (o.chapter !== false) chapters.push(start);
     if (end != null) {
       const d = o.exitDur ?? 0.35;
-      if (o.exit !== "none") {
+      if (o.exit === "whip") {
+        tl.to(s, { xPercent: -110, skewX: 12, filter: "blur(16px)", duration: 0.3, ease: "power3.in" }, end - 0.3);
+        if (o.exitCue !== false) cue("whoosh", end - 0.3, 0.6);
+      } else if (o.exit !== "none") {
         tl.to(s, { opacity: 0, scale: o.exit === "in" ? 0.85 : 1.12, filter: "blur(22px)", duration: d, ease: "power2.in" }, end - d);
         if (o.exitCue !== false) cue("swish", end - d, 0.55);
       }
@@ -269,6 +274,93 @@
   }
   function pulse(node, t, s = 1.12, d = 0.3) {
     tl.to(node, { scale: s, duration: d / 2, ease: "power2.out", yoyo: true, repeat: 1 }, t);
+  }
+
+  // ---------- cinema ----------
+  // empurra a câmera devagar (dolly-in) numa cena
+  function dolly(node, t0, t1, k = 0.06) {
+    tl.fromTo(node, { scale: 1 }, { scale: 1 + k, duration: Math.max(0.5, t1 - t0), ease: "none", immediateRender: false }, t0);
+  }
+  // barras de cinema (letterbox) entrando/saindo
+  const bars = el(document.getElementById("bars"), "", "");
+  const barT = el(bars, "bar-cine top"), barB = el(bars, "bar-cine bot");
+  gsap.set([barT, barB], { scaleY: 0 });
+  function letterbox(t, on = true, h = 1, d = 0.6) {
+    tl.to([barT, barB], { scaleY: on ? h : 0, duration: d, ease: "expo.inOut" }, t);
+  }
+  // cartela de capítulo, com barras de cinema
+  function chapter(t, d, kicker, title, o = {}) {
+    const s = scene(t, t + d, { exit: o.exit || "whip", chapter: false });
+    if (o.bg) bgTo(t - 0.15, o.bg);
+    letterbox(t, true, 1, 0.5);
+    letterbox(t + d - 0.35, false, 1, 0.4);
+    const c = el(s, "center");
+    const k = el(c, "kicker", `<span class="dot"></span>${kicker}`, { marginBottom: "44px" });
+    inn(k, t + 0.1, { from: "pop" });
+    const tx = text(c, title, "t t-xl");
+    wordsIn(tx, t + 0.2, { stagger: 0.09, cue: "whoosh" });
+    cue("braam", t + 0.05, 0.9);
+    shake(t + 0.25, 10, 0.4);
+    dolly(c, t, t + d, 0.08);
+    return s;
+  }
+
+  // ---------- narração ----------
+  // Cada fala tem id, texto e (opcional) gap antes. A duração real vem do TTS
+  // (window.NARR_DUR); sem ela, estima pelo número de palavras.
+  const N = {};
+  function layoutNarr(V) {
+    const D = window.NARR_DUR || {};
+    let t = V.narrStart ?? 0.3;
+    for (const l of V.narr || []) {
+      t += l.gap ?? 0.28;
+      if (l.at != null) t = l.at;
+      const words = l.text.split(/\s+/).length;
+      const d = D[l.id] ?? words / 2.8 + 0.2;
+      N[l.id] = { t: +t.toFixed(3), d, end: +(t + d).toFixed(3), text: l.cap || l.text, nocap: !!l.nocap };
+      t += d;
+    }
+    N._end = t;
+  }
+  // legendas palavra a palavra (blocos de até 3 palavras), destaque na palavra falada
+  function captions(V) {
+    const top = V.capTop ?? 1365;
+    for (const id of Object.keys(N)) {
+      if (id === "_end") continue;
+      const l = N[id];
+      if (l.nocap) continue;
+      const words = l.text.split(/\s+/);
+      const w8 = words.map((w) => w.length + 2);
+      const tot = w8.reduce((a, b) => a + b, 0);
+      const wt = []; let acc = 0;
+      words.forEach((w, i) => { wt.push(l.t + (acc / tot) * l.d); acc += w8[i]; });
+      wt.push(l.end);
+      const chunks = []; let cur = [];
+      words.forEach((w, i) => {
+        cur.push(i);
+        const len = cur.reduce((a, j) => a + words[j].length + 1, 0);
+        const punct = /[.,!?:;]$/.test(w);
+        if (cur.length >= 3 || len > 15 || punct) { chunks.push(cur); cur = []; }
+      });
+      if (cur.length) chunks.push(cur);
+      chunks.forEach((ch, ci) => {
+        const ts = wt[ch[0]];
+        const te = ci + 1 < chunks.length ? wt[chunks[ci + 1][0]] : l.end + 0.15;
+        const box = el(hud, "cap", "", { top: top + "px" });
+        const spans = ch.map((j) => {
+          const sp = document.createElement("span");
+          sp.className = "cw"; sp.textContent = words[j];
+          box.appendChild(sp); box.appendChild(document.createTextNode(" "));
+          return sp;
+        });
+        tl.fromTo(box, { opacity: 0, scale: 0.7, y: 24 }, { opacity: 1, scale: 1, y: 0, duration: 0.16, ease: "back.out(2.6)" }, ts);
+        tl.set(box, { opacity: 0 }, te);
+        ch.forEach((j, k) => {
+          tl.set(spans[k], { color: "#ffd23f", scale: 1.06 }, wt[j]);
+          tl.set(spans[k], { color: "#ffffff", scale: 1 }, wt[j + 1]);
+        });
+      });
+    }
   }
 
   // ---------- telas prontas ----------
@@ -368,11 +460,14 @@
       if (th.a1) document.documentElement.style.setProperty("--a1", th.a1);
       if (th.a2) document.documentElement.style.setProperty("--a2", th.a2);
       Object.assign(BG, typeof th.bg === "string" ? P[th.bg] : th.bg || {});
+      if (V.narr) layoutNarr(V);
       V.build(E);
+      if (V.narr && V.captions !== false) captions(V);
       const dur = V.duration || tl.duration();
       tl.set({}, {}, dur);
       buildHUD(V, dur);
-      window.__info = () => ({ duration: dur, fps, cues: cues.sort((a, b) => a.t - b.t), ep: V.ep, slug: V.slug, title: V.title, bpm: V.bpm || 120 });
+      window.__info = () => ({ duration: dur, fps, cues: cues.sort((a, b) => a.t - b.t), ep: V.ep, slug: V.slug, title: V.title, bpm: V.bpm || 120,
+        music: V.music || "pop", voice: Object.keys(N).filter((k) => k !== "_end").map((k) => ({ id: k, t: N[k].t, d: N[k].d })) });
       window.__seek(0);
       window.__ready = true;
     },
@@ -380,6 +475,6 @@
 
   const E = (window.E = {
     W, H, tl, BG, layer, el, icon, text, scene, wordsIn, in: inn, out, shake, flash, punch, glitch, mark, counter, draw,
-    bgTo, float, pulse, hook, cta, cue, rand, rng, at, P,
+    bgTo, float, pulse, hook, cta, cue, rand, rng, at, P, N, dolly, letterbox, chapter,
   });
 })();

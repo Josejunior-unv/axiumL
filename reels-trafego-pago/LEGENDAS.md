@@ -126,3 +126,64 @@ Qual você usa hoje? 👇
 Qual desses você já cometeu? 👇
 
 #trafegopago #metaads #googleads #erros #gestordetrafego #marketingdigital #anuncios
+
+---
+
+## EP 11 — Quanto investir por dia?
+Quanto investir por dia em anúncio? Não é mágica, é conta. 🧮
+
+Custo por venda × 50 conversões na semana ÷ 7 dias.
+Ex.: R$ 30 × 50 = R$ 1.500/semana → uns R$ 215/dia.
+Pouca verba? Otimize pra um evento mais barato até ganhar volume.
+
+Qual é o seu custo por venda hoje? 👇
+
+#trafegopago #metaads #orcamento #gestordetrafego #marketingdigital #anuncios
+
+---
+
+## EP 12 — Teste A/B do jeito certo
+Testou dois anúncios e não sabe qual ganhou? Você mudou coisa demais. 🧪
+
+Regra de ouro: uma variável por vez. Mesmo vídeo, mesma oferta, mesmo público, só o gancho muda. E nada de decidir no primeiro dia.
+
+O que você vai testar primeiro? 👇
+
+#testeab #criativos #trafegopago #metaads #marketingdigital #gestordetrafego
+
+---
+
+## EP 13 — Como escalar sem quebrar a campanha
+Campanha vendendo? Agora escala sem estragar tudo. 🚀
+
+Vertical: +20% de orçamento a cada 2–3 dias (R$ 100 → R$ 120 → R$ 144).
+Horizontal: novos criativos, públicos e ofertas.
+O mais seguro: os dois juntos, de olho no custo por venda.
+
+Você já dobrou orçamento de uma vez e se arrependeu? 👇
+
+#escala #trafegopago #metaads #facebookads #gestordetrafego #marketingdigital
+
+---
+
+## EP 14 — Dobre as vendas sem gastar mais
+Dá pra dobrar as vendas sem gastar 1 real a mais em anúncio. 📈
+
+1.000 cliques × 1% = 10 vendas. Melhora a página: 1.000 × 2% = 20 vendas.
+Promessa clara no topo, prova social, um botão só, página rápida e a mesma promessa do anúncio.
+
+Sua página passa nesse checklist? 👇
+
+#landingpage #conversao #trafegopago #marketingdigital #vendasonline #cro
+
+---
+
+## EP 15 — Quanto vale um cliente? (LTV × CAC)
+Pagaria R$ 100 por um cliente que compra um produto de R$ 80? 🤔
+
+Depende do LTV: o lucro que ele deixa com o tempo.
+Ex.: 10 compras × R$ 30 de lucro = R$ 300. CAC de R$ 100 → 3×.
+
+Você sabe o LTV do seu cliente? 👇
+
+#ltv #cac #trafegopago #marketingdigital #empreendedorismo #gestordetrafego

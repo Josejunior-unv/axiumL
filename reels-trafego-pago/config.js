@@ -4,7 +4,9 @@ window.CONFIG = {
   handle: "",
   // Nome da série que aparece na etiqueta do topo
   serie: "TRÁFEGO PAGO",
-  // Total de episódios (aparece como 03/10)
-  total: 10,
+  // Total de episódios (aparece como 03/15)
+  total: 15,
   fps: 30,
+  // Voz da narração (Kokoro): "pm_alex", "pm_santa" (masculinas) ou "pf_dora" (feminina)
+  voz: "pm_alex",
 };

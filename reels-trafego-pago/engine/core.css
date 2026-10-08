@@ -120,3 +120,14 @@ body {
 .hud-prog > div > i { display: block; height: 100%; width: 100%; transform-origin: left; transform: scaleX(0); background: var(--ink); }
 
 .abs { position: absolute !important; }
+
+/* ---------- cinema e legendas ---------- */
+#bars { position: absolute; inset: 0; pointer-events: none; }
+.bar-cine { position: absolute; left: 0; right: 0; height: 230px; background: var(--ink); }
+.bar-cine.top { top: 0; transform-origin: top; }
+.bar-cine.bot { bottom: 0; transform-origin: bottom; }
+.cap { position: absolute; left: 50px; right: 50px; text-align: center;
+  font-family: "Inter Display", sans-serif; font-weight: 900; font-size: 68px; line-height: 1.1;
+  letter-spacing: -.02em; text-transform: uppercase; color: #fff;
+  -webkit-text-stroke: 12px var(--ink); paint-order: stroke fill; text-shadow: 0 8px 0 var(--ink); }
+.cap .cw { display: inline-block; margin: 0 .1em; }

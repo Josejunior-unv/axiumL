@@ -14,6 +14,7 @@
   <canvas id="bg" width="1080" height="1920"></canvas>
   <div id="cam"><div id="layer"></div></div>
   <div id="hud"></div>
+  <div id="bars"></div>
   <canvas id="fx" width="1080" height="1920"></canvas>
 </div>
 <script src="../config.js"></script>
@@ -21,10 +22,17 @@
 <script src="core.js"></script>
 <script>
   // Carrega o roteiro pedido em ?v=01 (ou abre o 01 por padrão) e monta a timeline
-  const id = new URLSearchParams(location.search).get('v') || '01';
+  // Com ?probe=1 só devolve as falas (para o renderizador gerar a narração antes)
+  const q = new URLSearchParams(location.search);
+  const id = q.get('v') || '01';
   const s = document.createElement('script');
   s.src = '../videos/' + id + '.js';
-  s.onload = () => Engine.boot();
+  s.onload = () => {
+    if (q.has('probe')) {
+      window.__probe = { narr: VIDEO.narr || null, voz: VIDEO.voz || CONFIG.voz, slug: VIDEO.slug };
+      window.__ready = true;
+    } else Engine.boot();
+  };
   document.head.appendChild(s);
 </script>
 </body>

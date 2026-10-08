@@ -9,7 +9,8 @@ import sys
 import wave
 
 import numpy as np
-from scipy.signal import butter, sosfilt
+import soundfile as sf
+from scipy.signal import butter, resample_poly, sosfilt
 
 SR = 48000
 rng = np.random.default_rng(7)
@@ -166,6 +167,16 @@ def sfx(name):
         f = 200 * 2 ** (t / 1.5 * 3)
         s = np.sin(2 * np.pi * np.cumsum(f) / SR) * 0.3
         return (n * 0.4 + s) * (t / 1.5) ** 2 * 0.5
+    if name == "braam":  # o "BRAAAM" de trailer: metais graves desafinados + distorção
+        t = t_axis(2.6)
+        x = sum(saw(f, t, dt) for f in (note(38), note(45), note(50)) for dt in (-0.006, 0, 0.007))
+        x = filt(x, "lp", 900) * env(len(t), 0.03, 0.9)
+        sub = np.sin(2 * np.pi * note(26) * t) * env(len(t), 0.01, 0.8)
+        return np.tanh(2.2 * (x * 0.18 + sub * 0.6)) * 0.55
+    if name == "boom":
+        t = t_axis(1.8)
+        f = 30 + 70 * np.exp(-t / 0.12)
+        return np.tanh(2 * np.sin(2 * np.pi * np.cumsum(f) / SR) * env(len(t), 0.002, 0.6)) * 0.75
     if name == "type":
         t = t_axis(0.03)
         return filt(rng.standard_normal(len(t)), "bp", (2000, 7000)) * env(len(t), 0.0002, 0.004) * 0.4
@@ -208,11 +219,206 @@ def music(dur, bpm):
     return mix[: int(dur * SR)]
 
 
+# ---------------- estilos de trilha (um por episódio narrado) ----------------
+def rhodes(freqs, d):
+    t = t_axis(d)
+    x = sum(np.sin(2 * np.pi * f * t) + 0.35 * np.sin(4 * np.pi * f * t) * np.exp(-t / 0.3) for f in freqs)
+    trem = 1 + 0.18 * np.sin(2 * np.pi * 4.5 * t)
+    return x / len(freqs) * env(len(t), 0.01, d * 0.7) * trem
+
+
+def strings(freqs, d):
+    t = t_axis(d)
+    vib = 1 + 0.003 * np.sin(2 * np.pi * 5.2 * t)
+    x = sum(saw(f * vib, t, dt) for f in freqs for dt in (-0.005, 0.0, 0.006)) / (3 * len(freqs))
+    x = filt(x, "lp", 2200)
+    a = np.minimum(1, t / 0.6) * np.minimum(1, (d - t) / 0.3)
+    return x * a
+
+
+def tom(freq=70, d=0.6):
+    t = t_axis(d)
+    f = freq + freq * 1.4 * np.exp(-t / 0.04)
+    body = np.sin(2 * np.pi * np.cumsum(f) / SR) * env(len(t), 0.001, d / 3)
+    skin = filt(rng.standard_normal(len(t)), "bp", (150, 1200)) * env(len(t), 0.001, 0.05) * 0.5
+    return np.tanh(1.5 * (body + skin))
+
+
+def k808(freq, d, glide=None):
+    t = t_axis(d)
+    f = freq + 90 * np.exp(-t / 0.03)
+    if glide:
+        f = f + (glide - freq) * np.clip((t - d * 0.5) / (d * 0.3), 0, 1)
+    return np.tanh(1.8 * np.sin(2 * np.pi * np.cumsum(f) / SR) * env(len(t), 0.002, d * 0.45))
+
+
+def bell(freq, d=0.6):
+    t = t_axis(d)
+    mod = np.sin(2 * np.pi * freq * 3.5 * t) * 2.5 * np.exp(-t / 0.15)
+    return np.sin(2 * np.pi * freq * t + mod) * env(len(t), 0.001, d / 3)
+
+
+def snare(soft=False):
+    t = t_axis(0.25)
+    n = filt(rng.standard_normal(len(t)), "bp", (1200, 7000)) * env(len(t), 0.001, 0.07 if soft else 0.1)
+    b = np.sin(2 * np.pi * 190 * t) * env(len(t), 0.001, 0.04)
+    return (n * 0.7 + b * 0.5) * (0.5 if soft else 0.8)
+
+
+def crackle(n):
+    x = np.zeros(n)
+    idx = rng.integers(0, n, n // 900)
+    x[idx] = rng.standard_normal(len(idx)) * 0.5
+    return filt(x, "bp", (800, 6000)) + filt(rng.standard_normal(n), "lp", 900) * 0.01
+
+
+def arrange(dur, style):
+    """Devolve (mix, bpm). Cada estilo tem seu tempo, tom, timbres e levada."""
+    st = STYLES[style]
+    bpm = st["bpm"]
+    beat = 60 / bpm
+    bar = beat * 4
+    n = int((dur + 3) * SR)
+    dr, ba, hm = np.zeros(n), np.zeros(n), np.zeros(n)
+    nb = int(np.ceil(dur / bar)) + 1
+    for b in range(nb):
+        t0 = b * bar
+        ch = st["prog"][b % len(st["prog"])]
+        intro = b == 0
+        st["bar"](dr, ba, hm, t0, beat, ch, b, intro, dur)
+    t = np.arange(n) / SR
+    duck = 1 - st.get("duck", 0.5) * np.exp(-((t % beat)) / 0.1)
+    return (dr * st.get("dr", 0.9) + (ba + hm) * duck)[: int(dur * SR)], bpm
+
+
+def bar_epic(dr, ba, hm, t0, beat, ch, b, intro, dur):
+    add(hm, strings([note(x) for x in ch], beat * 4 + 0.2), t0, 0.5)
+    add(ba, strings([note(ch[0] - 24)], beat * 4 + 0.2), t0, 0.5)
+    # ostinato de cordas em colcheias
+    for i in range(8):
+        add(hm, pluck(note(ch[0] - 12 + (12 if i % 4 == 3 else 0)), 0.16, 1600), t0 + i * beat / 2, 0.22)
+    if intro:
+        return
+    for k, v in ((0, 1.0), (1.5, 0.6), (2, 0.8), (3, 0.6), (3.5, 0.7)):
+        add(dr, tom(62 if k in (0, 2) else 95), t0 + k * beat, v)
+    if b % 2 == 0:
+        add(dr, sfx("boom"), t0, 0.5)
+    add(dr, snare(), t0 + 2 * beat, 0.35)
+
+
+def bar_lofi(dr, ba, hm, t0, beat, ch, b, intro, dur):
+    sw = beat * 0.08  # swing
+    add(hm, rhodes([note(x) for x in ch], beat * 4), t0, 0.55)
+    add(ba, bass(note(ch[0] - 24), beat * 1.6), t0, 0.5)
+    add(ba, bass(note(ch[0] - 24), beat * 1.2), t0 + 2.5 * beat, 0.45)
+    if intro:
+        return
+    K = kick()
+    for k in (0, 2.5):
+        add(dr, K, t0 + k * beat, 0.6)
+    for k in (1, 3):
+        add(dr, snare(True), t0 + k * beat, 0.6)
+    for i in range(8):
+        add(dr, hat(), t0 + i * beat / 2 + (sw if i % 2 else 0), 0.25 if i % 2 else 0.35)
+    if b % 2 == 1:
+        add(hm, bell(note(ch[2] + 12), 0.8), t0 + 3.5 * beat, 0.08)
+
+
+def bar_trap(dr, ba, hm, t0, beat, ch, b, intro, dur):
+    add(hm, pad([note(x) for x in ch], beat * 4 + 0.1), t0, 0.28)
+    mel = [ch[0] + 12, ch[2] + 12, ch[1] + 12, ch[2] + 12, ch[0] + 24, ch[2] + 12, ch[1] + 12, ch[0] + 12]
+    for i, m in enumerate(mel):
+        add(hm, bell(note(m), 0.5), t0 + i * beat / 2, 0.11)
+    if intro:
+        return
+    # 808 com deslize no fim do compasso
+    add(dr, k808(note(ch[0] - 24), beat * 1.5), t0, 0.9)
+    add(dr, k808(note(ch[0] - 24), beat * 1.0), t0 + 1.75 * beat, 0.75)
+    add(dr, k808(note(ch[0] - 24), beat * 1.2, glide=note(ch[0] - 19)), t0 + 3 * beat, 0.7)
+    add(dr, clap(), t0 + 2 * beat, 0.8)
+    roll = b % 2 == 1
+    for i in range(16):
+        add(dr, hat(), t0 + i * beat / 4, 0.3 if i % 2 == 0 else 0.18)
+        if roll and i >= 12:
+            add(dr, hat(), t0 + i * beat / 4 + beat / 8, 0.2)
+
+
+def bar_house(dr, ba, hm, t0, beat, ch, b, intro, dur):
+    for k in range(4):
+        add(dr, kick(), t0 + k * beat, 0.95)
+        add(ba, bass(note(ch[0] - 24), beat / 2), t0 + k * beat + beat / 2, 0.55)
+        if not intro:
+            add(dr, hat(True), t0 + k * beat + beat / 2, 0.35)
+            if k in (1, 3):
+                add(dr, clap(), t0 + k * beat, 0.55)
+    # acordes de piano no contratempo
+    for k in (0.5, 1.5, 2.75, 3.5):
+        add(hm, pluck(note(ch[0]), 0.25, 3200) + pluck(note(ch[1]), 0.25, 3200) + pluck(note(ch[2]), 0.25, 3200), t0 + k * beat, 0.13)
+    add(hm, pad([note(x) for x in ch], beat * 4), t0, 0.18)
+
+
+def bar_funk(dr, ba, hm, t0, beat, ch, b, intro, dur):
+    patt = [0, 0.75, 1.5, 2.25, 2.5, 3.25]
+    for i, k in enumerate(patt):
+        nn = ch[0] - 24 + (12 if i in (2, 5) else 0)
+        add(ba, pluck(note(nn), 0.18, 1400) * 1.4, t0 + k * beat, 0.45)
+    for k in (0.5, 1.5, 2.5, 3.5):  # guitarrinha/clav curtinha
+        add(hm, pluck(note(ch[1] + 12), 0.09, 4500) + pluck(note(ch[2] + 12), 0.09, 4500), t0 + k * beat, 0.12)
+    add(hm, pad([note(x) for x in ch], beat * 4), t0, 0.14)
+    if intro:
+        return
+    for k in (0, 1.75, 2.5):
+        add(dr, kick(), t0 + k * beat, 0.85)
+    for k in (1, 3):
+        add(dr, clap(), t0 + k * beat, 0.6)
+    for i in range(16):  # pandeirola
+        add(dr, hat(), t0 + i * beat / 4, 0.22 if i % 4 == 2 else 0.12)
+
+
+STYLES = {
+    "epico": {"bpm": 96, "prog": [[50, 53, 57], [46, 50, 53], [53, 57, 60], [48, 52, 55]], "bar": bar_epic, "duck": 0.25},
+    "lofi": {"bpm": 84, "prog": [[53, 57, 60, 64], [52, 55, 59, 62], [50, 53, 57, 60], [48, 52, 55, 59]], "bar": bar_lofi, "duck": 0.35},
+    "trap": {"bpm": 140, "prog": [[54, 57, 61], [50, 54, 57], [52, 56, 59], [49, 52, 56]], "bar": bar_trap, "duck": 0.3},
+    "house": {"bpm": 124, "prog": [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], "bar": bar_house, "duck": 0.6},
+    "funk": {"bpm": 108, "prog": [[52, 56, 59], [49, 52, 56], [57, 61, 64], [59, 63, 66]], "bar": bar_funk, "duck": 0.4},
+}
+
+
+def load_voice(info, n):
+    """Coloca cada fala no seu tempo e devolve (voz, envelope de presença da voz)."""
+    v = np.zeros(n)
+    pres = np.zeros(n)
+    for f in info.get("voice") or []:
+        a, sr = sf.read(f"{info['voiceDir']}/{f['id']}.wav")
+        if a.ndim > 1:
+            a = a.mean(axis=1)
+        a = resample_poly(a, SR, sr)
+        a = filt(a, "hp", 90)
+        add(v, a, f["t"])
+        i0, i1 = int(f["t"] * SR), int((f["t"] + f["d"]) * SR)
+        pres[max(0, i0):min(n, i1)] = 1
+    # suaviza a entrada/saída do "abaixa a música"
+    k = int(0.25 * SR)
+    pres = np.convolve(pres, np.ones(k) / k, mode="same")
+    pk = np.abs(v).max()
+    if pk > 0:
+        v = np.tanh(v / pk * 1.6) * 0.62  # compressão leve e nível fixo
+    return v, np.clip(pres * 1.4, 0, 1)
+
+
 def main():
     info = json.load(open(sys.argv[1]))
     dur = info["duration"]
     bpm = info.get("bpm", 120)
-    m = music(dur, bpm) * 0.42
+    style = info.get("music", "pop")
+    if style in STYLES:
+        m, _ = arrange(dur, style)
+        m = m / max(1e-9, np.abs(m).max()) * 0.55
+    else:
+        m = music(dur, bpm) * 0.42
+    voz, pres = load_voice(info, len(m))
+    if info.get("voice"):
+        m = m * (1 - 0.68 * pres)  # música desce quando tem fala
     fx = np.zeros(len(m))
     last = {}
     for c in info["cues"]:
@@ -222,7 +428,7 @@ def main():
             continue
         last[name] = c["t"]
         add(fx, sfx(name), c["t"], c.get("vol", 1))
-    mix = m + fx * 0.85
+    mix = m + fx * (0.6 if info.get("voice") else 0.85) * (1 - 0.35 * pres) + voz
     t = np.arange(len(mix)) / SR
     fade = np.clip((dur - t) / 1.2, 0, 1) * np.clip(t / 0.03, 0, 1)
     mix = np.tanh(mix * 1.15 * fade)
