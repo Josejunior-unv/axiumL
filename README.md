@@ -1,12 +1,15 @@
 # axiumL — Projeto de vídeos com Manim
 
-Este repositório guarda dois projetos:
+Este repositório guarda estes projetos:
 
 - **`scenes/`** — os vídeos de matemática feitos com Manim (descrito abaixo).
 - **`app-questionario/`** — app de tablet para aplicar a pesquisa *Uso da
   Tecnologia no Ensino Superior* e exportar as respostas para o Excel.
   No ar em **https://analisededados.vercel.app/**.
   Veja [`app-questionario/README.md`](app-questionario/README.md).
+- **`projetos-ia/`** — cinco projetos de IA e dados: previsão de churn,
+  previsão de demanda, detecção de fraude, sistema de recomendação e um agente
+  text-to-SQL com Claude. Veja [`projetos-ia/README.md`](projetos-ia/README.md).
 
 ---
 
