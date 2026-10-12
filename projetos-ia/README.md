@@ -31,6 +31,17 @@ README se reproduzem.
 
 Cada projeto tem uma animação interativa em `animacao/index.html`, com identidade visual própria e os números reais do projeto: uma fatura de operadora, um quadro de horários de loja, um dossiê impresso como papel-moeda, um cartaz em risografia e um diorama isométrico em corte. Elas combinam 2D e 3D (superfícies, calendários e nuvens de pontos que giram com o mouse ou o dedo), funcionam no celular e respeitam a preferência por menos movimento. Quatro delas seguem o tema claro ou escuro do sistema; o cartaz em risografia é sempre claro, porque a sobreposição de tintas só funciona sobre papel. Basta abrir o arquivo no navegador.
 
+## Vídeos
+
+As animações também viram vídeo (MP4, 1920 × 1080, 30 fps): um por projeto e um completo, com abertura e encerramento. O script `video/gravar.js` abre cada página com um relógio controlado, avança 1/30 s por quadro, encena as interações (o simulador, os cortes 3D, o limiar, as consultas barradas no cofre) e entrega os quadros ao ffmpeg. Por isso o vídeo sai liso mesmo com captura lenta.
+
+```bash
+npm install playwright && npx playwright install chromium   # uma vez
+node projetos-ia/video/gravar.js                              # tudo; ou: churn, demanda, fraude, recomendacao, cofre
+```
+
+Os arquivos saem em `media/videos/projetos-ia/`, pasta que o git ignora.
+
 ## Como rodar
 
 Cada pasta é autocontida (Python 3.10+):
