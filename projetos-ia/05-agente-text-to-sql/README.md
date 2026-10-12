@@ -83,6 +83,12 @@ Na primeira execução, o banco de exemplo é criado em `dados/loja.db`.
 Tem crescimento de um ano para o outro, pico em novembro e dezembro e
 Black Friday. Assim as perguntas sobre tempo têm respostas interessantes.
 
+## Animação
+
+`animacao/index.html` explica o projeto de forma visual e interativa, com os números reais desta pasta. Um diorama isométrico em corte mostra, passo a passo, as mensagens que vão para a API (pergunta, chamadas de ferramenta, chamadas paralelas, erro e correção) e um laboratório em que você manda consultas ao banco e vê em qual camada cada uma para, com as mensagens reais de bloqueio.
+
+Abra o arquivo no navegador; não precisa de servidor. Depois de mudar o código, refaça os dados embutidos na página com `python animacao/exportar_dados.py`.
+
 ## Estrutura
 
 ```

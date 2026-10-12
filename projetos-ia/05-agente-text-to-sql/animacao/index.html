@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cofre de Consultas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&display=swap">
+<style>
+/* Layout: diorama isométrico em corte à esquerda; à direita, o roteiro da conversa com as mensagens que vão para a API. */
+:root {
+  --cimento: #ECEBF1;
+  --cimento-2: #DEDCE7;
+  --placa: #F8F7FB;
+  --tinta: #211C37;
+  --tinta-2: #5D5878;
+  --lilas: #7B66F0;
+  --menta: #1F9E86;
+  --coral: #E5483F;
+  --ambar: #D98B12;
+  --f: "Recursive", ui-sans-serif, system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --cimento: #15131F; --cimento-2: #211E30; --placa: #1B1828; --tinta: #ECEAF6; --tinta-2: #A29EBE;
+    --lilas: #A693FF; --menta: #4FD1B6; --coral: #FF6E66; --ambar: #F5B44C; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --cimento: #15131F; --cimento-2: #211E30; --placa: #1B1828; --tinta: #ECEAF6; --tinta-2: #A29EBE;
+  --lilas: #A693FF; --menta: #4FD1B6; --coral: #FF6E66; --ambar: #F5B44C; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--cimento); color: var(--tinta); }
+body { margin: 0; font-family: var(--f); font-variation-settings: "CASL" 0.25, "MONO" 0; font-size: 16px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+.mono, code, pre { font-family: var(--f); font-variation-settings: "MONO" 1, "CASL" 0; }
+.pagina { max-width: 1520px; margin: 0 auto; padding-inline: clamp(16px, 3vw, 40px); padding-block: 20px 40px; }
+
+.topo { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 28px; align-items: end; padding-bottom: 16px; }
+.selo { font-size: 12.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--tinta-2); font-variation-settings: "MONO" 1; }
+h1 { margin: 6px 0 4px; font-size: clamp(38px, 5.6vw, 78px); line-height: .95; font-weight: 900; letter-spacing: -.02em; font-variation-settings: "CASL" 1, "MONO" 0; text-wrap: balance; }
+.sub { margin: 0; max-width: 46rem; font-size: 17px; color: var(--tinta-2); }
+.camadas { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; list-style: none; padding: 0; margin: 0; }
+.camadas li { border: 1.5px solid var(--tinta); border-radius: 6px; padding: 6px 10px; font-size: 13px; background: var(--placa); }
+.camadas li b { display: block; font-size: 11px; font-weight: 500; color: var(--tinta-2); font-variation-settings: "MONO" 1; }
+
+.palco { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 25rem); gap: 0; border: 1.5px solid var(--tinta); border-radius: 10px; overflow: hidden; background: var(--placa); }
+.diorama { min-width: 0; position: relative; display: grid; grid-template-rows: auto auto; }
+#tela { display: block; width: 100%; height: clamp(400px, 64vh, 720px); touch-action: pan-y; }
+.controles { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 14px; border-top: 1.5px solid var(--tinta); }
+.controles button { font: 600 14px/1 var(--f); font-variation-settings: "CASL" 0.5; color: var(--tinta); background: var(--placa); border: 1.5px solid var(--tinta); border-radius: 999px; padding: 9px 14px; cursor: pointer; }
+.controles button.principal { background: var(--tinta); color: var(--placa); }
+.controles button[aria-pressed="true"] { background: var(--lilas); border-color: var(--lilas); color: #fff; }
+.controles .lab { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+.controles .lab button { font-size: 12.5px; padding: 7px 11px; font-variation-settings: "MONO" 1; }
+button:focus-visible { outline: 3px solid var(--ambar); outline-offset: 2px; }
+
+.roteiro { border-left: 1.5px solid var(--tinta); display: flex; flex-direction: column; min-width: 0; max-height: calc(clamp(400px, 64vh, 720px) + 62px); }
+.roteiro header { padding: 14px 16px 10px; border-bottom: 1px solid var(--cimento-2); }
+.roteiro header h2 { margin: 0; font-size: 22px; font-weight: 800; font-variation-settings: "CASL" 1; line-height: 1.15; text-wrap: balance; }
+.roteiro header p { margin: 6px 0 0; font-size: 14.5px; color: var(--tinta); }
+.passos { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; padding: 10px 16px 0; flex-wrap: wrap; }
+.passos button { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--tinta); background: var(--placa); font: 700 13px/1 var(--f); color: var(--tinta); cursor: pointer; padding: 0; }
+.passos button[aria-current="step"] { background: var(--tinta); color: var(--placa); }
+.mensagens { overflow-y: auto; padding: 12px 16px 16px; display: grid; gap: 10px; align-content: start; }
+.msg { border: 1px solid var(--cimento-2); border-radius: 8px; padding: 8px 10px; background: var(--cimento); font-size: 13px; }
+.msg .papel { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; font-variation-settings: "MONO" 1; color: var(--tinta-2); display: flex; justify-content: space-between; gap: 8px; }
+.msg.assistant { border-color: var(--lilas); }
+.msg .bloco { margin-top: 6px; }
+.msg .bloco b { font-size: 11.5px; font-variation-settings: "MONO" 1; }
+.msg pre { margin: 4px 0 0; white-space: pre-wrap; word-break: break-word; font-size: 11.5px; line-height: 1.45; }
+.msg .erro { color: var(--coral); }
+.msg .nova { animation: chega .5s ease-out; }
+@keyframes chega { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.aviso { font-size: 12px; color: var(--tinta-2); padding: 0 16px 12px; }
+
+.resumo { margin-top: 28px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px 26px; }
+.resumo h2 { grid-column: 1 / -1; margin: 0; font-size: 26px; font-weight: 900; font-variation-settings: "CASL" 1; }
+.resumo article { border-top: 2px solid var(--tinta); padding-top: 8px; }
+.resumo h3 { margin: 0 0 4px; font-size: 16px; }
+.resumo p { margin: 0; font-size: 14.5px; color: var(--tinta-2); }
+.rodape { margin-top: 26px; font-size: 13.5px; color: var(--tinta-2); border-top: 1px solid var(--cimento-2); padding-top: 12px; }
+
+@media (max-width: 1000px) {
+  .topo { grid-template-columns: minmax(0, 1fr); }
+  .camadas { justify-content: flex-start; }
+  .palco { grid-template-columns: minmax(0, 1fr); }
+  .roteiro { border-left: none; border-top: 1.5px solid var(--tinta); max-height: 520px; }
+  #tela { height: clamp(320px, 52vh, 520px); }
+}
+@media (prefers-reduced-motion: reduce) { .msg .nova { animation: none; } }
+</style>
+</head>
+<body>
+<div class="pagina">
+  <header class="topo">
+    <div>
+      <div class="selo">Projeto 05 · Agente text-to-SQL com Claude</div>
+      <h1>Cofre de Consultas</h1>
+      <p class="sub">Como um agente responde perguntas em português consultando um banco SQLite: o laço de ferramentas com o Claude, as mensagens que vão para a API e as três camadas que impedem qualquer escrita.</p>
+    </div>
+    <ul class="camadas" aria-label="Proteções do banco">
+      <li><b>barra escrita antes de rodar</b>autorizador</li>
+      <li><b>recusa escrita no disco</b>arquivo em mode=ro</li>
+      <li><b>interrompe consulta lenta</b>tempo limite de 5 s</li>
+    </ul>
+  </header>
+
+  <section class="palco">
+    <div class="diorama">
+      <canvas id="tela" role="img" aria-label="Diorama animado do agente e do banco"></canvas>
+      <div class="controles" id="controles">
+        <button type="button" id="anterior">← Passo anterior</button>
+        <button type="button" id="proximo" class="principal">Próximo passo →</button>
+        <button type="button" id="repetir">Repetir</button>
+        <div class="lab" id="lab" hidden></div>
+      </div>
+    </div>
+    <aside class="roteiro">
+      <header>
+        <h2 id="titulo-passo"></h2>
+        <p id="texto-passo"></p>
+      </header>
+      <ol class="passos" id="passos" aria-label="Passos"></ol>
+      <div class="mensagens" id="mensagens" aria-live="polite"></div>
+      <div class="aviso" id="aviso"></div>
+    </aside>
+  </section>
+
+  <section class="resumo" id="resumo"><h2>Os sete passos</h2></section>
+  <footer class="rodape">Tudo o que vem do banco é real: saídas das ferramentas, mensagens de erro e bloqueio, resultados das consultas, exportados por <code class="mono">animacao/exportar_dados.py</code> do projeto <code class="mono">projetos-ia/05-agente-text-to-sql</code>. As falas do modelo são um roteiro ilustrativo, porque a animação não chama a API.</footer>
+</div>
+
+<script id="dados" type="application/json">{"modelo":"claude-opus-5-5","max_passos":15,"esforco":"medium","limite_linhas":200,"tempo_limite":5,"sistema":"Você é um analista de dados que responde perguntas sobre o banco SQLite de uma loja online.\n\nComo trabalhar:\n- Confira o esquema com as ferramentas antes de escrever SQL; não adivinhe nomes de tabelas ou colunas.\n- O banco é somente leitura e o dialeto é SQLite. Datas são texto no formato AAAA-MM-DD: use strftime para agrupar por mês ou ano.\n- Se uma consulta falhar ou trouxer algo estranho, leia o erro, corrija e rode de novo.\n- Faturamento é a soma de quantidade * preco_unitario dos itens de pedidos não cancelados, a menos que o usuário defina de outro jeito.\n\nResposta final, em português do Brasil:\n- comece pela resposta direta, com números formatados no padrão brasileiro (R$ 1.234,56);\n- depois mostre a consulta SQL final em um bloco ```sql;\n- termine com as suposições que você fez, se houver (por exemplo, como tratou pedidos cancelados).","ferramentas":[{"nome":"listar_tabelas","descricao":"Lista as tabelas do banco e quantas linhas cada uma tem.","campos":[]},{"nome":"descrever_tabela","descricao":"Mostra as colunas, tipos, chaves e três linhas de exemplo de uma tabela.","campos":["tabela"]},{"nome":"executar_sql","descricao":"Executa uma única consulta SQLite somente leitura (SELECT ou WITH) e devolve as colunas e até 200 linhas. Se houver mais, 'truncado' vem true: agregue ou use LIMIT.","campos":["consulta"]}],"pergunta":"Qual categoria de produto mais faturou em 2025, e quanto?","tabelas":{"clientes":1500,"itens_pedido":19959,"pedidos":12000,"produtos":57},"esquemas":{"pedidos":{"tabela":"pedidos","colunas":[{"nome":"id","tipo":"INTEGER","chave_primaria":true},{"nome":"cliente_id","tipo":"INTEGER","chave_primaria":false},{"nome":"data_pedido","tipo":"TEXT","chave_primaria":false},{"nome":"status","tipo":"TEXT","chave_primaria":false},{"nome":"canal","tipo":"TEXT","chave_primaria":false}],"chaves_estrangeiras":[{"coluna":"cliente_id","referencia":"clientes.id"}],"exemplos":[{"id":1,"cliente_id":702,"data_pedido":"2024-01-01","status":"entregue","canal":"marketplace"},{"id":2,"cliente_id":163,"data_pedido":"2024-01-01","status":"entregue","canal":"marketplace"},{"id":3,"cliente_id":103,"data_pedido":"2024-01-01","status":"entregue","canal":"app"}]},"itens_pedido":{"tabela":"itens_pedido","colunas":[{"nome":"id","tipo":"INTEGER","chave_primaria":true},{"nome":"pedido_id","tipo":"INTEGER","chave_primaria":false},{"nome":"produto_id","tipo":"INTEGER","chave_primaria":false},{"nome":"quantidade","tipo":"INTEGER","chave_primaria":false},{"nome":"preco_unitario","tipo":"REAL","chave_primaria":false}],"chaves_estrangeiras":[{"coluna":"produto_id","referencia":"produtos.id"},{"coluna":"pedido_id","referencia":"pedidos.id"}],"exemplos":[{"id":1,"pedido_id":1,"produto_id":20,"quantidade":3,"preco_unitario":177.52},{"id":2,"pedido_id":1,"produto_id":6,"quantidade":1,"preco_unitario":333.9},{"id":3,"pedido_id":2,"produto_id":38,"quantidade":1,"preco_unitario":73.9}]},"produtos":{"tabela":"produtos","colunas":[{"nome":"id","tipo":"INTEGER","chave_primaria":true},{"nome":"nome","tipo":"TEXT","chave_primaria":false},{"nome":"categoria","tipo":"TEXT","chave_primaria":false},{"nome":"preco","tipo":"REAL","chave_primaria":false}],"chaves_estrangeiras":[],"exemplos":[{"id":1,"nome":"Fone Bluetooth Lite","categoria":"Eletrônicos","preco":170.9},{"id":2,"nome":"Fone Bluetooth","categoria":"Eletrônicos","preco":191.9},{"id":3,"nome":"Fone Bluetooth Max","categoria":"Eletrônicos","preco":339.9}]},"clientes":{"tabela":"clientes","colunas":[{"nome":"id","tipo":"INTEGER","chave_primaria":true},{"nome":"nome","tipo":"TEXT","chave_primaria":false},{"nome":"cidade","tipo":"TEXT","chave_primaria":false},{"nome":"estado","tipo":"TEXT","chave_primaria":false},{"nome":"data_cadastro","tipo":"TEXT","chave_primaria":false}],"chaves_estrangeiras":[],"exemplos":[{"id":1,"nome":"Otávio Almeida","cidade":"Brasília","estado":"DF","data_cadastro":"2025-02-09"},{"id":2,"nome":"Wagner Gomes","cidade":"Curitiba","estado":"PR","data_cadastro":"2024-09-07"},{"id":3,"nome":"Ana Pereira","cidade":"Goiânia","estado":"GO","data_cadastro":"2025-09-19"}]}},"sql_errado":"SELECT pr.categoria, SUM(i.quantidade * i.preco) AS faturamento FROM itens_pedido i JOIN pedidos p ON p.id = i.pedido_id JOIN produtos pr ON pr.id = i.produto_id WHERE p.status <> 'cancelado' AND p.data_pedido LIKE '2025%' GROUP BY pr.categoria ORDER BY faturamento DESC","errado":{"ok":false,"erro":"no such column: i.preco"},"sql_certo":"SELECT pr.categoria, ROUND(SUM(i.quantidade * i.preco_unitario), 2) AS faturamento FROM itens_pedido i JOIN pedidos p ON p.id = i.pedido_id JOIN produtos pr ON pr.id = i.produto_id WHERE p.status <> 'cancelado' AND p.data_pedido LIKE '2025%' GROUP BY pr.categoria ORDER BY faturamento DESC","certo":{"ok":true,"colunas":["categoria","faturamento"],"linhas":[["Casa",790984.87],["Eletrônicos",767860.54],["Moda",601707.4],["Beleza",354341.51],["Esporte",310063.33],["Livros",113422.67]],"truncado":false},"ataques":[{"nome":"Leitura comum","sql":"SELECT COUNT(*) FROM pedidos","ok":true,"erro":null,"linhas":[[12000]]},{"nome":"Duas instruções","sql":"SELECT 1; DROP TABLE clientes","ok":false,"erro":"You can only execute one statement at a time.","linhas":null},{"nome":"Inserir","sql":"INSERT INTO produtos (nome, categoria, preco) VALUES ('x', 'y', 1)","ok":false,"erro":"operação não permitida: o banco é somente leitura (use apenas SELECT/WITH)","linhas":null},{"nome":"Apagar tabela","sql":"DROP TABLE clientes","ok":false,"erro":"operação não permitida: o banco é somente leitura (use apenas SELECT/WITH)","linhas":null},{"nome":"Anexar outro arquivo","sql":"ATTACH DATABASE 'outro.db' AS outro","ok":false,"erro":"operação não permitida: o banco é somente leitura (use apenas SELECT/WITH)","linhas":null},{"nome":"Mudar configuração","sql":"PRAGMA journal_mode = WAL","ok":false,"erro":"operação não permitida: o banco é somente leitura (use apenas SELECT/WITH)","linhas":null},{"nome":"Consulta sem fim","sql":"WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r) SELECT COUNT(*) FROM r","ok":false,"erro":"consulta interrompida: passou de 5 s","linhas":null}],"grande":{"linhas":200,"truncado":true},"avaliacao":{"pergunta":"Qual categoria de produto mais faturou no período todo? Traga a categoria e o valor.","gabarito_sql":"SELECT pr.categoria, ROUND(SUM(i.quantidade * i.preco_unitario), 2) AS total FROM itens_pedido i JOIN pedidos p ON p.id = i.pedido_id JOIN produtos pr ON pr.id = i.produto_id WHERE p.status <> 'cancelado' GROUP BY pr.categoria ORDER BY total DESC LIMIT 1","gabarito":{"colunas":["categoria","total"],"linhas":[["Casa",1419407.03]],"truncado":false},"invertida":{"colunas":["total","categoria"],"linhas":[[1419407.03,"Casa"]],"truncado":false},"com_cancelados":{"colunas":["categoria","total"],"linhas":[["Casa",1524557.68]],"truncado":false},"invertida_bate":true,"cancelados_bate":false,"normalizado":[[1419407.03,"Casa"]],"n_perguntas":8,"perguntas":["Quantos clientes temos cadastrados?","Quantos pedidos foram cancelados em 2025?","Qual foi o faturamento total de 2024?","Qual categoria de produto mais faturou no período todo? Traga a categoria e o valor.","Quantos pedidos foram feitos por canal em 2025?","Qual foi o dia com mais pedidos e quantos foram?","Quais são os 3 estados com mais clientes, e quantos clientes cada um tem?","Qual o ticket médio dos pedidos entregues em 2025, em reais?"]}}</script>
+<script>
+(() => {
+"use strict";
+const D = JSON.parse(document.getElementById("dados").textContent);
+const tela = document.getElementById("tela"), ctx = tela.getContext("2d");
+const movimentoReduzido = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- utilidades ---------- */
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const suave = t => (t = clamp(t, 0, 1), t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const saida = t => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+const fase = (t, a, d) => clamp((t - a) / d, 0, 1);
+const fmt = (v, c = 0) => v.toLocaleString("pt-BR", { minimumFractionDigits: c, maximumFractionDigits: c });
+const P = {};
+function lerCores() {
+  const cs = getComputedStyle(document.documentElement);
+  for (const k of ["cimento", "cimento-2", "placa", "tinta", "tinta-2", "lilas", "menta", "coral", "ambar"]) P[k] = cs.getPropertyValue("--" + k).trim();
+  P.escuro = matchMedia("(prefers-color-scheme: dark)").matches && document.documentElement.dataset.theme !== "light" || document.documentElement.dataset.theme === "dark";
+}
+function rgb(hex) { const h = hex.replace("#", ""); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); }
+function rgba(hex, a) { const [r, g, b] = rgb(hex); return `rgba(${r},${g},${b},${a})`; }
+function sombra(hex, f) { const [r, g, b] = rgb(hex); return `rgb(${Math.round(r * f)},${Math.round(g * f)},${Math.round(b * f)})`; }
+const FONTE = (p, w = 500, mono = 0, casl = 0.3) => { ctx.font = `${w} ${p}px Recursive, system-ui, sans-serif`; try { ctx.fontVariationSettings = `"MONO" ${mono}, "CASL" ${casl}`; } catch (e) {} return ctx.font; };
+function texto(s, x, y, tam, cor, { peso = 500, mono = 0, alinhar = "left", casl = 0.3 } = {}) {
+  ctx.font = `${peso} ${tam}px ${mono ? '"Recursive"' : "Recursive"}, ${mono ? "ui-monospace, Menlo" : "system-ui"}, sans-serif`;
+  ctx.fillStyle = cor; ctx.textAlign = alinhar; ctx.textBaseline = "alphabetic"; ctx.fillText(s, x, y);
+}
+function linha(x1, y1, x2, y2, cor, w = 1, tr) { ctx.beginPath(); ctx.strokeStyle = cor; ctx.lineWidth = w; ctx.setLineDash(tr || []); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.setLineDash([]); }
+function poli(pts, f, c, w = 1) { ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); if (f) { ctx.fillStyle = f; ctx.fill(); } if (c) { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.stroke(); } }
+let W = 0, H = 0;
+const agora = () => performance.now() / 1000;
+
+/* ---------- projeção isométrica ---------- */
+let ISO = { s: 30, ox: 0, oy: 0 };
+const camera = { s: 0, ox: null, oy: null };
+// janela de x do mundo que cada passo mostra no celular
+const FOCOS = [[-0.6, 9, 1.5, 7.2], [3.8, 17.2, -0.4, 7.2], [3.8, 17.2, -0.4, 7.2], [3.8, 17.2, -0.4, 7.2], [-0.6, 9, 1.5, 7.2], [7.5, 17.2, -0.4, 6.6]];
+function iso(x, y, z = 0) { return [ISO.ox + (x - y) * ISO.s * 0.866, ISO.oy + (x + y) * ISO.s * 0.5 - z * ISO.s]; }
+function caixa3(x, y, z, w, d, h, cor, { contorno = true, alfa = 1, topo = null } = {}) {
+  const A = (a, b, c) => iso(a, b, c);
+  const tp = topo || cor;
+  const c = alfa < 1 ? (hex => rgba(hex, alfa)) : (hex => hex);
+  // face da frente-direita (x = x+w) e da frente-esquerda (y = y+d), depois o topo
+  poli([A(x + w, y, z), A(x + w, y + d, z), A(x + w, y + d, z + h), A(x + w, y, z + h)], alfa < 1 ? rgba(cor, alfa * 0.8) : sombra(cor, 0.78), contorno ? P.tinta : null, 1.2);
+  poli([A(x, y + d, z), A(x + w, y + d, z), A(x + w, y + d, z + h), A(x, y + d, z + h)], alfa < 1 ? rgba(cor, alfa * 0.65) : sombra(cor, 0.62), contorno ? P.tinta : null, 1.2);
+  poli([A(x, y, z + h), A(x + w, y, z + h), A(x + w, y + d, z + h), A(x, y + d, z + h)], c(tp), contorno ? P.tinta : null, 1.2);
+}
+let rotulosPendentes = [];
+function rotulo(...args) { rotulosPendentes.push(args); }
+function desenharRotulos() { const lista = rotulosPendentes; rotulosPendentes = []; for (const a of lista) rotuloAgora(...a); }
+function rotuloAgora(s, x, y, z, { cor = P.tinta, tam = 12, peso = 700, alinhar = "center", dy = 0, fundo = true } = {}) {
+  const [sx, sy] = iso(x, y, z);
+  ctx.font = `${peso} ${tam}px Recursive, system-ui, sans-serif`;
+  const w = ctx.measureText(s).width;
+  const x0 = alinhar === "center" ? sx - w / 2 : alinhar === "right" ? sx - w : sx;
+  if (fundo) { ctx.fillStyle = rgba(P.placa, 0.88); ctx.beginPath(); ctx.roundRect(x0 - 5, sy + dy - tam, w + 10, tam + 7, 4); ctx.fill(); }
+  texto(s, x0, sy + dy, tam, cor, { peso });
+}
+
+/* ---------- lugares do diorama ---------- */
+const L = {
+  voce: [0.4, 5.2], claude: [4.2, 2.2], hist: [4.2, 5.3], exec: [7.7, 2.4],
+  cofre: { x: 10.6, y: -0.2, w: 6.4, d: 6.6 },
+  g1: 11.25, g2: 12.05, parede: 12.85,
+};
+const PRAT = { clientes: [14.0, 0.5], produtos: [15.6, 0.5], pedidos: [14.0, 3.4], itens_pedido: [15.6, 3.4] };
+const PONTOS = {
+  voce: [1.4, 5.8, 1.6], claude: [5.2, 3.2, 2.2], exec: [8.6, 3.3, 1.3], entrada: [10.7, 3.0, 0.7],
+  g1: [L.g1 + 0.1, 3.0, 0.7], g2: [L.g2 + 0.1, 3.0, 0.7], parede: [L.parede + 0.1, 3.0, 0.7], centro: [14.6, 3.0, 0.9],
+};
+const prat = t => [PRAT[t][0] + 0.6, PRAT[t][1] + 0.6, 1.3];
+
+/* ---------- estado da cena ---------- */
+const cena = { pilha: [], destaque: {}, pacotes: [], aviso: null, relogio: 0, falhaEm: null };
+const COR_PILHA = { user: () => P["tinta-2"], assistant: () => P.lilas, resultado: () => P.menta, erro: () => P.coral };
+
+function desenharDiorama(t) {
+  const compacto = W < 640;
+  // o mundo vai de x −0,6 a 17,6 e y −0,8 a 7,4, com altura até 3: cabe inteiro no quadro.
+  // Em telas estreitas, a câmera se aproxima da parte do mundo que importa no passo.
+  const [xa, xb, ya, yb] = (compacto && FOCOS[estado.passo]) || [-0.6, 17.6, -0.8, 7.4];
+  // caixa do recorte na tela: cantos do bloco [xa, xb] × [ya, yb] × [0, 3]
+  const Xmin = (xa - yb) * 0.866, Xmax = (xb - ya) * 0.866, Ymin = (xa + ya) * 0.5 - 3, Ymax = (xb + yb) * 0.5;
+  const sAlvo = Math.min(W * 0.96 / (Xmax - Xmin), H * 0.94 / (Ymax - Ymin));
+  const alvo = { s: sAlvo, ox: W / 2 - (Xmin + Xmax) / 2 * sAlvo, oy: H / 2 - (Ymin + Ymax) / 2 * sAlvo };
+  const k = movimentoReduzido || !camera.s ? 1 : 0.08;
+  camera.s = lerp(camera.s || alvo.s, alvo.s, k); camera.ox = lerp(camera.ox ?? alvo.ox, alvo.ox, k); camera.oy = lerp(camera.oy ?? alvo.oy, alvo.oy, k);
+  ISO.s = camera.s; ISO.ox = camera.ox; ISO.oy = camera.oy;
+  const hl = cena.destaque;
+  // chão
+  poli([iso(-0.6, -0.8), iso(17.6, -0.8), iso(17.6, 7.4), iso(-0.6, 7.4)], rgba(P.tinta, 0.03), null);
+  for (let x = 0; x <= 17; x += 1) linha(...iso(x, -0.8), ...iso(x, 7.4), rgba(P.tinta, 0.05), 1);
+  for (let y = 0; y <= 7; y += 1) linha(...iso(-0.6, y), ...iso(17.6, y), rgba(P.tinta, 0.05), 1);
+  // trilho do laço entre Claude e o executor
+  ctx.beginPath();
+  for (let i = 0; i <= 64; i++) { const a = i / 64 * Math.PI * 2; const p = iso(6.9 + Math.cos(a) * 2.9, 3.3 + Math.sin(a) * 1.7, 0.02); i ? ctx.lineTo(...p) : ctx.moveTo(...p); }
+  ctx.strokeStyle = rgba(P.lilas, hl.laco ? 0.9 : 0.35); ctx.lineWidth = hl.laco ? 3 : 2; ctx.setLineDash([6, 6]); ctx.lineDashOffset = -agora() * 20; ctx.stroke(); ctx.setLineDash([]); ctx.lineDashOffset = 0;
+
+  // cofre em corte: chão, paredes do fundo, prateleiras
+  const cf = L.cofre;
+  poli([iso(cf.x, cf.y), iso(cf.x + cf.w, cf.y), iso(cf.x + cf.w, cf.y + cf.d), iso(cf.x, cf.y + cf.d)], rgba(P.tinta, 0.06), P.tinta, 1.2);
+  const hP = 2.4;
+  poli([iso(cf.x, cf.y, 0), iso(cf.x + cf.w, cf.y, 0), iso(cf.x + cf.w, cf.y, hP), iso(cf.x, cf.y, hP)], rgba(P["cimento-2"], 0.9), P.tinta, 1.2);
+  poli([iso(cf.x + cf.w, cf.y, 0), iso(cf.x + cf.w, cf.y + cf.d, 0), iso(cf.x + cf.w, cf.y + cf.d, hP), iso(cf.x + cf.w, cf.y, hP)], rgba(P["cimento-2"], 0.75), P.tinta, 1.2);
+  // relógio do tempo limite na parede do fundo
+  const rel = iso(cf.x + cf.w - 0.9, cf.y, 1.7);
+  ctx.beginPath(); ctx.ellipse(rel[0], rel[1], ISO.s * 0.42, ISO.s * 0.42, 0, 0, Math.PI * 2); ctx.fillStyle = P.placa; ctx.fill(); ctx.strokeStyle = hl.relogio ? P.ambar : P.tinta; ctx.lineWidth = hl.relogio ? 3 : 1.5; ctx.stroke();
+  const ang = -Math.PI / 2 + cena.relogio * Math.PI * 2 / 5;
+  linha(rel[0], rel[1], rel[0] + Math.cos(ang) * ISO.s * 0.33, rel[1] + Math.sin(ang) * ISO.s * 0.33, hl.relogio ? P.ambar : P.tinta, 2);
+  if (!compacto) rotulo("tempo limite 5 s", cf.x + cf.w - 0.9, cf.y, 2.45, { tam: 10.5, cor: hl.relogio ? P.ambar : P.tinta });
+  // executor de ferramentas
+  caixa3(L.exec[0], L.exec[1], 0, 1.8, 1.8, 1.2, hl.exec ? P.menta : P["cimento-2"], { topo: hl.exec ? P.menta : P.placa });
+  rotulo("executor Python", L.exec[0] + 0.9, L.exec[1] + 0.9, 1.3, { tam: compacto ? 8.5 : 11 });
+  // histórico de mensagens: placas empilhadas
+  const [hx, hy] = L.hist;
+  cena.pilha.forEach((m, i) => {
+    const k = saida((agora() - m.t0) / 0.4);
+    const z = i * 0.2 + (1 - k) * 0.8;
+    caixa3(hx, hy, z, 1.9, 1.3, 0.16, COR_PILHA[m.tipo](), { topo: COR_PILHA[m.tipo](), alfa: k });
+  });
+  rotulo(`histórico · ${cena.pilha.length} ${cena.pilha.length === 1 ? "mensagem" : "mensagens"}`, hx + 0.95, hy + 0.65, cena.pilha.length * 0.2 + 0.3, { tam: compacto ? 8.5 : 10.5, cor: P.tinta });
+  // Claude
+  caixa3(L.claude[0], L.claude[1], 0, 2, 2, 2.4, P.lilas, { topo: hl.claude ? P.lilas : rgba(P.lilas, 1) });
+  const pulso = hl.claude ? 0.5 + 0.5 * Math.sin(agora() * 5) : 0;
+  const tc = iso(L.claude[0] + 1, L.claude[1] + 1, 2.4);
+  ctx.beginPath(); ctx.ellipse(tc[0], tc[1], ISO.s * (0.5 + pulso * 0.15), ISO.s * (0.28 + pulso * 0.08), 0, 0, Math.PI * 2); ctx.fillStyle = rgba("#ffffff", 0.35 + pulso * 0.3); ctx.fill();
+  rotulo("Claude", L.claude[0] + 1, L.claude[1] + 1, 2.9, { tam: compacto ? 10 : 14, cor: P.lilas });
+  if (!compacto) rotulo(`${D.modelo} · esforço ${D.esforco}`, L.claude[0] + 1, L.claude[1] + 1, 2.9, { tam: 9.5, peso: 500, cor: P.tinta, dy: 16 });
+  // você
+  caixa3(L.voce[0], L.voce[1], 0, 2, 1.4, 0.9, P["cimento-2"], { topo: P.placa });
+  caixa3(L.voce[0] + 0.3, L.voce[1] + 0.2, 0.9, 1.4, 0.1, 0.9, hl.voce ? P.lilas : P.tinta, { topo: P.tinta });
+  rotulo("você", L.voce[0] + 1, L.voce[1] + 0.7, 2.0, { tam: compacto ? 10 : 13 });
+  // prateleiras (tabelas)
+  const ordem = ["clientes", "produtos", "pedidos", "itens_pedido"];
+  for (const nome of ordem) {
+    const [x, y] = PRAT[nome];
+    const n = D.tabelas[nome];
+    const h = 0.5 + Math.log10(n) * 0.28;
+    const ativo = hl.tabelas && hl.tabelas.includes(nome);
+    caixa3(x, y, 0, 1.2, 1.2, h, ativo ? P.menta : P["cimento-2"], { topo: ativo ? P.menta : P.placa });
+    for (let k = 1; k < 4; k++) { const z = h * k / 4; linha(...iso(x + 1.2, y, z), ...iso(x + 1.2, y + 1.2, z), rgba(P.tinta, 0.35), 1); }
+    rotulo(nome, x + 0.6, y + 0.6, h + 0.1, { tam: compacto ? 8.5 : 10.5, cor: P.tinta, dy: -4 });
+    if (!compacto) rotulo(`${fmt(n)} linhas`, x + 0.6, y + 0.6, h + 0.1, { tam: 9.5, peso: 500, cor: P["tinta-2"], dy: 10, fundo: false });
+  }
+  // corredor com os portões: autorizador e parede em mode=ro
+  const porta = (x, cor, nome, ativo, i) => {
+    const y0 = 2.2, y1 = 3.8, h = 1.7;
+    poli([iso(x, y0, 0), iso(x, y1, 0), iso(x, y1, h), iso(x, y0, h)], rgba(cor, ativo ? 0.38 : 0.14), cor, ativo ? 2.5 : 1.5);
+    for (let k = 1; k < 5; k++) linha(...iso(x, lerp(y0, y1, k / 5), 0), ...iso(x, lerp(y0, y1, k / 5), h), rgba(cor, 0.5), 1);
+    rotulo(nome, x, y1 + (i % 2 ? 0.35 : 0.9), h + 0.15, { tam: compacto ? 8.5 : 10.5, cor: ativo ? cor : P.tinta });
+  };
+  porta(L.g1, P.tinta, "uma instrução", hl.g1, 0);
+  porta(L.g2, P.coral, "autorizador", hl.g2, 1);
+  // parede em mode=ro: cortada na frente, com hachura no corte
+  const yc0 = cf.y, yc1 = cf.y + cf.d;
+  [[yc0, 2.2], [3.8, yc1]].forEach(([a, b]) => {
+    poli([iso(L.parede, a, 0), iso(L.parede, b, 0), iso(L.parede, b, 1.1), iso(L.parede, a, 1.1)], rgba(P.ambar, hl.parede ? 0.4 : 0.16), P.ambar, hl.parede ? 2.5 : 1.5);
+    ctx.save(); poli([iso(L.parede, a, 0), iso(L.parede, b, 0), iso(L.parede, b, 1.1), iso(L.parede, a, 1.1)]); ctx.clip();
+    const [hx, hy] = iso(L.parede, a, 1.1); for (let s = -200; s < 400; s += 7) linha(hx + s, hy - 40, hx + s + 60, hy + 120, rgba(P.ambar, 0.45), 1);
+    ctx.restore();
+  });
+  rotulo("arquivo em mode=ro", L.parede, yc1 - 0.2, 1.3, { tam: compacto ? 8.5 : 10.5, cor: hl.parede ? P.ambar : P.tinta });
+  if (!compacto) rotulo("banco SQLite · em corte", cf.x + 0.2, cf.y + cf.d + 0.3, 0, { tam: 11, cor: P["tinta-2"], alinhar: "left", dy: 12 });
+
+  // pacotes em trânsito e, por cima de tudo, os rótulos
+  for (const pk of cena.pacotes) desenharPacote(pk);
+  desenharRotulos();
+  if (cena.aviso) {
+    const a = cena.aviso, k = saida((agora() - a.t0) / 0.3);
+    if (k > 0) {
+      ctx.save(); ctx.globalAlpha *= k;
+      const [sx, sy] = iso(...a.onde);
+      ctx.font = `600 ${compacto ? 10 : 12}px Recursive, system-ui, sans-serif`;
+      const linhas = quebrarLinhas(a.texto, compacto ? 170 : 260);
+      const w = Math.max(...linhas.map(l => ctx.measureText(l).width)) + 18, h = linhas.length * (compacto ? 14 : 16) + 12;
+      const bx = clamp(sx - w / 2, 4, W - w - 4), by = clamp(sy - h - 24, 4, H - h - 4);
+      ctx.fillStyle = P.placa; ctx.strokeStyle = a.cor; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(bx, by, w, h, 6); ctx.fill(); ctx.stroke();
+      linhas.forEach((l, i) => texto(l, bx + 9, by + (compacto ? 17 : 19) + i * (compacto ? 14 : 16), compacto ? 10 : 12, a.cor, { peso: 600 }));
+      ctx.restore();
+    }
+  }
+}
+function quebrarLinhas(s, maxW) {
+  const ps = s.split(" "), out = []; let l = "";
+  for (const p of ps) { const t = l ? l + " " + p : p; if (ctx.measureText(t).width > maxW && l) { out.push(l); l = p; } else l = t; }
+  if (l) out.push(l); return out;
+}
+function posicaoNoCaminho(cam, k) {
+  const seg = []; let total = 0;
+  for (let i = 1; i < cam.length; i++) { const d = Math.hypot(cam[i][0] - cam[i - 1][0], cam[i][1] - cam[i - 1][1], cam[i][2] - cam[i - 1][2]); seg.push(d); total += d; }
+  let alvo = k * total;
+  for (let i = 0; i < seg.length; i++) { if (alvo <= seg[i]) { const f = seg[i] ? alvo / seg[i] : 0; return [0, 1, 2].map(d => lerp(cam[i][d], cam[i + 1][d], f)); } alvo -= seg[i]; }
+  return cam[cam.length - 1];
+}
+function desenharPacote(pk) {
+  const k = suave((agora() - pk.t0) / pk.dur);
+  if (k <= 0 || (k >= 1 && !pk.fica)) return;
+  const p = posicaoNoCaminho(pk.caminho, k);
+  const [sx, sy] = iso(...p);
+  const r = ISO.s * 0.22;
+  ctx.save(); ctx.shadowColor = rgba(pk.cor, 0.6); ctx.shadowBlur = 12;
+  poli([[sx, sy - r], [sx + r, sy - r * 0.5], [sx + r, sy + r * 0.5], [sx, sy + r], [sx - r, sy + r * 0.5], [sx - r, sy - r * 0.5]], pk.cor, P.tinta, 1);
+  ctx.restore();
+  if (pk.rotulo && W > 520) { ctx.font = `600 10.5px Recursive, system-ui, sans-serif`; const w = ctx.measureText(pk.rotulo).width; ctx.fillStyle = rgba(P.placa, 0.9); ctx.fillRect(sx + r + 4, sy - 8, w + 8, 15); texto(pk.rotulo, sx + r + 8, sy + 3, 10.5, P.tinta, { peso: 600 }); }
+}
+function enviar(caminho, { cor = P.lilas, rotulo = "", atraso = 0, dur = 1.2, fica = false } = {}) {
+  const pk = { caminho, cor, rotulo, t0: agora() + atraso, dur, fica };
+  cena.pacotes.push(pk); return pk;
+}
+const C_ = PONTOS;
+const IDA_COFRE = (tabela) => [C_.exec, C_.entrada, C_.g1, C_.g2, C_.parede, C_.centro, prat(tabela)];
+
+/* ---------- roteiro: mensagens e passos ---------- */
+const json = o => JSON.stringify(o);
+const resumoColunas = t => D.esquemas[t].colunas.map(c => c.nome).join(", ");
+const ROT = D.certo.linhas;
+const PASSOS = [
+  { titulo: "A pergunta", texto: `A pessoa pergunta em português. A CLI chama a API com o histórico (por enquanto, só a pergunta), as instruções de sistema e as ${D.ferramentas.length} ferramentas.`,
+    mensagens: [
+      { papel: "user", blocos: [["texto", D.pergunta]] },
+      { papel: "requisição", blocos: [["model", D.modelo], ["output_config", `{"effort": "${D.esforco}"}`], ["tools", D.ferramentas.map(f => f.nome).join(", ")], ["fallbacks", '"default" · se o modelo recusar por engano, a API tenta o modelo reserva']] },
+    ],
+    roteiro: () => { cena.destaque = { voce: true, claude: true }; empilhar("user"); enviar([C_.voce, [3, 4.8, 2], C_.claude], { rotulo: "pergunta", dur: 1.6 }); } },
+  { titulo: "Primeiro, conhecer o banco", texto: "O modelo não adivinha nomes de tabela: pede a lista. O executor roda a ferramenta no banco, sempre pela conexão somente leitura, e devolve o resultado como tool_result.",
+    mensagens: [
+      { papel: "assistant", blocos: [["raciocínio", "(bloco de pensamento: devolvido sem alteração nas próximas chamadas)"], ["tool_use", "listar_tabelas {}"]] },
+      { papel: "user", blocos: [["tool_result", json({ tabelas: D.tabelas })]] },
+    ],
+    roteiro: () => {
+      cena.destaque = { claude: true, laco: true, exec: true };
+      empilhar("assistant", 0.2);
+      enviar([C_.claude, [7, 2.4, 1.6], C_.exec], { rotulo: "listar_tabelas", dur: 1.3 });
+      enviar([C_.exec, C_.entrada, C_.g1, C_.g2, C_.parede, C_.centro], { rotulo: "", cor: P.menta, atraso: 1.3, dur: 1.4 });
+      enviar([C_.centro, C_.parede, C_.g2, C_.g1, C_.entrada, C_.exec, [7, 4.3, 1.6], C_.claude], { rotulo: "tool_result", cor: P.menta, atraso: 2.9, dur: 2 });
+      depois(1.5, () => { cena.destaque.tabelas = Object.keys(PRAT); });
+      depois(4.9, () => empilhar("resultado"));
+    } },
+  { titulo: "Três chamadas de uma vez", texto: "O modelo pede o esquema de três tabelas na mesma resposta. O executor roda as três e devolve os três resultados juntos, numa única mensagem: é assim que a API espera chamadas paralelas.",
+    mensagens: [
+      { papel: "assistant", blocos: [["tool_use", "descrever_tabela {tabela: pedidos}"], ["tool_use", "descrever_tabela {tabela: itens_pedido}"], ["tool_use", "descrever_tabela {tabela: produtos}"]] },
+      { papel: "user", blocos: ["pedidos", "itens_pedido", "produtos"].map(t => ["tool_result", `${t}: ${resumoColunas(t)}${D.esquemas[t].chaves_estrangeiras.length ? " · chaves: " + D.esquemas[t].chaves_estrangeiras.map(c => `${c.coluna} → ${c.referencia}`).join(", ") : ""}`]) },
+    ],
+    roteiro: () => {
+      cena.destaque = { claude: true, laco: true, exec: true };
+      empilhar("assistant", 0.2);
+      enviar([C_.claude, [7, 2.4, 1.6], C_.exec], { rotulo: "3 × descrever_tabela", dur: 1.3 });
+      ["pedidos", "itens_pedido", "produtos"].forEach((t, i) => {
+        enviar(IDA_COFRE(t), { cor: P.menta, atraso: 1.3 + i * 0.15, dur: 1.6 });
+        enviar([prat(t), C_.centro, C_.parede, C_.g2, C_.g1, C_.entrada, C_.exec], { cor: P.menta, atraso: 3 + i * 0.15, dur: 1.4 });
+      });
+      enviar([C_.exec, [7, 4.3, 1.6], C_.claude], { rotulo: "3 tool_result juntos", cor: P.menta, atraso: 4.6, dur: 1.2 });
+      depois(2.6, () => { cena.destaque.tabelas = ["pedidos", "itens_pedido", "produtos"]; });
+      depois(5.8, () => empilhar("resultado"));
+    } },
+  { titulo: "Um erro, e a correção", texto: "A primeira consulta usa uma coluna que não existe. O erro real do SQLite volta como tool_result com is_error, e o modelo corrige a consulta sozinho na chamada seguinte.",
+    mensagens: [
+      { papel: "assistant", blocos: [["tool_use", "executar_sql " + D.sql_errado]] },
+      { papel: "user", blocos: [["tool_result · is_error", "Erro: " + D.errado.erro]], erro: true },
+      { papel: "assistant", blocos: [["tool_use", "executar_sql " + D.sql_certo]] },
+      { papel: "user", blocos: [["tool_result", json({ colunas: D.certo.colunas, linhas: ROT, truncado: D.certo.truncado })]] },
+    ],
+    roteiro: () => {
+      cena.destaque = { claude: true, laco: true, exec: true };
+      empilhar("assistant", 0.2);
+      enviar([C_.claude, [7, 2.4, 1.6], C_.exec], { rotulo: "executar_sql", dur: 1.2 });
+      enviar(IDA_COFRE("itens_pedido"), { cor: P.coral, atraso: 1.2, dur: 1.4 });
+      depois(2.6, () => { cena.destaque.tabelas = ["itens_pedido"]; aviso(D.errado.erro, prat("itens_pedido"), P.coral); });
+      enviar([prat("itens_pedido"), C_.centro, C_.parede, C_.g2, C_.g1, C_.entrada, C_.exec, [7, 4.3, 1.6], C_.claude], { cor: P.coral, rotulo: "is_error", atraso: 3.3, dur: 1.9 });
+      depois(5.2, () => { empilhar("erro"); cena.aviso = null; empilhar("assistant", 0.3); });
+      enviar([C_.claude, [7, 2.4, 1.6], C_.exec], { rotulo: "executar_sql (corrigida)", atraso: 5.6, dur: 1.2 });
+      ["itens_pedido", "pedidos", "produtos"].forEach((t, i) => enviar(IDA_COFRE(t), { cor: P.menta, atraso: 6.8 + i * 0.12, dur: 1.4 }));
+      depois(8.2, () => { cena.destaque.tabelas = ["itens_pedido", "pedidos", "produtos"]; });
+      enviar([C_.centro, C_.parede, C_.g2, C_.g1, C_.entrada, C_.exec, [7, 4.3, 1.6], C_.claude], { cor: P.menta, rotulo: `${ROT.length} linhas`, atraso: 8.4, dur: 1.9 });
+      depois(10.3, () => empilhar("resultado"));
+    } },
+  { titulo: "A resposta", texto: "Sem mais ferramentas a chamar, o modelo responde em texto. A CLI mostra a resposta e guarda a conversa: dá para perguntar em seguida \"e em 2024?\" sem repetir o contexto.",
+    mensagens: [
+      { papel: "assistant", blocos: [["texto", `A categoria que mais faturou em 2025 foi ${ROT[0][0]}, com R$ ${fmt(ROT[0][1], 2)} em pedidos não cancelados. Logo atrás vem ${ROT[1][0]}, com R$ ${fmt(ROT[1][1], 2)}.`], ["sql", D.sql_certo], ["suposição", "faturamento = quantidade × preço pago, sem pedidos cancelados"]], ilustrativo: true },
+    ],
+    roteiro: () => { cena.destaque = { claude: true, voce: true }; empilhar("assistant", 0.2); enviar([C_.claude, [3, 4.8, 2], C_.voce], { rotulo: "resposta", dur: 1.6 }); } },
+  { titulo: "O cofre por dentro", texto: "Escolha uma consulta e veja onde ela para. Escritas são barradas pelo autorizador antes de rodar; se algo passasse, o arquivo aberto em mode=ro recusaria. Consultas lentas são interrompidas aos 5 segundos.",
+    mensagens: [], lab: true,
+    roteiro: () => { cena.destaque = { g1: true, g2: true, parede: true, relogio: true }; cena.pilha = []; } },
+  { titulo: "Como se mede", texto: `A avaliação roda ${D.avaliacao.n_perguntas} perguntas com consulta gabarito e compara os resultados, ignorando a ordem das linhas e das colunas e arredondando números. Isso se chama acurácia de execução.`,
+    mensagens: [
+      { papel: "gabarito", blocos: [["sql", D.avaliacao.gabarito_sql]] },
+      { papel: "avaliar.py", blocos: [["normalizar", "def normalizar(linhas):\n    def valor(v):\n        return round(float(v), 2) if isinstance(v, (int, float)) else str(v)\n    return Counter(tuple(sorted(map(valor, linha), key=str)) for linha in linhas)"]] },
+    ], avaliacao: true,
+    roteiro: () => { cena.destaque = {}; } },
+];
+
+/* ---------- motor dos passos ---------- */
+let agenda = [];
+function depois(s, fn) { agenda.push({ t: agora() + (movimentoReduzido ? 0 : s), fn }); }
+function empilhar(tipo, atraso = 0) { depois(atraso, () => cena.pilha.push({ tipo, t0: agora() })); }
+function aviso(texto, onde, cor) { cena.aviso = { texto, onde, cor, t0: agora() }; }
+const estado = { passo: 0, inicio: agora(), lab: null };
+const pilhaAntes = [[], ["user"], ["user", "assistant", "resultado"], ["user", "assistant", "resultado", "assistant", "resultado"],
+  ["user", "assistant", "resultado", "assistant", "resultado", "assistant", "erro", "assistant", "resultado"]];
+function irPara(i) {
+  i = clamp(i, 0, PASSOS.length - 1);
+  estado.passo = i; estado.inicio = agora(); estado.lab = null;
+  agenda = []; cena.pacotes = []; cena.aviso = null; cena.relogio = 0;
+  cena.pilha = (pilhaAntes[i] || pilhaAntes[4].concat(["assistant"])).map(tipo => ({ tipo, t0: -10 }));
+  PASSOS[i].roteiro();
+  if (movimentoReduzido) { for (const a of agenda) a.fn(); agenda = []; cena.pacotes = []; }
+  document.getElementById("titulo-passo").textContent = `${i + 1}. ${PASSOS[i].titulo}`;
+  document.getElementById("texto-passo").textContent = PASSOS[i].texto;
+  [...document.getElementById("passos").children].forEach((li, k) => { const b = li.querySelector("button"); k === i ? b.setAttribute("aria-current", "step") : b.removeAttribute("aria-current"); });
+  document.getElementById("anterior").disabled = i === 0;
+  document.getElementById("proximo").disabled = i === PASSOS.length - 1;
+  mostrarMensagens(i);
+  montarLab(!!PASSOS[i].lab);
+}
+function mostrarMensagens(i) {
+  const caixa = document.getElementById("mensagens");
+  caixa.innerHTML = "";
+  const aviso = document.getElementById("aviso");
+  // mostra o histórico acumulado até este passo, com as mensagens novas destacadas
+  const lista = [];
+  for (let k = 0; k <= Math.min(i, 4); k++) PASSOS[k].mensagens.forEach(m => lista.push({ ...m, nova: k === i }));
+  if (i >= 5) {
+    aviso.textContent = i === 5 ? "As mensagens abaixo são as respostas reais do banco a cada tentativa." : "";
+  } else aviso.textContent = PASSOS[i].mensagens.some(m => m.ilustrativo) ? "Texto do modelo ilustrativo; números e SQL reais." : "";
+  const fonte = i === 5 ? [] : i === 6 ? PASSOS[6].mensagens.map(m => ({ ...m, nova: true })) : lista;
+  for (const m of fonte) {
+    const div = document.createElement("div");
+    div.className = `msg ${m.papel === "assistant" ? "assistant" : ""} ${m.nova ? "nova" : ""}`;
+    div.innerHTML = `<div class="papel"><span>${m.papel}</span>${m.nova ? "<span>novo</span>" : ""}</div>` +
+      m.blocos.map(([tipo, conteudo]) => `<div class="bloco"><b class="${/erro/.test(tipo) ? "erro" : ""}">${tipo}</b><pre class="mono ${/erro/.test(tipo) ? "erro" : ""}">${escapar(conteudo)}</pre></div>`).join("");
+    if (!m.nova) div.style.opacity = "0.55";
+    caixa.appendChild(div);
+  }
+  caixa.scrollTop = caixa.scrollHeight;
+}
+const escapar = s => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+
+/* ---------- laboratório do cofre ---------- */
+const lab = document.getElementById("lab");
+function montarLab(ativo) {
+  lab.hidden = !ativo; lab.innerHTML = "";
+  if (!ativo) return;
+  D.ataques.forEach((a, i) => {
+    const b = document.createElement("button"); b.type = "button"; b.id = `tentativa-${i}`; b.textContent = a.nome;
+    b.addEventListener("click", () => tentar(i)); lab.appendChild(b);
+  });
+  depois(0.6, () => tentar(3));
+}
+function tentar(i) {
+  const a = D.ataques[i];
+  [...lab.children].forEach((b, k) => b.setAttribute("aria-pressed", String(k === i)));
+  cena.pacotes = []; cena.aviso = null; agenda = []; cena.relogio = 0;
+  estado.lab = { i, t0: agora() };
+  const ate = a.ok ? "fim" : /one statement/.test(a.erro) ? "g1" : /interrompida/.test(a.erro) ? "relogio" : "g2";
+  const caminhoTotal = [C_.exec, C_.entrada, C_.g1, C_.g2, C_.parede, C_.centro, prat("pedidos")];
+  const cortes = { g1: 3, g2: 4, relogio: 7, fim: 7 };
+  const caminho = caminhoTotal.slice(0, cortes[ate]);
+  const cor = a.ok ? P.menta : ate === "relogio" ? P.ambar : P.coral;
+  enviar(caminho, { cor, rotulo: a.sql.length > 34 ? a.sql.slice(0, 32) + "…" : a.sql, dur: 1.4 * caminho.length / 7 + 0.4, fica: !a.ok });
+  const fim = 1.4 * caminho.length / 7 + 0.4;
+  if (ate === "relogio") {
+    depois(fim, () => { estado.lab.girar = agora(); });
+    depois(fim + 1.6, () => aviso(a.erro, [L.cofre.x + L.cofre.w - 0.9, L.cofre.y, 1.7], P.ambar));
+  } else if (a.ok) {
+    depois(fim, () => aviso(`resultado: ${json(a.linhas)}`, prat("pedidos"), P.menta));
+  } else {
+    const onde = ate === "g1" ? C_.g1 : C_.g2;
+    depois(fim, () => aviso(a.erro, [onde[0], onde[1] + 0.4, onde[2] + 1.6], P.coral));
+  }
+  const caixa = document.getElementById("mensagens");
+  const div = document.createElement("div");
+  div.className = "msg nova";
+  div.innerHTML = `<div class="papel"><span>executar_sql</span><span>${a.ok ? "liberada" : "barrada"}</span></div><div class="bloco"><pre class="mono">${escapar(a.sql)}</pre></div><div class="bloco"><b class="${a.ok ? "" : "erro"}">${a.ok ? "resultado" : "erro"}</b><pre class="mono ${a.ok ? "" : "erro"}">${escapar(a.ok ? json(a.linhas) : a.erro)}</pre></div>`;
+  caixa.prepend(div);
+}
+
+/* ---------- avaliação: acurácia de execução ---------- */
+function desenharAvaliacao(t) {
+  const A = D.avaliacao;
+  const compacto = W < 700;
+  texto(A.pergunta, 20, 34, compacto ? 13 : 16, P.tinta, { peso: 700 });
+  texto("o resultado de cada consulta, antes e depois de normalizar", 20, 54, compacto ? 10.5 : 12, P["tinta-2"]);
+  const cols = [
+    { nome: "gabarito", r: A.gabarito, cor: P.tinta },
+    { nome: "agente A: colunas trocadas", r: A.invertida, cor: P.menta, bate: A.invertida_bate },
+    { nome: "agente B: esqueceu os cancelados", r: A.com_cancelados, cor: P.coral, bate: A.cancelados_bate },
+  ];
+  const cw = compacto ? W - 40 : (W - 80) / 3;
+  cols.forEach((c, i) => {
+    const x = compacto ? 20 : 20 + i * (cw + 20), y = compacto ? 76 + i * (H - 90) / 3 : 90;
+    const k = saida(fase(t, 0.3 + i * 0.4, 0.5));
+    if (k <= 0) return;
+    ctx.save(); ctx.globalAlpha *= k;
+    texto(c.nome, x, y, compacto ? 11.5 : 13, c.cor, { peso: 700 });
+    // tabela original
+    const th = compacto ? 22 : 28;
+    ctx.fillStyle = rgba(P.tinta, 0.06); ctx.fillRect(x, y + 10, cw, th);
+    c.r.colunas.forEach((col, j) => texto(col, x + 10 + j * cw / 2, y + 10 + th * 0.68, compacto ? 10.5 : 12, P.tinta, { peso: 600 }));
+    c.r.linhas.forEach((l, li) => l.forEach((v, j) => texto(typeof v === "number" ? fmt(v, 2) : v, x + 10 + j * cw / 2, y + 10 + th * (1.7 + li), compacto ? 10.5 : 12.5, P.tinta)));
+    // normalização
+    const kn = saida(fase(t, 2 + i * 0.3, 0.8));
+    if (kn > 0) {
+      const ny = y + th * (compacto ? 3.0 : 3.2);
+      texto("normalizado", x, ny, compacto ? 9.5 : 11, P["tinta-2"], { peso: 600 });
+      const tupla = c.r.linhas.map(l => l.map(v => typeof v === "number" ? fmt(v, 2) : v).sort()).map(l => `(${l.join(", ")})`).join(" ");
+      texto(tupla, x, ny + (compacto ? 16 : 20) * kn, compacto ? 11 : 13, c.cor, { peso: 700 });
+    }
+    if (i > 0) {
+      const kv = saida(fase(t, 3.4 + i * 0.4, 0.4));
+      if (kv > 0) {
+        const vy = y + th * (compacto ? 4.6 : 5.2);
+        texto(c.bate ? "✓ igual ao gabarito: conta como acerto" : "✗ número diferente: conta como erro", x, vy, compacto ? 11 : 13, c.bate ? P.menta : P.coral, { peso: 700 });
+      }
+    }
+    ctx.restore();
+  });
+  if (!compacto) {
+    const ly = H * 0.62;
+    texto(`As ${A.n_perguntas} perguntas do conjunto de avaliação`, 20, ly, 14, P.tinta, { peso: 700 });
+    A.perguntas.forEach((p, i) => {
+      const k = fase(t, 4.5 + i * 0.12, 0.3); if (k <= 0) return;
+      ctx.save(); ctx.globalAlpha *= k;
+      ctx.font = "500 12.5px Recursive, system-ui, sans-serif";
+      let s = `${i + 1}. ${p}`; const max = W / 2 - 40;
+      while (ctx.measureText(s).width > max && s.length > 10) s = s.slice(0, -2);
+      if (s !== `${i + 1}. ${p}`) s = s.trimEnd() + "…";
+      texto(s, 20 + (i % 2) * (W / 2 - 10), ly + 26 + Math.floor(i / 2) * 22, 12.5, P["tinta-2"]);
+      ctx.restore();
+    });
+    texto("python -m agente_sql.avaliar  →  acurácia de execução: acertos / perguntas", 20, H - 18, 12, P.tinta, { peso: 600 });
+  }
+}
+
+/* ---------- laço de desenho ---------- */
+let erroMostrado = false;
+function redimensionar() {
+  const r = tela.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
+  W = Math.max(1, r.width); H = Math.max(1, r.height);
+  tela.width = Math.round(W * dpr); tela.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function quadro() {
+  requestAnimationFrame(quadro);
+  const t = agora();
+  // tira da fila o que venceu antes de rodar: uma tarefa pode agendar outras
+  const vencidas = agenda.filter(a => t >= a.t);
+  agenda = agenda.filter(a => t < a.t);
+  vencidas.forEach(a => a.fn());
+  if (estado.lab && estado.lab.girar) cena.relogio = Math.min(5, (t - estado.lab.girar) / 1.6 * 5);
+  ctx.clearRect(0, 0, W, H);
+  ctx.globalAlpha = 1;
+  try {
+    if (PASSOS[estado.passo].avaliacao) desenharAvaliacao(movimentoReduzido ? 60 : t - estado.inicio);
+    else desenharDiorama(t - estado.inicio);
+  } catch (e) { if (!erroMostrado) { erroMostrado = true; console.error(e); } }
+}
+
+/* ---------- montagem ---------- */
+const passosEl = document.getElementById("passos"), resumo = document.getElementById("resumo");
+PASSOS.forEach((p, i) => {
+  const li = document.createElement("li");
+  li.innerHTML = `<button type="button" id="passo-${i + 1}" aria-label="Passo ${i + 1}: ${p.titulo}">${i + 1}</button>`;
+  li.querySelector("button").addEventListener("click", () => irPara(i));
+  passosEl.appendChild(li);
+  const a = document.createElement("article"); a.innerHTML = `<h3>${i + 1}. ${p.titulo}</h3><p>${p.texto}</p>`; resumo.appendChild(a);
+});
+document.getElementById("anterior").addEventListener("click", () => irPara(estado.passo - 1));
+document.getElementById("proximo").addEventListener("click", () => irPara(estado.passo + 1));
+document.getElementById("repetir").addEventListener("click", () => irPara(estado.passo));
+const reler = () => lerCores();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", reler);
+new MutationObserver(reler).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+lerCores();
+new ResizeObserver(redimensionar).observe(tela);
+redimensionar();
+irPara(0);
+requestAnimationFrame(quadro);
+})();
+</script>
+</body>
+</html>
