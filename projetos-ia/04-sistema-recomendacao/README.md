@@ -63,6 +63,12 @@ python -m recomendacao.recomendar --usuario 7   # histórico + recomendações d
 pytest
 ```
 
+## Animação
+
+`animacao/index.html` explica o projeto de forma visual e interativa, com os números reais desta pasta. Seis lâminas em estilo risografia mostram a matriz quase vazia, a fatoração como duas camadas de tinta (pessoas em rosa, filmes em azul), o ALS convergindo meia-iteração por meia-iteração (refeito e conferido contra o modelo), o mapa do gosto em 3D, os vizinhos do ItemKNN e a avaliação com o NDCG.
+
+Abra o arquivo no navegador; não precisa de servidor. Depois de mudar o código, refaça os dados embutidos na página com `python animacao/exportar_dados.py`.
+
 ## Estrutura
 
 ```
