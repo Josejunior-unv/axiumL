@@ -66,6 +66,12 @@ curl -X POST localhost:8000/prever -H 'Content-Type: application/json' -d '{
 # {"probabilidade_churn": 0.9407, "acionar_retencao": true, "limiar": 0.36}
 ```
 
+## Animação
+
+`animacao/index.html` explica o projeto de forma visual e interativa, com os números reais desta pasta. Uma animação em rolagem, no formato de uma fatura de operadora, mostra o pipeline por dentro: a previsão de um cliente real virando uma "fatura de risco" item a item, um simulador que recalcula a probabilidade com os coeficientes do modelo, a superfície de risco em 3D com corte de seção, as cinco rodadas da validação cruzada e a curva de lucro do limiar.
+
+Abra o arquivo no navegador; não precisa de servidor. Depois de mudar o código, refaça os dados embutidos na página com `python animacao/exportar_dados.py`.
+
 ## Estrutura
 
 ```

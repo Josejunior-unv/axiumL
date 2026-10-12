@@ -1,0 +1,1161 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fatura de Risco</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: fatura de operadora em duas colunas. O texto rola à esquerda e a figura fica presa à direita; no celular, a figura fica presa no topo. */
+:root {
+  --papel: #F1F4F3;
+  --papel-2: #E3E9E7;
+  --cartao: #FBFCFB;
+  --tinta: #17202A;
+  --tinta-2: #57626C;
+  --pontilhado: #A9B4B6;
+  --risco: #C8303C;
+  --fica: #0F7F71;
+  --faixa: #1D3A5C;
+  --realce: #D99A1E;
+  --f-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-texto: "Barlow", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --papel: #0E1419; --papel-2: #18222A; --cartao: #131B22; --tinta: #E5EBEE; --tinta-2: #97A4AE;
+    --pontilhado: #3B4954; --risco: #FF5C66; --fica: #35C2AD; --faixa: #8DB3E2; --realce: #F0B23A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --papel: #0E1419; --papel-2: #18222A; --cartao: #131B22; --tinta: #E5EBEE; --tinta-2: #97A4AE;
+  --pontilhado: #3B4954; --risco: #FF5C66; --fica: #35C2AD; --faixa: #8DB3E2; --realce: #F0B23A;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { background: var(--papel); color: var(--tinta); }
+body { margin: 0; font-family: var(--f-texto); font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.pagina { padding-inline: clamp(16px, 4vw, 56px); max-width: 1440px; margin: 0 auto; }
+
+/* Cabeçalho no formato de fatura */
+.topo { padding-block: 28px 18px; border-bottom: 2px solid var(--tinta); display: grid; gap: 14px; }
+.marca { display: flex; align-items: center; gap: 10px; font-family: var(--f-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--tinta-2); }
+.barras { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; }
+.barras i { width: 3px; background: var(--faixa); display: block; }
+.barras i:nth-child(1) { height: 4px; } .barras i:nth-child(2) { height: 7px; } .barras i:nth-child(3) { height: 10px; } .barras i:nth-child(4) { height: 14px; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(44px, 7vw, 92px); line-height: .92; letter-spacing: -.01em; margin: 0; text-wrap: balance; }
+.lead { max-width: 44rem; margin: 0; font-size: 19px; color: var(--tinta-2); text-wrap: pretty; }
+.resumo { display: flex; flex-wrap: wrap; gap: 6px 28px; margin: 6px 0 0; padding: 0; list-style: none; font-family: var(--f-mono); font-size: 13px; }
+.resumo li { display: flex; gap: 8px; }
+.resumo b { font-weight: 600; }
+.resumo span { color: var(--tinta-2); }
+
+/* História */
+.historia { display: grid; grid-template-columns: minmax(0, 30rem) minmax(0, 1fr); gap: clamp(24px, 4vw, 64px); }
+.texto { min-width: 0; padding-bottom: 30vh; }
+.passo { min-height: 88vh; padding-block: 16vh 4vh; transition: opacity .35s ease; opacity: .5; }
+.passo:first-child { padding-top: 7vh; min-height: 70vh; }
+.passo.ativo { opacity: 1; }
+.passo .rotulo { font-family: var(--f-mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--tinta-2); display: flex; gap: 10px; align-items: baseline; }
+.passo .rotulo::after { content: ""; flex: 1; border-bottom: 1px dotted var(--pontilhado); transform: translateY(-3px); }
+.passo h2 { font-family: var(--f-display); font-weight: 600; font-size: clamp(30px, 3.4vw, 42px); line-height: 1.02; margin: 8px 0 14px; text-wrap: balance; }
+.passo p { margin: 0 0 14px; text-wrap: pretty; }
+.passo code, .rodape code { font-family: var(--f-mono); font-size: .86em; background: var(--papel-2); padding: 1px 5px; border-radius: 3px; }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: .92em; }
+
+.figura { min-width: 0; }
+.figura-fixa { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 2vh); height: 96vh; display: flex; flex-direction: column; }
+#tela { flex: 1; width: 100%; min-height: 0; display: block; touch-action: pan-y; }
+#tela.giravel { cursor: grab; }
+#tela.giravel:active { cursor: grabbing; }
+.legenda { font-family: var(--f-mono); font-size: 12px; color: var(--tinta-2); padding-top: 8px; min-height: 2.6em; border-top: 1px dotted var(--pontilhado); }
+
+/* Controles */
+.controles { display: grid; gap: 12px; margin-top: 18px; padding: 16px; background: var(--cartao); border: 1px solid var(--papel-2); border-radius: 4px; }
+.grupo { display: grid; gap: 6px; }
+.grupo > span, .grupo label { font-family: var(--f-mono); font-size: 12px; color: var(--tinta-2); letter-spacing: .04em; display: flex; justify-content: space-between; gap: 8px; }
+.grupo output { color: var(--tinta); font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { font: 500 14px/1 var(--f-texto); color: var(--tinta); background: transparent; border: 1px solid var(--pontilhado); border-radius: 2px; padding: 8px 11px; cursor: pointer; }
+.chips button[aria-pressed="true"] { background: var(--tinta); color: var(--papel); border-color: var(--tinta); }
+.chips button:hover { border-color: var(--tinta); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--realce); outline-offset: 2px; }
+input[type="range"] { width: 100%; accent-color: var(--faixa); }
+.dica { font-size: 14px; color: var(--tinta-2); font-style: italic; }
+
+.rodape { border-top: 2px solid var(--tinta); padding-block: 22px 40px; font-size: 14px; color: var(--tinta-2); display: grid; gap: 6px; }
+
+@media (max-width: 900px) {
+  body { font-size: 16px; }
+  .historia { grid-template-columns: minmax(0, 1fr); }
+  .figura { order: -1; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; background: var(--papel); margin-inline: calc(-1 * clamp(16px, 4vw, 56px)); padding-inline: clamp(16px, 4vw, 56px); border-bottom: 1px solid var(--papel-2); }
+  .figura-fixa { position: static; height: 46vh; min-height: 280px; }
+  .legenda { min-height: 0; padding-block: 6px; }
+  .passo { min-height: 64vh; padding-block: 6vh 4vh; }
+  .passo:first-child { padding-top: 4vh; min-height: 50vh; }
+  .texto { padding-bottom: 40vh; }
+}
+@media (prefers-reduced-motion: reduce) { .passo { transition: none; } }
+</style>
+</head>
+<body>
+<div class="pagina">
+  <header class="topo">
+    <div class="marca"><span class="barras" aria-hidden="true"><i></i><i></i><i></i><i></i></span> Projeto 01 · Previsão de churn</div>
+    <h1>Fatura de Risco</h1>
+    <p class="lead">Como o modelo estima a chance de um cliente de telecom cancelar o plano e decide para quem vale a pena oferecer um desconto de retenção.</p>
+    <ul class="resumo">
+      <li><span>Base</span><b>7.000 clientes</b></li>
+      <li><span>Teste</span><b>1.400</b></li>
+      <li><span>Modelo</span><b>regressão logística</b></li>
+      <li><span>ROC-AUC no teste</span><b>0,835</b></li>
+      <li><span>Limiar</span><b>0,36</b></li>
+    </ul>
+  </header>
+
+  <main class="historia">
+    <div class="texto">
+      <section class="passo ativo" data-passo="0">
+        <div class="rotulo">O problema</div>
+        <h2>Um em cada quatro clientes vai embora</h2>
+        <p>Na base de 7.000 clientes, <span class="num">27,4%</span> cancelaram o plano. Ao lado estão 420 clientes do conjunto de teste; os vermelhos cancelaram.</p>
+        <p>O projeto tem dois objetivos: estimar a chance de cada cliente cancelar e decidir para quem compensa oferecer um desconto de retenção.</p>
+      </section>
+
+      <section class="passo" data-passo="1">
+        <div class="rotulo">Pipeline</div>
+        <h2>Do cadastro à probabilidade</h2>
+        <p>O modelo recebe só os campos do cadastro. Dentro do pipeline do scikit-learn, três variáveis novas são calculadas: o logaritmo do tempo de casa, o gasto médio por mês e um indicador de cliente novo.</p>
+        <p>Depois, os números vão para a mesma escala e cada categoria vira uma coluna de 0 e 1. A regressão logística soma tudo com pesos aprendidos e a função sigmoide transforma a soma num valor entre 0 e 1.</p>
+      </section>
+
+      <section class="passo" data-passo="2">
+        <div class="rotulo">Explicação</div>
+        <h2>Cada previsão vira uma fatura</h2>
+        <p>Como o modelo é linear, a previsão pode ser escrita como uma conta: parte do cliente médio do treino, e cada característica acrescenta ou desconta <em>log-chance</em>. O total passa pela sigmoide e vira probabilidade.</p>
+        <p>Os três são clientes reais do teste, com a resposta que eles deram de verdade:</p>
+        <div class="controles">
+          <div class="grupo"><span>Cliente</span>
+            <div class="chips" id="exemplos">
+              <button type="button" id="ex-0" data-ex="0" aria-pressed="true">Risco alto</button>
+              <button type="button" id="ex-1" data-ex="1" aria-pressed="false">Risco médio</button>
+              <button type="button" id="ex-2" data-ex="2" aria-pressed="false">Risco baixo</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="passo" data-passo="3">
+        <div class="rotulo">Simulador</div>
+        <h2>Monte um cliente</h2>
+        <p>Mude os campos e veja a soma andar pela curva. A conta é feita aqui no navegador, com os mesmos coeficientes do modelo treinado.</p>
+        <div class="controles" id="simulador">
+          <div class="grupo"><span>Contrato</span>
+            <div class="chips" data-campo="contrato">
+              <button type="button" id="s-contrato-mensal" data-valor="mensal" aria-pressed="true">mensal</button>
+              <button type="button" id="s-contrato-anual" data-valor="anual" aria-pressed="false">anual</button>
+              <button type="button" id="s-contrato-bianual" data-valor="bianual" aria-pressed="false">bianual</button>
+            </div>
+          </div>
+          <div class="grupo"><span>Internet</span>
+            <div class="chips" data-campo="internet">
+              <button type="button" id="s-internet-fibra" data-valor="fibra" aria-pressed="true">fibra</button>
+              <button type="button" id="s-internet-dsl" data-valor="dsl" aria-pressed="false">DSL</button>
+              <button type="button" id="s-internet-sem" data-valor="sem_internet" aria-pressed="false">sem internet</button>
+            </div>
+          </div>
+          <div class="grupo"><span>Pagamento</span>
+            <div class="chips" data-campo="pagamento">
+              <button type="button" id="s-pag-boleto" data-valor="boleto" aria-pressed="true">boleto</button>
+              <button type="button" id="s-pag-cartao" data-valor="cartao_credito" aria-pressed="false">cartão</button>
+              <button type="button" id="s-pag-pix" data-valor="pix" aria-pressed="false">pix</button>
+              <button type="button" id="s-pag-debito" data-valor="debito_automatico" aria-pressed="false">débito automático</button>
+            </div>
+          </div>
+          <div class="grupo"><label for="s-meses">Tempo de casa <output id="o-meses">4 meses</output></label><input type="range" id="s-meses" min="1" max="72" value="4"></div>
+          <div class="grupo"><label for="s-chamados">Chamados no suporte <output id="o-chamados">3</output></label><input type="range" id="s-chamados" min="0" max="8" value="3"></div>
+          <div class="grupo"><label for="s-atrasos">Atrasos de pagamento <output id="o-atrasos">1</output></label><input type="range" id="s-atrasos" min="0" max="5" value="1"></div>
+          <div class="grupo"><label for="s-mensalidade">Mensalidade <output id="o-mensalidade">R$ 110</output></label><input type="range" id="s-mensalidade" min="30" max="160" step="1" value="110"></div>
+        </div>
+        <p class="dica">Idade (41), dependentes (0), região (Sudeste) e streaming (não) ficam fixos. O total gasto acompanha mensalidade × meses.</p>
+      </section>
+
+      <section class="passo" data-passo="4">
+        <div class="rotulo">Visão 3D</div>
+        <h2>A superfície de risco</h2>
+        <p>Fixando um cliente típico (fibra, cartão, R$ 99 por mês), a probabilidade vira uma superfície sobre o tempo de casa e o número de chamados no suporte. Arraste a figura para girar.</p>
+        <p>O corte mostra a curva para um número fixo de chamados. Os pontos são clientes reais do teste com o contrato escolhido; eles não ficam colados na superfície porque têm outros valores nos campos fixados.</p>
+        <div class="controles">
+          <div class="grupo"><span>Contrato</span>
+            <div class="chips" id="contrato3d">
+              <button type="button" id="c3-mensal" data-valor="mensal" aria-pressed="true">mensal</button>
+              <button type="button" id="c3-anual" data-valor="anual" aria-pressed="false">anual</button>
+              <button type="button" id="c3-bianual" data-valor="bianual" aria-pressed="false">bianual</button>
+            </div>
+          </div>
+          <div class="grupo"><label for="corte">Corte em <output id="o-corte">3 chamados</output></label><input type="range" id="corte" min="0" max="8" value="3"></div>
+        </div>
+      </section>
+
+      <section class="passo" data-passo="5">
+        <div class="rotulo">Seleção do modelo</div>
+        <h2>Cinco rodadas de validação</h2>
+        <p>Para escolher o modelo sem olhar o teste, o treino (5.600 clientes) é dividido em 5 partes. Cada parte serve uma vez de validação enquanto os modelos treinam nas outras quatro.</p>
+        <p>A regressão logística vence o gradient boosting nas cinco rodadas, porque os dados foram gerados por um processo quase logístico. As previsões feitas fora da amostra ficam guardadas: é com elas que o limiar será escolhido.</p>
+      </section>
+
+      <section class="passo" data-passo="6">
+        <div class="rotulo">Decisão</div>
+        <h2>Quanto vale avisar</h2>
+        <p>Cada oferta custa R$ 120. Se o cliente ia mesmo sair, a oferta o segura em 30% dos casos e preserva um ano de mensalidade. Quem fica abaixo do limiar não recebe nada.</p>
+        <p>O limiar 0,36 maximiza o lucro nas previsões fora da amostra do treino. No teste, ele rende <span class="num">R$ 44.489</span>. Oferecer para todos daria prejuízo de <span class="num">R$ 31.559</span>.</p>
+        <div class="controles">
+          <div class="grupo"><label for="limiar">Limiar <output id="o-limiar">0,36</output></label><input type="range" id="limiar" min="0.02" max="0.98" step="0.01" value="0.36"></div>
+        </div>
+      </section>
+
+      <section class="passo" data-passo="7">
+        <div class="rotulo">Explicabilidade</div>
+        <h2>O que mais pesa</h2>
+        <p>Para medir a importância de uma variável, a coluna dela é embaralhada no teste e mede-se quanto a ROC-AUC cai. Se o modelo dependia dela, a previsão piora muito.</p>
+        <p>Tempo de casa e tipo de contrato dominam. O total gasto aparece forte porque carrega quase a mesma informação que o tempo de casa: ele é a mensalidade multiplicada pelos meses.</p>
+      </section>
+
+      <section class="passo" data-passo="8">
+        <div class="rotulo">Produção</div>
+        <h2>A mesma conta, servida por uma API</h2>
+        <p>A API FastAPI recebe os campos brutos em JSON, roda o mesmo pipeline salvo pelo treino e devolve a probabilidade e a decisão de acionar a retenção.</p>
+        <p>O exemplo usa o cliente montado no simulador. Para subir a API: <code>python -m churn.treinar</code> e depois <code>uvicorn churn.api:app</code>.</p>
+      </section>
+    </div>
+
+    <div class="figura">
+      <div class="figura-fixa">
+        <canvas id="tela" role="img" aria-label="Figura animada que acompanha o texto"></canvas>
+        <div class="legenda" id="legenda" aria-live="polite"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="rodape">
+    <div>Todos os números vêm do projeto <code>projetos-ia/01-previsao-churn</code> rodado com semente 42 e foram exportados por <code>animacao/exportar_dados.py</code>.</div>
+    <div>Os clientes são sintéticos: o gerador sorteia o churn a partir de efeitos conhecidos, para dar para conferir o que o modelo aprende.</div>
+  </footer>
+</div>
+
+<script id="dados" type="application/json">{"n_clientes":7000,"taxa_churn":0.2736,"n_treino":5600,"n_teste":1400,"validacao":[{"nome":"regressao_logistica","roc_auc":0.828,"pr_auc":0.665,"folds":[0.833,0.844,0.813,0.83,0.819]},{"nome":"gradient_boosting","roc_auc":0.817,"pr_auc":0.644,"folds":[0.819,0.831,0.804,0.825,0.806]}],"vencedor":"regressao_logistica","limiar":0.36,"teste":{"roc_auc":0.835},"custos":{"oferta":120.0,"sucesso":0.3,"meses_valor":12},"curva":[{"t":0.02,"lucro":-19798.78,"lucro_oof":-70408.06,"acionados":1302,"churn_acionados":383},{"t":0.03,"lucro":-13284.79,"lucro_oof":-43730.46,"acionados":1245,"churn_acionados":382},{"t":0.04,"lucro":-7609.73,"lucro_oof":-19862.41,"acionados":1189,"churn_acionados":378},{"t":0.05,"lucro":-1729.73,"lucro_oof":-927.79,"acionados":1140,"churn_acionados":378},{"t":0.06,"lucro":3122.35,"lucro_oof":15520.92,"acionados":1098,"churn_acionados":376},{"t":0.07,"lucro":6737.34,"lucro_oof":31023.4,"acionados":1064,"churn_acionados":373},{"t":0.08,"lucro":10772.88,"lucro_oof":46423.16,"acionados":1024,"churn_acionados":370},{"t":0.09,"lucro":17016.13,"lucro_oof":60736.08,"acionados":968,"churn_acionados":368},{"t":0.1,"lucro":19981.58,"lucro_oof":72457.84,"acionados":933,"churn_acionados":363},{"t":0.11,"lucro":23554.36,"lucro_oof":85262.9,"acionados":901,"churn_acionados":361},{"t":0.12,"lucro":25836.3,"lucro_oof":97958.48,"acionados":873,"churn_acionados":357},{"t":0.13,"lucro":28309.82,"lucro_oof":105785.32,"acionados":849,"churn_acionados":355},{"t":0.14,"lucro":30365.32,"lucro_oof":113078.68,"acionados":831,"churn_acionados":354},{"t":0.15,"lucro":32389.26,"lucro_oof":122552.57,"acionados":802,"churn_acionados":348},{"t":0.16,"lucro":33701.66,"lucro_oof":130319.8,"acionados":782,"churn_acionados":343},{"t":0.17,"lucro":35204.24,"lucro_oof":137216.74,"acionados":754,"churn_acionados":337},{"t":0.18,"lucro":36557.24,"lucro_oof":142986.23,"acionados":735,"churn_acionados":334},{"t":0.19,"lucro":39086.72,"lucro_oof":149254.62,"acionados":710,"churn_acionados":332},{"t":0.2,"lucro":38925.59,"lucro_oof":155742.7,"acionados":695,"churn_acionados":325},{"t":0.21,"lucro":39411.53,"lucro_oof":159522.58,"acionados":682,"churn_acionados":321},{"t":0.22,"lucro":40335.32,"lucro_oof":161052.72,"acionados":658,"churn_acionados":315},{"t":0.23,"lucro":41474.29,"lucro_oof":163765.45,"acionados":640,"churn_acionados":312},{"t":0.24,"lucro":42224.64,"lucro_oof":166614.74,"acionados":616,"churn_acionados":305},{"t":0.25,"lucro":43087.79,"lucro_oof":170804.45,"acionados":597,"churn_acionados":300},{"t":0.26,"lucro":43609.36,"lucro_oof":173350.67,"acionados":585,"churn_acionados":297},{"t":0.27,"lucro":44930.78,"lucro_oof":176348.05,"acionados":566,"churn_acionados":294},{"t":0.28,"lucro":44952.29,"lucro_oof":179910.86,"acionados":538,"churn_acionados":283},{"t":0.29,"lucro":45174.77,"lucro_oof":182728.69,"acionados":529,"churn_acionados":280},{"t":0.3,"lucro":46254.77,"lucro_oof":182343.29,"acionados":520,"churn_acionados":280},{"t":0.31,"lucro":46838.4,"lucro_oof":182793.95,"acionados":502,"churn_acionados":275},{"t":0.32,"lucro":46437.84,"lucro_oof":185305.86,"acionados":489,"churn_acionados":270},{"t":0.33,"lucro":47016.36,"lucro_oof":187714.85,"acionados":471,"churn_acionados":266},{"t":0.34,"lucro":46178.22,"lucro_oof":188007.58,"acionados":455,"churn_acionados":259},{"t":0.35,"lucro":45661.93,"lucro_oof":188176.19,"acionados":435,"churn_acionados":251},{"t":0.36,"lucro":44489.12,"lucro_oof":188557.13,"acionados":423,"churn_acionados":243},{"t":0.37,"lucro":43853.14,"lucro_oof":188161.88,"acionados":412,"churn_acionados":238},{"t":0.38,"lucro":45097.34,"lucro_oof":188355.22,"acionados":396,"churn_acionados":236},{"t":0.39,"lucro":44587.85,"lucro_oof":186410.99,"acionados":386,"churn_acionados":232},{"t":0.4,"lucro":44075.3,"lucro_oof":183492.94,"acionados":375,"churn_acionados":227},{"t":0.41,"lucro":43789.33,"lucro_oof":183071.4,"acionados":365,"churn_acionados":223},{"t":0.42,"lucro":44286.4,"lucro_oof":183965.5,"acionados":358,"churn_acionados":222},{"t":0.43,"lucro":43467.83,"lucro_oof":182063.77,"acionados":352,"churn_acionados":218},{"t":0.44,"lucro":43583.6,"lucro_oof":178804.58,"acionados":343,"churn_acionados":215},{"t":0.45,"lucro":42508.43,"lucro_oof":178674.05,"acionados":331,"churn_acionados":209},{"t":0.46,"lucro":42547.18,"lucro_oof":178416.12,"acionados":321,"churn_acionados":205},{"t":0.47,"lucro":42486.84,"lucro_oof":177358.27,"acionados":312,"churn_acionados":202},{"t":0.48,"lucro":41844.29,"lucro_oof":174557.29,"acionados":299,"churn_acionados":196},{"t":0.49,"lucro":41903.63,"lucro_oof":172573.51,"acionados":289,"churn_acionados":193},{"t":0.5,"lucro":41463.52,"lucro_oof":170326.85,"acionados":278,"churn_acionados":188},{"t":0.51,"lucro":41157.17,"lucro_oof":168835.88,"acionados":271,"churn_acionados":185},{"t":0.52,"lucro":41257.75,"lucro_oof":164546.39,"acionados":262,"churn_acionados":182},{"t":0.53,"lucro":41304.49,"lucro_oof":160210.03,"acionados":255,"churn_acionados":180},{"t":0.54,"lucro":40043.06,"lucro_oof":157704.2,"acionados":245,"churn_acionados":174},{"t":0.55,"lucro":39422.02,"lucro_oof":153684.49,"acionados":237,"churn_acionados":170},{"t":0.56,"lucro":38654.68,"lucro_oof":148765.9,"acionados":228,"churn_acionados":165},{"t":0.57,"lucro":38274.49,"lucro_oof":144124.34,"acionados":218,"churn_acionados":161},{"t":0.58,"lucro":36583.39,"lucro_oof":142319.16,"acionados":212,"churn_acionados":155},{"t":0.59,"lucro":35949.59,"lucro_oof":139486.57,"acionados":208,"churn_acionados":152},{"t":0.6,"lucro":35742.23,"lucro_oof":136400.66,"acionados":199,"churn_acionados":149},{"t":0.61,"lucro":35549.15,"lucro_oof":132601.32,"acionados":191,"churn_acionados":146},{"t":0.62,"lucro":34414.3,"lucro_oof":127559.47,"acionados":187,"churn_acionados":142},{"t":0.63,"lucro":33001.33,"lucro_oof":123147.12,"acionados":178,"churn_acionados":136},{"t":0.64,"lucro":32371.13,"lucro_oof":119470.39,"acionados":171,"churn_acionados":132},{"t":0.65,"lucro":31601.44,"lucro_oof":115602.96,"acionados":160,"churn_acionados":126},{"t":0.66,"lucro":31191.9,"lucro_oof":111946.12,"acionados":148,"churn_acionados":121},{"t":0.67,"lucro":29737.74,"lucro_oof":108038.6,"acionados":143,"churn_acionados":116},{"t":0.68,"lucro":28950.4,"lucro_oof":102329.48,"acionados":139,"churn_acionados":113},{"t":0.69,"lucro":27464.98,"lucro_oof":95853.42,"acionados":132,"churn_acionados":107},{"t":0.7,"lucro":26434.73,"lucro_oof":92470.66,"acionados":123,"churn_acionados":102},{"t":0.71,"lucro":25450.66,"lucro_oof":88304.5,"acionados":118,"churn_acionados":98},{"t":0.72,"lucro":25090.63,"lucro_oof":83985.56,"acionados":114,"churn_acionados":96},{"t":0.73,"lucro":23833.49,"lucro_oof":81847.06,"acionados":107,"churn_acionados":91},{"t":0.74,"lucro":21805.81,"lucro_oof":78062.72,"acionados":99,"churn_acionados":83},{"t":0.75,"lucro":21026.28,"lucro_oof":72488.92,"acionados":89,"churn_acionados":78},{"t":0.76,"lucro":20243.98,"lucro_oof":67426.54,"acionados":85,"churn_acionados":75},{"t":0.77,"lucro":19073.38,"lucro_oof":63060.79,"acionados":78,"churn_acionados":69},{"t":0.78,"lucro":18681.67,"lucro_oof":59320.85,"acionados":74,"churn_acionados":67},{"t":0.79,"lucro":17171.46,"lucro_oof":54510.44,"acionados":69,"churn_acionados":62},{"t":0.8,"lucro":16388.04,"lucro_oof":49345.69,"acionados":65,"churn_acionados":59},{"t":0.81,"lucro":15739.3,"lucro_oof":46911.19,"acionados":61,"churn_acionados":56},{"t":0.82,"lucro":14831.11,"lucro_oof":42003.37,"acionados":56,"churn_acionados":52},{"t":0.83,"lucro":14084.2,"lucro_oof":36958.21,"acionados":52,"churn_acionados":49},{"t":0.84,"lucro":12415.25,"lucro_oof":32732.3,"acionados":45,"churn_acionados":43},{"t":0.85,"lucro":10451.8,"lucro_oof":30199.4,"acionados":37,"churn_acionados":36},{"t":0.86,"lucro":9543.37,"lucro_oof":25526.92,"acionados":34,"churn_acionados":33},{"t":0.87,"lucro":7707.18,"lucro_oof":22218.43,"acionados":26,"churn_acionados":26},{"t":0.88,"lucro":5586.79,"lucro_oof":20960.53,"acionados":19,"churn_acionados":19},{"t":0.89,"lucro":3424.03,"lucro_oof":17203.25,"acionados":12,"churn_acionados":12},{"t":0.9,"lucro":3424.03,"lucro_oof":14087.75,"acionados":12,"churn_acionados":12},{"t":0.91,"lucro":2114.58,"lucro_oof":12588.44,"acionados":8,"churn_acionados":8},{"t":0.92,"lucro":1901.15,"lucro_oof":8262.83,"acionados":7,"churn_acionados":7},{"t":0.93,"lucro":1554.34,"lucro_oof":5315.69,"acionados":6,"churn_acionados":6},{"t":0.94,"lucro":1071.17,"lucro_oof":3599.68,"acionados":4,"churn_acionados":4},{"t":0.95,"lucro":1071.17,"lucro_oof":2178.96,"acionados":4,"churn_acionados":4},{"t":0.96,"lucro":625.62,"lucro_oof":574.79,"acionados":2,"churn_acionados":2},{"t":0.97,"lucro":301.74,"lucro_oof":574.79,"acionados":1,"churn_acionados":1},{"t":0.98,"lucro":0.0,"lucro_oof":574.79,"acionados":0,"churn_acionados":0}],"lucro_todos":-31558.78,"parametros":{"intercepto":-2.01563,"numericas":[{"nome":"meses_cliente","media":21.472857,"escala":20.476563,"coef":0.06728},{"nome":"idade","media":41.133036,"escala":12.6375,"coef":-0.070542},{"nome":"dependentes","media":0.801429,"escala":0.897137,"coef":-0.184434},{"nome":"mensalidade","media":87.00063,"escala":30.261984,"coef":0.174268},{"nome":"total_gasto","media":1853.53473,"escala":1994.77333,"coef":-0.075386},{"nome":"chamados_suporte","media":1.269286,"escala":1.16235,"coef":0.578062},{"nome":"atrasos_pagamento","media":0.521964,"escala":0.780716,"coef":0.345584},{"nome":"streaming","media":0.402857,"escala":0.490472,"coef":-0.060878},{"nome":"log_meses_cliente","media":2.647346,"escala":1.036946,"coef":-0.334132},{"nome":"gasto_medio_mensal","media":85.725836,"escala":29.89196,"coef":0.445977},{"nome":"cliente_novo","media":0.286429,"escala":0.452092,"coef":0.060848}],"categoricas":[{"nome":"contrato","categorias":["anual","bianual","mensal"],"coef":[-0.114792,-1.082313,1.197803],"freq":[0.248571,0.19625,0.555179]},{"nome":"internet","categorias":["dsl","fibra","sem_internet"],"coef":[-0.135188,0.37045,-0.234564],"freq":[0.355893,0.45375,0.190357]},{"nome":"pagamento","categorias":["boleto","cartao_credito","debito_automatico","pix"],"coef":[0.373263,0.097035,-0.471703,0.002102],"freq":[0.291071,0.239107,0.207857,0.261964]},{"nome":"regiao","categorias":["Centro-Oeste","Nordeste","Norte","Sudeste","Sul"],"coef":[-0.003076,0.155711,-0.121265,0.05249,-0.083163],"freq":[0.0825,0.265179,0.079464,0.431607,0.14125]}]},"base_logito":-1.4396,"exemplos":[{"cliente":{"meses_cliente":1,"idade":29,"dependentes":0,"mensalidade":134.36,"total_gasto":129.01,"chamados_suporte":1,"atrasos_pagamento":1,"streaming":true,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","regiao":"Nordeste"},"p":0.8434,"churn":1,"itens":{"tempo":0.6585,"idade":0.0677,"dependentes":0.1648,"gasto":0.9837,"chamados":-0.1339,"atrasos":0.2116,"streaming":-0.0741,"contrato":0.7737,"internet":0.2951,"pagamento":0.0627,"regiao":0.1134}},{"cliente":{"meses_cliente":30,"idade":35,"dependentes":2,"mensalidade":97.41,"total_gasto":2928.6,"chamados_suporte":1,"atrasos_pagamento":0,"streaming":false,"contrato":"mensal","internet":"fibra","pagamento":"pix","regiao":"Sudeste"},"p":0.2715,"churn":1,"itens":{"tempo":-0.264,"idade":0.0342,"dependentes":-0.2464,"gasto":0.1968,"chamados":-0.1339,"atrasos":-0.231,"streaming":0.05,"contrato":0.7737,"internet":0.2951,"pagamento":-0.0323,"regiao":0.0102}},{"cliente":{"meses_cliente":44,"idade":39,"dependentes":3,"mensalidade":114.69,"total_gasto":4888.46,"chamados_suporte":1,"atrasos_pagamento":0,"streaming":false,"contrato":"bianual","internet":"fibra","pagamento":"debito_automatico","regiao":"Sudeste"},"p":0.0215,"churn":0,"itens":{"tempo":-0.3381,"idade":0.0119,"dependentes":-0.452,"gasto":0.4234,"chamados":-0.1339,"atrasos":-0.231,"streaming":0.05,"contrato":-1.5064,"internet":0.2951,"pagamento":-0.5061,"regiao":0.0102}}],"clientes":[{"meses":25,"chamados":4,"contrato":"bianual","internet":"dsl","pagamento":"pix","mensalidade":74.23,"atrasos":0,"idade":31,"p":0.0761,"churn":1},{"meses":32,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":133.61,"atrasos":0,"idade":31,"p":0.3926,"churn":0},{"meses":24,"chamados":0,"contrato":"mensal","internet":"sem_internet","pagamento":"pix","mensalidade":31.77,"atrasos":1,"idade":41,"p":0.0669,"churn":0},{"meses":4,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":74.84,"atrasos":1,"idade":36,"p":0.2433,"churn":1},{"meses":41,"chamados":1,"contrato":"anual","internet":"dsl","pagamento":"cartao_credito","mensalidade":84.84,"atrasos":3,"idade":54,"p":0.1632,"churn":1},{"meses":69,"chamados":0,"contrato":"bianual","internet":"fibra","pagamento":"cartao_credito","mensalidade":111.56,"atrasos":0,"idade":45,"p":0.0312,"churn":0},{"meses":53,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":137.15,"atrasos":0,"idade":27,"p":0.447,"churn":1},{"meses":22,"chamados":2,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":117.89,"atrasos":2,"idade":53,"p":0.5294,"churn":0},{"meses":21,"chamados":2,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":94.93,"atrasos":0,"idade":46,"p":0.3085,"churn":1},{"meses":12,"chamados":1,"contrato":"anual","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":34.26,"atrasos":0,"idade":46,"p":0.0156,"churn":0},{"meses":55,"chamados":3,"contrato":"bianual","internet":"fibra","pagamento":"boleto","mensalidade":115.99,"atrasos":1,"idade":51,"p":0.2247,"churn":1},{"meses":33,"chamados":4,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":92.64,"atrasos":0,"idade":46,"p":0.4893,"churn":0},{"meses":2,"chamados":2,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":82.71,"atrasos":0,"idade":40,"p":0.5477,"churn":1},{"meses":1,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":103.33,"atrasos":2,"idade":44,"p":0.7134,"churn":1},{"meses":1,"chamados":1,"contrato":"anual","internet":"dsl","pagamento":"boleto","mensalidade":78.89,"atrasos":0,"idade":25,"p":0.1702,"churn":0},{"meses":18,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":146.16,"atrasos":1,"idade":33,"p":0.5659,"churn":0},{"meses":10,"chamados":1,"contrato":"anual","internet":"dsl","pagamento":"cartao_credito","mensalidade":98.08,"atrasos":0,"idade":74,"p":0.0824,"churn":0},{"meses":19,"chamados":0,"contrato":"bianual","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":44.27,"atrasos":1,"idade":47,"p":0.0085,"churn":0},{"meses":7,"chamados":1,"contrato":"anual","internet":"dsl","pagamento":"cartao_credito","mensalidade":104.01,"atrasos":2,"idade":20,"p":0.2789,"churn":0},{"meses":8,"chamados":2,"contrato":"anual","internet":"fibra","pagamento":"debito_automatico","mensalidade":105.51,"atrasos":0,"idade":45,"p":0.1721,"churn":0},{"meses":5,"chamados":0,"contrato":"bianual","internet":"dsl","pagamento":"debito_automatico","mensalidade":70.26,"atrasos":1,"idade":19,"p":0.0234,"churn":0},{"meses":7,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":90.79,"atrasos":0,"idade":18,"p":0.2257,"churn":0},{"meses":35,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"debito_automatico","mensalidade":127.24,"atrasos":0,"idade":41,"p":0.0738,"churn":0},{"meses":17,"chamados":1,"contrato":"anual","internet":"dsl","pagamento":"pix","mensalidade":95.46,"atrasos":1,"idade":34,"p":0.087,"churn":0},{"meses":2,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":65.99,"atrasos":2,"idade":36,"p":0.2418,"churn":0},{"meses":2,"chamados":0,"contrato":"mensal","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":22.43,"atrasos":0,"idade":49,"p":0.0847,"churn":0},{"meses":3,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":43.14,"atrasos":0,"idade":18,"p":0.1106,"churn":0},{"meses":32,"chamados":0,"contrato":"anual","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":31.24,"atrasos":0,"idade":36,"p":0.0125,"churn":0},{"meses":8,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":136.57,"atrasos":0,"idade":18,"p":0.6266,"churn":1},{"meses":30,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":117.82,"atrasos":2,"idade":44,"p":0.3313,"churn":0},{"meses":13,"chamados":4,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":97.62,"atrasos":0,"idade":48,"p":0.4914,"churn":1},{"meses":21,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":62.43,"atrasos":0,"idade":45,"p":0.067,"churn":0},{"meses":35,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"pix","mensalidade":115.7,"atrasos":0,"idade":40,"p":0.1506,"churn":0},{"meses":20,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":66.36,"atrasos":0,"idade":21,"p":0.1478,"churn":1},{"meses":38,"chamados":1,"contrato":"bianual","internet":"dsl","pagamento":"boleto","mensalidade":90.76,"atrasos":1,"idade":36,"p":0.0453,"churn":0},{"meses":9,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"debito_automatico","mensalidade":103.11,"atrasos":0,"idade":19,"p":0.1207,"churn":0},{"meses":14,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":36.83,"atrasos":0,"idade":35,"p":0.1171,"churn":0},{"meses":16,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":133.45,"atrasos":0,"idade":68,"p":0.2308,"churn":1},{"meses":32,"chamados":0,"contrato":"bianual","internet":"dsl","pagamento":"boleto","mensalidade":88.53,"atrasos":3,"idade":31,"p":0.0545,"churn":0},{"meses":5,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":79.95,"atrasos":0,"idade":18,"p":0.1726,"churn":0},{"meses":24,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"pix","mensalidade":88.73,"atrasos":0,"idade":46,"p":0.0756,"churn":0},{"meses":1,"chamados":2,"contrato":"anual","internet":"fibra","pagamento":"debito_automatico","mensalidade":95.86,"atrasos":0,"idade":26,"p":0.2749,"churn":0},{"meses":6,"chamados":1,"contrato":"anual","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":37.51,"atrasos":0,"idade":25,"p":0.0261,"churn":0},{"meses":61,"chamados":4,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":112.85,"atrasos":0,"idade":18,"p":0.4838,"churn":1},{"meses":6,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":42.53,"atrasos":0,"idade":56,"p":0.1323,"churn":0},{"meses":5,"chamados":3,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":106.23,"atrasos":0,"idade":46,"p":0.5748,"churn":1},{"meses":41,"chamados":0,"contrato":"mensal","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":46.64,"atrasos":0,"idade":41,"p":0.0679,"churn":1},{"meses":19,"chamados":0,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":36.41,"atrasos":0,"idade":50,"p":0.0704,"churn":1},{"meses":8,"chamados":3,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":71.63,"atrasos":0,"idade":31,"p":0.3419,"churn":0},{"meses":4,"chamados":0,"contrato":"bianual","internet":"dsl","pagamento":"pix","mensalidade":89.21,"atrasos":1,"idade":36,"p":0.0374,"churn":0},{"meses":21,"chamados":2,"contrato":"anual","internet":"fibra","pagamento":"pix","mensalidade":101.59,"atrasos":1,"idade":43,"p":0.2752,"churn":0},{"meses":4,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":97.55,"atrasos":0,"idade":18,"p":0.4084,"churn":1},{"meses":19,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":85.96,"atrasos":0,"idade":48,"p":0.1026,"churn":0},{"meses":13,"chamados":3,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":97.62,"atrasos":2,"idade":37,"p":0.8672,"churn":1},{"meses":1,"chamados":2,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":56.42,"atrasos":1,"idade":26,"p":0.637,"churn":1},{"meses":1,"chamados":3,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":91.66,"atrasos":2,"idade":55,"p":0.8518,"churn":1},{"meses":71,"chamados":1,"contrato":"bianual","internet":"fibra","pagamento":"pix","mensalidade":107.62,"atrasos":0,"idade":43,"p":0.0321,"churn":0},{"meses":40,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":96.27,"atrasos":0,"idade":38,"p":0.077,"churn":0},{"meses":62,"chamados":2,"contrato":"bianual","internet":"fibra","pagamento":"boleto","mensalidade":121.03,"atrasos":0,"idade":39,"p":0.1323,"churn":0},{"meses":4,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":65.33,"atrasos":0,"idade":29,"p":0.1811,"churn":0},{"meses":2,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":132.41,"atrasos":1,"idade":46,"p":0.8169,"churn":0},{"meses":18,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":96.03,"atrasos":1,"idade":60,"p":0.2622,"churn":1},{"meses":72,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":72.59,"atrasos":0,"idade":44,"p":0.1091,"churn":0},{"meses":14,"chamados":3,"contrato":"bianual","internet":"fibra","pagamento":"boleto","mensalidade":122.79,"atrasos":1,"idade":41,"p":0.349,"churn":0},{"meses":2,"chamados":2,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":86.59,"atrasos":0,"idade":40,"p":0.4781,"churn":0},{"meses":5,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"pix","mensalidade":121.62,"atrasos":0,"idade":45,"p":0.2785,"churn":1},{"meses":29,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"debito_automatico","mensalidade":97.19,"atrasos":0,"idade":60,"p":0.0826,"churn":1},{"meses":7,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":99.17,"atrasos":0,"idade":40,"p":0.3167,"churn":1},{"meses":72,"chamados":2,"contrato":"bianual","internet":"fibra","pagamento":"boleto","mensalidade":114.15,"atrasos":1,"idade":44,"p":0.1594,"churn":0},{"meses":10,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":72.74,"atrasos":0,"idade":56,"p":0.2749,"churn":0},{"meses":72,"chamados":2,"contrato":"bianual","internet":"fibra","pagamento":"pix","mensalidade":94.84,"atrasos":0,"idade":44,"p":0.0593,"churn":0},{"meses":8,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":125.46,"atrasos":1,"idade":53,"p":0.604,"churn":0},{"meses":21,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":139.62,"atrasos":2,"idade":42,"p":0.4795,"churn":1},{"meses":16,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":94.58,"atrasos":1,"idade":25,"p":0.5134,"churn":0},{"meses":1,"chamados":0,"contrato":"bianual","internet":"sem_internet","pagamento":"boleto","mensalidade":32.24,"atrasos":1,"idade":33,"p":0.0253,"churn":0},{"meses":72,"chamados":0,"contrato":"anual","internet":"dsl","pagamento":"debito_automatico","mensalidade":68.9,"atrasos":1,"idade":49,"p":0.0241,"churn":0},{"meses":25,"chamados":3,"contrato":"anual","internet":"dsl","pagamento":"pix","mensalidade":97.25,"atrasos":0,"idade":48,"p":0.1364,"churn":0},{"meses":37,"chamados":3,"contrato":"bianual","internet":"fibra","pagamento":"pix","mensalidade":99.98,"atrasos":0,"idade":72,"p":0.0756,"churn":0},{"meses":18,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":99.39,"atrasos":0,"idade":28,"p":0.244,"churn":0},{"meses":27,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":75.99,"atrasos":0,"idade":67,"p":0.0684,"churn":0},{"meses":10,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":92.36,"atrasos":2,"idade":21,"p":0.5602,"churn":0},{"meses":5,"chamados":3,"contrato":"bianual","internet":"fibra","pagamento":"pix","mensalidade":130.01,"atrasos":1,"idade":52,"p":0.4456,"churn":1},{"meses":1,"chamados":0,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":39.55,"atrasos":2,"idade":28,"p":0.3068,"churn":0},{"meses":7,"chamados":2,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":93.77,"atrasos":0,"idade":30,"p":0.2915,"churn":0},{"meses":23,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":129.08,"atrasos":1,"idade":61,"p":0.3291,"churn":1},{"meses":6,"chamados":2,"contrato":"anual","internet":"sem_internet","pagamento":"boleto","mensalidade":35.6,"atrasos":0,"idade":61,"p":0.0803,"churn":0},{"meses":23,"chamados":3,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":87.92,"atrasos":1,"idade":31,"p":0.494,"churn":0},{"meses":30,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":97.41,"atrasos":0,"idade":35,"p":0.2715,"churn":1},{"meses":7,"chamados":0,"contrato":"anual","internet":"dsl","pagamento":"pix","mensalidade":67.57,"atrasos":0,"idade":32,"p":0.0394,"churn":0},{"meses":22,"chamados":2,"contrato":"bianual","internet":"dsl","pagamento":"pix","mensalidade":76.79,"atrasos":0,"idade":40,"p":0.0318,"churn":1},{"meses":1,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":114.59,"atrasos":1,"idade":33,"p":0.6345,"churn":1},{"meses":17,"chamados":2,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":38.87,"atrasos":0,"idade":30,"p":0.2097,"churn":0},{"meses":7,"chamados":2,"contrato":"bianual","internet":"fibra","pagamento":"debito_automatico","mensalidade":104.0,"atrasos":0,"idade":55,"p":0.0874,"churn":0},{"meses":35,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":107.05,"atrasos":0,"idade":50,"p":0.3807,"churn":1},{"meses":72,"chamados":1,"contrato":"bianual","internet":"fibra","pagamento":"boleto","mensalidade":103.45,"atrasos":1,"idade":41,"p":0.0891,"churn":0},{"meses":15,"chamados":3,"contrato":"mensal","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":40.49,"atrasos":1,"idade":44,"p":0.349,"churn":0},{"meses":66,"chamados":5,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":104.93,"atrasos":1,"idade":38,"p":0.6526,"churn":1},{"meses":8,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":120.2,"atrasos":0,"idade":63,"p":0.4853,"churn":0},{"meses":8,"chamados":3,"contrato":"anual","internet":"fibra","pagamento":"cartao_credito","mensalidade":113.27,"atrasos":1,"idade":35,"p":0.5947,"churn":0},{"meses":8,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":103.97,"atrasos":2,"idade":52,"p":0.2636,"churn":0},{"meses":72,"chamados":0,"contrato":"anual","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":33.26,"atrasos":1,"idade":18,"p":0.0136,"churn":0},{"meses":26,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":72.83,"atrasos":0,"idade":45,"p":0.115,"churn":0},{"meses":2,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":107.34,"atrasos":0,"idade":33,"p":0.337,"churn":1},{"meses":5,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"pix","mensalidade":46.97,"atrasos":1,"idade":42,"p":0.2369,"churn":0},{"meses":63,"chamados":3,"contrato":"bianual","internet":"sem_internet","pagamento":"pix","mensalidade":35.08,"atrasos":1,"idade":32,"p":0.029,"churn":0},{"meses":43,"chamados":0,"contrato":"anual","internet":"sem_internet","pagamento":"boleto","mensalidade":22.46,"atrasos":1,"idade":19,"p":0.0222,"churn":0},{"meses":8,"chamados":3,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":106.35,"atrasos":0,"idade":43,"p":0.659,"churn":1},{"meses":1,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":121.62,"atrasos":1,"idade":35,"p":0.8425,"churn":1},{"meses":34,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":96.47,"atrasos":1,"idade":32,"p":0.2122,"churn":0},{"meses":39,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":98.45,"atrasos":0,"idade":31,"p":0.2611,"churn":0},{"meses":6,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":128.0,"atrasos":1,"idade":27,"p":0.6609,"churn":1},{"meses":3,"chamados":0,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":104.78,"atrasos":0,"idade":42,"p":0.2277,"churn":0},{"meses":11,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":119.77,"atrasos":1,"idade":49,"p":0.3616,"churn":0},{"meses":1,"chamados":0,"contrato":"bianual","internet":"dsl","pagamento":"debito_automatico","mensalidade":93.15,"atrasos":0,"idade":54,"p":0.0234,"churn":0},{"meses":9,"chamados":2,"contrato":"anual","internet":"fibra","pagamento":"cartao_credito","mensalidade":93.68,"atrasos":0,"idade":28,"p":0.2806,"churn":1},{"meses":2,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":95.63,"atrasos":1,"idade":36,"p":0.7446,"churn":1},{"meses":1,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":88.94,"atrasos":1,"idade":62,"p":0.5866,"churn":0},{"meses":1,"chamados":2,"contrato":"anual","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":43.42,"atrasos":0,"idade":25,"p":0.1277,"churn":1},{"meses":9,"chamados":2,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":128.75,"atrasos":1,"idade":18,"p":0.3134,"churn":0},{"meses":26,"chamados":0,"contrato":"anual","internet":"dsl","pagamento":"cartao_credito","mensalidade":98.75,"atrasos":1,"idade":53,"p":0.0668,"churn":0},{"meses":9,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":125.9,"atrasos":0,"idade":40,"p":0.5355,"churn":0},{"meses":1,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":85.39,"atrasos":1,"idade":47,"p":0.7453,"churn":1},{"meses":1,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":103.16,"atrasos":0,"idade":30,"p":0.4251,"churn":1},{"meses":36,"chamados":1,"contrato":"bianual","internet":"dsl","pagamento":"debito_automatico","mensalidade":67.5,"atrasos":0,"idade":18,"p":0.0121,"churn":0},{"meses":6,"chamados":0,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":99.17,"atrasos":0,"idade":26,"p":0.2048,"churn":0},{"meses":2,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":109.86,"atrasos":1,"idade":42,"p":0.3782,"churn":0},{"meses":2,"chamados":0,"contrato":"anual","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":46.2,"atrasos":1,"idade":20,"p":0.0503,"churn":0},{"meses":3,"chamados":0,"contrato":"bianual","internet":"dsl","pagamento":"pix","mensalidade":90.1,"atrasos":0,"idade":27,"p":0.0356,"churn":0},{"meses":6,"chamados":3,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":97.05,"atrasos":0,"idade":50,"p":0.4991,"churn":1},{"meses":22,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":73.96,"atrasos":0,"idade":41,"p":0.2016,"churn":0},{"meses":27,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":52.78,"atrasos":1,"idade":47,"p":0.0863,"churn":0},{"meses":1,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":84.06,"atrasos":0,"idade":57,"p":0.2284,"churn":0},{"meses":17,"chamados":3,"contrato":"anual","internet":"fibra","pagamento":"cartao_credito","mensalidade":128.33,"atrasos":0,"idade":23,"p":0.4045,"churn":0},{"meses":9,"chamados":2,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":95.72,"atrasos":0,"idade":43,"p":0.3053,"churn":1},{"meses":72,"chamados":2,"contrato":"anual","internet":"fibra","pagamento":"pix","mensalidade":112.78,"atrasos":0,"idade":40,"p":0.1326,"churn":0},{"meses":4,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":33.37,"atrasos":1,"idade":41,"p":0.2443,"churn":0},{"meses":63,"chamados":2,"contrato":"mensal","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":36.53,"atrasos":1,"idade":18,"p":0.1199,"churn":0},{"meses":2,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":119.91,"atrasos":1,"idade":54,"p":0.5116,"churn":0},{"meses":10,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":73.46,"atrasos":0,"idade":42,"p":0.1833,"churn":0},{"meses":12,"chamados":2,"contrato":"bianual","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":47.03,"atrasos":1,"idade":30,"p":0.0291,"churn":0},{"meses":1,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":124.42,"atrasos":1,"idade":44,"p":0.7309,"churn":1},{"meses":15,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"pix","mensalidade":47.41,"atrasos":0,"idade":33,"p":0.1216,"churn":0},{"meses":2,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":124.52,"atrasos":0,"idade":42,"p":0.6628,"churn":1},{"meses":28,"chamados":0,"contrato":"anual","internet":"dsl","pagamento":"cartao_credito","mensalidade":87.95,"atrasos":0,"idade":53,"p":0.0403,"churn":0},{"meses":72,"chamados":0,"contrato":"bianual","internet":"dsl","pagamento":"pix","mensalidade":98.02,"atrasos":0,"idade":35,"p":0.0097,"churn":0},{"meses":51,"chamados":1,"contrato":"anual","internet":"sem_internet","pagamento":"boleto","mensalidade":35.33,"atrasos":0,"idade":55,"p":0.027,"churn":0},{"meses":3,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":58.08,"atrasos":1,"idade":49,"p":0.195,"churn":0},{"meses":26,"chamados":2,"contrato":"bianual","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":57.51,"atrasos":0,"idade":55,"p":0.0204,"churn":0},{"meses":2,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":59.67,"atrasos":4,"idade":37,"p":0.7639,"churn":1},{"meses":10,"chamados":5,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":85.44,"atrasos":0,"idade":40,"p":0.8002,"churn":1},{"meses":2,"chamados":2,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":31.93,"atrasos":2,"idade":71,"p":0.476,"churn":1},{"meses":10,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"debito_automatico","mensalidade":90.89,"atrasos":1,"idade":53,"p":0.1263,"churn":0},{"meses":16,"chamados":3,"contrato":"anual","internet":"sem_internet","pagamento":"pix","mensalidade":39.43,"atrasos":0,"idade":29,"p":0.0545,"churn":0},{"meses":72,"chamados":0,"contrato":"bianual","internet":"dsl","pagamento":"debito_automatico","mensalidade":90.38,"atrasos":0,"idade":32,"p":0.0054,"churn":0},{"meses":23,"chamados":0,"contrato":"mensal","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":46.66,"atrasos":1,"idade":58,"p":0.0885,"churn":0},{"meses":11,"chamados":3,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":121.51,"atrasos":0,"idade":36,"p":0.7849,"churn":1},{"meses":63,"chamados":4,"contrato":"anual","internet":"fibra","pagamento":"debito_automatico","mensalidade":120.44,"atrasos":0,"idade":60,"p":0.2704,"churn":0},{"meses":11,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":91.65,"atrasos":2,"idade":49,"p":0.5147,"churn":0},{"meses":17,"chamados":0,"contrato":"anual","internet":"dsl","pagamento":"boleto","mensalidade":64.82,"atrasos":0,"idade":44,"p":0.0447,"churn":0},{"meses":1,"chamados":2,"contrato":"bianual","internet":"dsl","pagamento":"cartao_credito","mensalidade":75.84,"atrasos":1,"idade":25,"p":0.1433,"churn":0},{"meses":7,"chamados":0,"contrato":"anual","internet":"dsl","pagamento":"debito_automatico","mensalidade":59.25,"atrasos":0,"idade":42,"p":0.019,"churn":0},{"meses":58,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":29.03,"atrasos":1,"idade":35,"p":0.1336,"churn":1},{"meses":6,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":124.14,"atrasos":0,"idade":33,"p":0.6457,"churn":0},{"meses":1,"chamados":3,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":76.42,"atrasos":2,"idade":57,"p":0.6768,"churn":0},{"meses":2,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":72.13,"atrasos":0,"idade":45,"p":0.127,"churn":0},{"meses":2,"chamados":3,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":104.54,"atrasos":0,"idade":43,"p":0.7425,"churn":0},{"meses":15,"chamados":0,"contrato":"bianual","internet":"fibra","pagamento":"debito_automatico","mensalidade":88.62,"atrasos":1,"idade":41,"p":0.0249,"churn":0},{"meses":72,"chamados":1,"contrato":"bianual","internet":"dsl","pagamento":"cartao_credito","mensalidade":51.84,"atrasos":0,"idade":61,"p":0.0105,"churn":0},{"meses":67,"chamados":3,"contrato":"mensal","internet":"sem_internet","pagamento":"pix","mensalidade":48.45,"atrasos":1,"idade":32,"p":0.2365,"churn":0},{"meses":66,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":100.17,"atrasos":1,"idade":43,"p":0.4651,"churn":0},{"meses":6,"chamados":3,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":96.15,"atrasos":0,"idade":29,"p":0.6568,"churn":0},{"meses":49,"chamados":3,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":129.31,"atrasos":0,"idade":47,"p":0.3628,"churn":0},{"meses":3,"chamados":1,"contrato":"bianual","internet":"fibra","pagamento":"cartao_credito","mensalidade":94.47,"atrasos":0,"idade":41,"p":0.1127,"churn":0},{"meses":15,"chamados":0,"contrato":"bianual","internet":"fibra","pagamento":"pix","mensalidade":100.11,"atrasos":1,"idade":61,"p":0.0394,"churn":0},{"meses":10,"chamados":2,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":34.69,"atrasos":1,"idade":41,"p":0.2774,"churn":1},{"meses":6,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"pix","mensalidade":85.53,"atrasos":0,"idade":37,"p":0.1712,"churn":0},{"meses":27,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":59.96,"atrasos":0,"idade":34,"p":0.1537,"churn":0},{"meses":6,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":92.66,"atrasos":1,"idade":73,"p":0.3872,"churn":0},{"meses":21,"chamados":0,"contrato":"bianual","internet":"dsl","pagamento":"debito_automatico","mensalidade":70.15,"atrasos":0,"idade":60,"p":0.0067,"churn":0},{"meses":18,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":127.39,"atrasos":1,"idade":41,"p":0.6419,"churn":1},{"meses":37,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":139.53,"atrasos":0,"idade":43,"p":0.332,"churn":1},{"meses":29,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":75.44,"atrasos":0,"idade":18,"p":0.2307,"churn":0},{"meses":20,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":45.86,"atrasos":1,"idade":54,"p":0.0943,"churn":0},{"meses":6,"chamados":2,"contrato":"bianual","internet":"fibra","pagamento":"pix","mensalidade":143.21,"atrasos":0,"idade":31,"p":0.2469,"churn":0},{"meses":11,"chamados":0,"contrato":"bianual","internet":"fibra","pagamento":"debito_automatico","mensalidade":126.9,"atrasos":0,"idade":44,"p":0.0462,"churn":0},{"meses":72,"chamados":2,"contrato":"bianual","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":35.55,"atrasos":0,"idade":38,"p":0.0066,"churn":0},{"meses":46,"chamados":3,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":81.38,"atrasos":3,"idade":27,"p":0.6444,"churn":1},{"meses":72,"chamados":0,"contrato":"bianual","internet":"dsl","pagamento":"cartao_credito","mensalidade":86.89,"atrasos":0,"idade":31,"p":0.0114,"churn":0},{"meses":15,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":98.97,"atrasos":0,"idade":55,"p":0.2413,"churn":0},{"meses":1,"chamados":3,"contrato":"mensal","internet":"sem_internet","pagamento":"pix","mensalidade":44.04,"atrasos":0,"idade":40,"p":0.3429,"churn":1},{"meses":14,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":114.85,"atrasos":1,"idade":30,"p":0.4618,"churn":0},{"meses":5,"chamados":4,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":104.78,"atrasos":1,"idade":40,"p":0.8694,"churn":1},{"meses":7,"chamados":4,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":94.27,"atrasos":0,"idade":20,"p":0.7505,"churn":1},{"meses":1,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"pix","mensalidade":38.82,"atrasos":0,"idade":32,"p":0.1908,"churn":0},{"meses":1,"chamados":0,"contrato":"bianual","internet":"dsl","pagamento":"pix","mensalidade":66.46,"atrasos":0,"idade":41,"p":0.0284,"churn":0},{"meses":35,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"debito_automatico","mensalidade":102.2,"atrasos":0,"idade":26,"p":0.0937,"churn":1},{"meses":5,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"pix","mensalidade":32.26,"atrasos":1,"idade":30,"p":0.1806,"churn":0},{"meses":22,"chamados":3,"contrato":"anual","internet":"fibra","pagamento":"pix","mensalidade":95.36,"atrasos":0,"idade":43,"p":0.2753,"churn":0},{"meses":13,"chamados":2,"contrato":"bianual","internet":"dsl","pagamento":"cartao_credito","mensalidade":97.18,"atrasos":1,"idade":33,"p":0.0833,"churn":0},{"meses":3,"chamados":5,"contrato":"anual","internet":"fibra","pagamento":"pix","mensalidade":106.85,"atrasos":0,"idade":28,"p":0.584,"churn":1},{"meses":10,"chamados":2,"contrato":"anual","internet":"sem_internet","pagamento":"boleto","mensalidade":15.27,"atrasos":0,"idade":72,"p":0.0405,"churn":0},{"meses":1,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":103.71,"atrasos":1,"idade":38,"p":0.7204,"churn":1},{"meses":3,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":78.59,"atrasos":0,"idade":38,"p":0.5589,"churn":1},{"meses":27,"chamados":3,"contrato":"bianual","internet":"fibra","pagamento":"boleto","mensalidade":101.09,"atrasos":3,"idade":61,"p":0.4591,"churn":1},{"meses":39,"chamados":1,"contrato":"bianual","internet":"sem_internet","pagamento":"boleto","mensalidade":45.77,"atrasos":2,"idade":32,"p":0.0198,"churn":0},{"meses":2,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":83.22,"atrasos":2,"idade":37,"p":0.5186,"churn":0},{"meses":1,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":86.52,"atrasos":0,"idade":39,"p":0.1112,"churn":0},{"meses":1,"chamados":8,"contrato":"bianual","internet":"fibra","pagamento":"pix","mensalidade":101.38,"atrasos":2,"idade":40,"p":0.9358,"churn":1},{"meses":22,"chamados":2,"contrato":"anual","internet":"fibra","pagamento":"pix","mensalidade":126.82,"atrasos":0,"idade":29,"p":0.2157,"churn":0},{"meses":1,"chamados":2,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":37.96,"atrasos":1,"idade":35,"p":0.4573,"churn":0},{"meses":23,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":122.07,"atrasos":1,"idade":38,"p":0.2125,"churn":0},{"meses":72,"chamados":1,"contrato":"anual","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":46.32,"atrasos":0,"idade":43,"p":0.0277,"churn":0},{"meses":6,"chamados":5,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":77.76,"atrasos":0,"idade":26,"p":0.688,"churn":1},{"meses":41,"chamados":0,"contrato":"bianual","internet":"dsl","pagamento":"cartao_credito","mensalidade":72.18,"atrasos":1,"idade":54,"p":0.0143,"churn":0},{"meses":26,"chamados":3,"contrato":"bianual","internet":"fibra","pagamento":"cartao_credito","mensalidade":111.72,"atrasos":0,"idade":48,"p":0.195,"churn":1},{"meses":33,"chamados":1,"contrato":"bianual","internet":"dsl","pagamento":"boleto","mensalidade":108.47,"atrasos":0,"idade":58,"p":0.0315,"churn":0},{"meses":3,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":66.9,"atrasos":1,"idade":55,"p":0.2852,"churn":0},{"meses":26,"chamados":2,"contrato":"anual","internet":"sem_internet","pagamento":"pix","mensalidade":34.87,"atrasos":0,"idade":53,"p":0.0237,"churn":0},{"meses":5,"chamados":1,"contrato":"bianual","internet":"sem_internet","pagamento":"pix","mensalidade":37.29,"atrasos":0,"idade":59,"p":0.0145,"churn":0},{"meses":10,"chamados":0,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":26.45,"atrasos":0,"idade":50,"p":0.0761,"churn":0},{"meses":2,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":132.82,"atrasos":1,"idade":42,"p":0.7959,"churn":1},{"meses":30,"chamados":2,"contrato":"bianual","internet":"fibra","pagamento":"pix","mensalidade":105.63,"atrasos":0,"idade":32,"p":0.0665,"churn":0},{"meses":6,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":83.67,"atrasos":0,"idade":32,"p":0.3281,"churn":0},{"meses":10,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":83.83,"atrasos":0,"idade":67,"p":0.0887,"churn":0},{"meses":72,"chamados":2,"contrato":"bianual","internet":"dsl","pagamento":"pix","mensalidade":70.19,"atrasos":0,"idade":28,"p":0.0205,"churn":0},{"meses":19,"chamados":0,"contrato":"anual","internet":"dsl","pagamento":"boleto","mensalidade":70.41,"atrasos":0,"idade":61,"p":0.0315,"churn":0},{"meses":11,"chamados":2,"contrato":"mensal","internet":"sem_internet","pagamento":"pix","mensalidade":38.66,"atrasos":1,"idade":49,"p":0.2494,"churn":0},{"meses":47,"chamados":0,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":122.12,"atrasos":2,"idade":61,"p":0.2571,"churn":0},{"meses":5,"chamados":1,"contrato":"anual","internet":"dsl","pagamento":"debito_automatico","mensalidade":67.25,"atrasos":0,"idade":43,"p":0.0575,"churn":0},{"meses":54,"chamados":1,"contrato":"bianual","internet":"sem_internet","pagamento":"pix","mensalidade":25.84,"atrasos":1,"idade":60,"p":0.0069,"churn":0},{"meses":1,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":87.85,"atrasos":0,"idade":39,"p":0.1706,"churn":0},{"meses":17,"chamados":3,"contrato":"anual","internet":"dsl","pagamento":"debito_automatico","mensalidade":87.7,"atrasos":0,"idade":40,"p":0.092,"churn":0},{"meses":9,"chamados":1,"contrato":"bianual","internet":"fibra","pagamento":"pix","mensalidade":104.4,"atrasos":0,"idade":59,"p":0.0511,"churn":0},{"meses":5,"chamados":0,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":44.4,"atrasos":1,"idade":31,"p":0.1652,"churn":1},{"meses":8,"chamados":0,"contrato":"anual","internet":"dsl","pagamento":"cartao_credito","mensalidade":99.95,"atrasos":0,"idade":60,"p":0.0576,"churn":0},{"meses":72,"chamados":1,"contrato":"bianual","internet":"dsl","pagamento":"pix","mensalidade":102.33,"atrasos":0,"idade":31,"p":0.0158,"churn":0},{"meses":37,"chamados":0,"contrato":"anual","internet":"dsl","pagamento":"pix","mensalidade":103.65,"atrasos":1,"idade":42,"p":0.0634,"churn":0},{"meses":3,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"pix","mensalidade":38.92,"atrasos":2,"idade":38,"p":0.3008,"churn":1},{"meses":21,"chamados":1,"contrato":"anual","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":34.45,"atrasos":0,"idade":37,"p":0.0132,"churn":0},{"meses":10,"chamados":2,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":60.54,"atrasos":0,"idade":46,"p":0.2701,"churn":0},{"meses":26,"chamados":0,"contrato":"bianual","internet":"dsl","pagamento":"pix","mensalidade":65.22,"atrasos":1,"idade":26,"p":0.0183,"churn":0},{"meses":60,"chamados":2,"contrato":"anual","internet":"sem_internet","pagamento":"boleto","mensalidade":23.83,"atrasos":1,"idade":34,"p":0.0535,"churn":0},{"meses":10,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":135.65,"atrasos":0,"idade":31,"p":0.553,"churn":1},{"meses":72,"chamados":1,"contrato":"anual","internet":"dsl","pagamento":"pix","mensalidade":91.12,"atrasos":0,"idade":48,"p":0.0521,"churn":0},{"meses":36,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":133.41,"atrasos":0,"idade":38,"p":0.2764,"churn":1},{"meses":1,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":119.35,"atrasos":0,"idade":59,"p":0.502,"churn":1},{"meses":12,"chamados":0,"contrato":"anual","internet":"fibra","pagamento":"pix","mensalidade":94.68,"atrasos":0,"idade":48,"p":0.067,"churn":0},{"meses":9,"chamados":4,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":123.32,"atrasos":0,"idade":54,"p":0.6385,"churn":1},{"meses":72,"chamados":3,"contrato":"anual","internet":"fibra","pagamento":"cartao_credito","mensalidade":94.61,"atrasos":0,"idade":45,"p":0.2526,"churn":0},{"meses":47,"chamados":3,"contrato":"bianual","internet":"fibra","pagamento":"pix","mensalidade":133.66,"atrasos":0,"idade":41,"p":0.1464,"churn":0},{"meses":13,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":97.38,"atrasos":1,"idade":44,"p":0.5087,"churn":0},{"meses":36,"chamados":1,"contrato":"bianual","internet":"dsl","pagamento":"boleto","mensalidade":71.77,"atrasos":0,"idade":48,"p":0.0222,"churn":0},{"meses":30,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":116.02,"atrasos":0,"idade":53,"p":0.5185,"churn":1},{"meses":41,"chamados":2,"contrato":"bianual","internet":"dsl","pagamento":"pix","mensalidade":70.8,"atrasos":1,"idade":24,"p":0.0413,"churn":0},{"meses":25,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":130.35,"atrasos":0,"idade":29,"p":0.2795,"churn":0},{"meses":7,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":129.28,"atrasos":0,"idade":39,"p":0.5189,"churn":0},{"meses":24,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":127.33,"atrasos":0,"idade":22,"p":0.5382,"churn":0},{"meses":9,"chamados":1,"contrato":"bianual","internet":"sem_internet","pagamento":"boleto","mensalidade":35.84,"atrasos":0,"idade":46,"p":0.0174,"churn":0},{"meses":51,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":133.53,"atrasos":0,"idade":32,"p":0.3258,"churn":1},{"meses":65,"chamados":2,"contrato":"anual","internet":"fibra","pagamento":"debito_automatico","mensalidade":132.93,"atrasos":0,"idade":41,"p":0.1392,"churn":0},{"meses":4,"chamados":0,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":31.06,"atrasos":1,"idade":24,"p":0.1454,"churn":0},{"meses":72,"chamados":0,"contrato":"anual","internet":"dsl","pagamento":"boleto","mensalidade":66.83,"atrasos":0,"idade":39,"p":0.0317,"churn":0},{"meses":12,"chamados":3,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":67.46,"atrasos":1,"idade":42,"p":0.3973,"churn":0},{"meses":6,"chamados":0,"contrato":"bianual","internet":"sem_internet","pagamento":"boleto","mensalidade":34.63,"atrasos":0,"idade":37,"p":0.0127,"churn":0},{"meses":23,"chamados":3,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":123.87,"atrasos":1,"idade":25,"p":0.5709,"churn":1},{"meses":9,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":113.11,"atrasos":0,"idade":36,"p":0.3971,"churn":1},{"meses":4,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":87.68,"atrasos":0,"idade":53,"p":0.3417,"churn":1},{"meses":61,"chamados":4,"contrato":"bianual","internet":"fibra","pagamento":"debito_automatico","mensalidade":98.34,"atrasos":0,"idade":38,"p":0.0752,"churn":0},{"meses":11,"chamados":2,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":64.83,"atrasos":0,"idade":31,"p":0.3197,"churn":0},{"meses":5,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":101.41,"atrasos":2,"idade":20,"p":0.7343,"churn":1},{"meses":4,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":106.16,"atrasos":1,"idade":44,"p":0.4806,"churn":0},{"meses":58,"chamados":2,"contrato":"bianual","internet":"fibra","pagamento":"pix","mensalidade":129.75,"atrasos":0,"idade":18,"p":0.1092,"churn":0},{"meses":7,"chamados":2,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":141.73,"atrasos":0,"idade":29,"p":0.5673,"churn":0},{"meses":1,"chamados":2,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":104.41,"atrasos":0,"idade":39,"p":0.6042,"churn":0},{"meses":27,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":98.08,"atrasos":0,"idade":32,"p":0.4418,"churn":0},{"meses":23,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":119.38,"atrasos":0,"idade":33,"p":0.4678,"churn":0},{"meses":36,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"pix","mensalidade":52.28,"atrasos":0,"idade":41,"p":0.1039,"churn":0},{"meses":38,"chamados":2,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":100.95,"atrasos":2,"idade":43,"p":0.3138,"churn":1},{"meses":5,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":117.38,"atrasos":1,"idade":23,"p":0.6219,"churn":1},{"meses":25,"chamados":3,"contrato":"bianual","internet":"fibra","pagamento":"boleto","mensalidade":84.62,"atrasos":1,"idade":28,"p":0.1499,"churn":0},{"meses":6,"chamados":2,"contrato":"mensal","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":42.73,"atrasos":1,"idade":24,"p":0.3099,"churn":0},{"meses":38,"chamados":4,"contrato":"bianual","internet":"fibra","pagamento":"pix","mensalidade":100.45,"atrasos":0,"idade":24,"p":0.1585,"churn":1},{"meses":7,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":87.74,"atrasos":1,"idade":43,"p":0.2824,"churn":0},{"meses":4,"chamados":0,"contrato":"bianual","internet":"fibra","pagamento":"cartao_credito","mensalidade":111.43,"atrasos":0,"idade":18,"p":0.0961,"churn":0},{"meses":6,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"pix","mensalidade":26.21,"atrasos":0,"idade":35,"p":0.0719,"churn":0},{"meses":1,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":114.3,"atrasos":1,"idade":36,"p":0.6425,"churn":1},{"meses":25,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":98.85,"atrasos":1,"idade":46,"p":0.3503,"churn":1},{"meses":9,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":35.24,"atrasos":1,"idade":66,"p":0.0834,"churn":1},{"meses":10,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":97.64,"atrasos":0,"idade":64,"p":0.272,"churn":1},{"meses":22,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":102.22,"atrasos":0,"idade":40,"p":0.3318,"churn":0},{"meses":17,"chamados":2,"contrato":"anual","internet":"fibra","pagamento":"cartao_credito","mensalidade":123.3,"atrasos":0,"idade":37,"p":0.3126,"churn":1},{"meses":23,"chamados":0,"contrato":"anual","internet":"dsl","pagamento":"cartao_credito","mensalidade":72.52,"atrasos":0,"idade":40,"p":0.0301,"churn":0},{"meses":8,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":105.22,"atrasos":0,"idade":28,"p":0.3444,"churn":1},{"meses":7,"chamados":1,"contrato":"anual","internet":"sem_internet","pagamento":"boleto","mensalidade":47.38,"atrasos":1,"idade":23,"p":0.0896,"churn":0},{"meses":72,"chamados":0,"contrato":"bianual","internet":"fibra","pagamento":"cartao_credito","mensalidade":82.34,"atrasos":0,"idade":53,"p":0.0155,"churn":0},{"meses":8,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":126.1,"atrasos":2,"idade":44,"p":0.7534,"churn":0},{"meses":45,"chamados":1,"contrato":"anual","internet":"dsl","pagamento":"pix","mensalidade":68.42,"atrasos":0,"idade":55,"p":0.0382,"churn":0},{"meses":26,"chamados":1,"contrato":"anual","internet":"dsl","pagamento":"debito_automatico","mensalidade":60.46,"atrasos":0,"idade":24,"p":0.0331,"churn":0},{"meses":72,"chamados":2,"contrato":"bianual","internet":"fibra","pagamento":"debito_automatico","mensalidade":105.9,"atrasos":0,"idade":51,"p":0.0405,"churn":0},{"meses":2,"chamados":1,"contrato":"bianual","internet":"dsl","pagamento":"debito_automatico","mensalidade":71.16,"atrasos":1,"idade":48,"p":0.0415,"churn":0},{"meses":2,"chamados":2,"contrato":"anual","internet":"dsl","pagamento":"debito_automatico","mensalidade":100.91,"atrasos":0,"idade":21,"p":0.2111,"churn":0},{"meses":18,"chamados":3,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":91.6,"atrasos":0,"idade":39,"p":0.601,"churn":1},{"meses":18,"chamados":0,"contrato":"anual","internet":"sem_internet","pagamento":"pix","mensalidade":53.85,"atrasos":0,"idade":37,"p":0.0155,"churn":0},{"meses":23,"chamados":0,"contrato":"anual","internet":"dsl","pagamento":"cartao_credito","mensalidade":95.57,"atrasos":0,"idade":18,"p":0.0485,"churn":0},{"meses":29,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":65.02,"atrasos":0,"idade":57,"p":0.1625,"churn":0},{"meses":10,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":99.68,"atrasos":0,"idade":50,"p":0.186,"churn":0},{"meses":15,"chamados":0,"contrato":"anual","internet":"dsl","pagamento":"cartao_credito","mensalidade":90.85,"atrasos":1,"idade":54,"p":0.0689,"churn":0},{"meses":6,"chamados":3,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":123.2,"atrasos":1,"idade":36,"p":0.8871,"churn":1},{"meses":33,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":29.58,"atrasos":0,"idade":33,"p":0.0566,"churn":1},{"meses":15,"chamados":3,"contrato":"anual","internet":"fibra","pagamento":"cartao_credito","mensalidade":89.75,"atrasos":0,"idade":39,"p":0.2221,"churn":0},{"meses":25,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":124.87,"atrasos":0,"idade":27,"p":0.2181,"churn":0},{"meses":61,"chamados":0,"contrato":"anual","internet":"dsl","pagamento":"debito_automatico","mensalidade":80.75,"atrasos":0,"idade":38,"p":0.018,"churn":0},{"meses":14,"chamados":1,"contrato":"bianual","internet":"dsl","pagamento":"boleto","mensalidade":64.51,"atrasos":1,"idade":25,"p":0.042,"churn":0},{"meses":16,"chamados":1,"contrato":"anual","internet":"dsl","pagamento":"boleto","mensalidade":95.07,"atrasos":0,"idade":18,"p":0.0746,"churn":0},{"meses":45,"chamados":2,"contrato":"bianual","internet":"sem_internet","pagamento":"pix","mensalidade":38.5,"atrasos":0,"idade":49,"p":0.0135,"churn":0},{"meses":28,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":78.22,"atrasos":2,"idade":43,"p":0.265,"churn":1},{"meses":23,"chamados":0,"contrato":"anual","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":39.67,"atrasos":0,"idade":39,"p":0.0097,"churn":0},{"meses":72,"chamados":0,"contrato":"anual","internet":"sem_internet","pagamento":"boleto","mensalidade":33.01,"atrasos":1,"idade":54,"p":0.0155,"churn":0},{"meses":10,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"cartao_credito","mensalidade":94.82,"atrasos":0,"idade":60,"p":0.1624,"churn":0},{"meses":5,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":95.41,"atrasos":0,"idade":37,"p":0.1941,"churn":0},{"meses":14,"chamados":1,"contrato":"anual","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":36.28,"atrasos":0,"idade":45,"p":0.0111,"churn":0},{"meses":7,"chamados":3,"contrato":"bianual","internet":"fibra","pagamento":"pix","mensalidade":107.58,"atrasos":0,"idade":18,"p":0.2322,"churn":1},{"meses":5,"chamados":1,"contrato":"anual","internet":"dsl","pagamento":"pix","mensalidade":73.34,"atrasos":0,"idade":35,"p":0.0552,"churn":0},{"meses":4,"chamados":2,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":83.58,"atrasos":0,"idade":49,"p":0.4013,"churn":1},{"meses":1,"chamados":1,"contrato":"anual","internet":"dsl","pagamento":"debito_automatico","mensalidade":93.35,"atrasos":1,"idade":35,"p":0.1366,"churn":0},{"meses":2,"chamados":3,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":103.93,"atrasos":0,"idade":31,"p":0.6838,"churn":1},{"meses":17,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":70.35,"atrasos":0,"idade":29,"p":0.1197,"churn":0},{"meses":61,"chamados":2,"contrato":"anual","internet":"fibra","pagamento":"cartao_credito","mensalidade":114.48,"atrasos":2,"idade":32,"p":0.3634,"churn":1},{"meses":22,"chamados":3,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":80.19,"atrasos":0,"idade":50,"p":0.5127,"churn":1},{"meses":1,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":34.63,"atrasos":0,"idade":21,"p":0.2197,"churn":0},{"meses":9,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":66.45,"atrasos":0,"idade":61,"p":0.1418,"churn":0},{"meses":7,"chamados":4,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":67.53,"atrasos":0,"idade":28,"p":0.3468,"churn":0},{"meses":10,"chamados":0,"contrato":"mensal","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":36.95,"atrasos":0,"idade":34,"p":0.0674,"churn":0},{"meses":40,"chamados":2,"contrato":"anual","internet":"fibra","pagamento":"debito_automatico","mensalidade":104.99,"atrasos":0,"idade":56,"p":0.1198,"churn":0},{"meses":25,"chamados":0,"contrato":"bianual","internet":"dsl","pagamento":"cartao_credito","mensalidade":92.97,"atrasos":0,"idade":30,"p":0.0175,"churn":0},{"meses":3,"chamados":0,"contrato":"bianual","internet":"dsl","pagamento":"debito_automatico","mensalidade":68.72,"atrasos":1,"idade":18,"p":0.0184,"churn":0},{"meses":13,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":105.31,"atrasos":0,"idade":39,"p":0.2613,"churn":0},{"meses":44,"chamados":3,"contrato":"anual","internet":"fibra","pagamento":"cartao_credito","mensalidade":124.02,"atrasos":0,"idade":25,"p":0.3462,"churn":0},{"meses":27,"chamados":0,"contrato":"anual","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":49.66,"atrasos":0,"idade":58,"p":0.0108,"churn":0},{"meses":11,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":45.36,"atrasos":1,"idade":54,"p":0.2261,"churn":1},{"meses":2,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":130.72,"atrasos":0,"idade":34,"p":0.7887,"churn":1},{"meses":37,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":107.08,"atrasos":0,"idade":40,"p":0.4651,"churn":1},{"meses":14,"chamados":0,"contrato":"mensal","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":35.63,"atrasos":0,"idade":41,"p":0.0671,"churn":1},{"meses":6,"chamados":2,"contrato":"bianual","internet":"dsl","pagamento":"cartao_credito","mensalidade":88.64,"atrasos":0,"idade":53,"p":0.0644,"churn":0},{"meses":21,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"debito_automatico","mensalidade":94.34,"atrasos":0,"idade":44,"p":0.0872,"churn":0},{"meses":9,"chamados":0,"contrato":"anual","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":45.89,"atrasos":0,"idade":25,"p":0.0256,"churn":0},{"meses":17,"chamados":0,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":46.69,"atrasos":1,"idade":54,"p":0.1158,"churn":0},{"meses":38,"chamados":2,"contrato":"anual","internet":"dsl","pagamento":"boleto","mensalidade":85.36,"atrasos":0,"idade":26,"p":0.125,"churn":0},{"meses":2,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":113.92,"atrasos":1,"idade":49,"p":0.7978,"churn":1},{"meses":10,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":100.54,"atrasos":1,"idade":31,"p":0.6781,"churn":1},{"meses":72,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":131.77,"atrasos":0,"idade":55,"p":0.2161,"churn":0},{"meses":1,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":97.14,"atrasos":0,"idade":49,"p":0.4037,"churn":1},{"meses":37,"chamados":0,"contrato":"anual","internet":"sem_internet","pagamento":"boleto","mensalidade":42.06,"atrasos":2,"idade":42,"p":0.0341,"churn":1},{"meses":3,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":112.4,"atrasos":0,"idade":22,"p":0.7486,"churn":1},{"meses":34,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":60.54,"atrasos":0,"idade":34,"p":0.1055,"churn":0},{"meses":37,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":65.49,"atrasos":2,"idade":41,"p":0.1824,"churn":0},{"meses":57,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":46.83,"atrasos":0,"idade":27,"p":0.0661,"churn":0},{"meses":21,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":85.15,"atrasos":0,"idade":55,"p":0.2141,"churn":0},{"meses":2,"chamados":1,"contrato":"anual","internet":"dsl","pagamento":"debito_automatico","mensalidade":87.21,"atrasos":1,"idade":41,"p":0.145,"churn":1},{"meses":6,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":89.06,"atrasos":0,"idade":56,"p":0.3011,"churn":0},{"meses":5,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":43.14,"atrasos":1,"idade":55,"p":0.1253,"churn":0},{"meses":1,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":87.46,"atrasos":1,"idade":68,"p":0.6267,"churn":0},{"meses":21,"chamados":1,"contrato":"anual","internet":"dsl","pagamento":"cartao_credito","mensalidade":101.28,"atrasos":0,"idade":47,"p":0.0808,"churn":0},{"meses":30,"chamados":1,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":49.21,"atrasos":0,"idade":18,"p":0.1435,"churn":1},{"meses":25,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":63.16,"atrasos":0,"idade":18,"p":0.0981,"churn":0},{"meses":72,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"pix","mensalidade":90.97,"atrasos":0,"idade":30,"p":0.0837,"churn":0},{"meses":11,"chamados":1,"contrato":"anual","internet":"dsl","pagamento":"boleto","mensalidade":94.44,"atrasos":0,"idade":46,"p":0.1249,"churn":0},{"meses":12,"chamados":2,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":63.21,"atrasos":0,"idade":18,"p":0.3111,"churn":0},{"meses":7,"chamados":3,"contrato":"anual","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":41.35,"atrasos":0,"idade":34,"p":0.0846,"churn":0},{"meses":4,"chamados":0,"contrato":"mensal","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":37.65,"atrasos":0,"idade":49,"p":0.0884,"churn":0},{"meses":2,"chamados":6,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":123.3,"atrasos":0,"idade":28,"p":0.9647,"churn":1},{"meses":29,"chamados":2,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":123.13,"atrasos":1,"idade":49,"p":0.4139,"churn":0},{"meses":4,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":105.11,"atrasos":0,"idade":41,"p":0.5703,"churn":1},{"meses":1,"chamados":3,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":117.58,"atrasos":1,"idade":67,"p":0.8472,"churn":1},{"meses":4,"chamados":3,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":98.51,"atrasos":0,"idade":30,"p":0.6417,"churn":0},{"meses":1,"chamados":0,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":35.11,"atrasos":1,"idade":57,"p":0.2076,"churn":1},{"meses":17,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"cartao_credito","mensalidade":138.03,"atrasos":0,"idade":31,"p":0.1884,"churn":0},{"meses":14,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":126.09,"atrasos":1,"idade":53,"p":0.6019,"churn":1},{"meses":13,"chamados":0,"contrato":"mensal","internet":"sem_internet","pagamento":"boleto","mensalidade":36.29,"atrasos":1,"idade":28,"p":0.1419,"churn":0},{"meses":3,"chamados":0,"contrato":"bianual","internet":"dsl","pagamento":"boleto","mensalidade":100.51,"atrasos":0,"idade":54,"p":0.0553,"churn":0},{"meses":27,"chamados":4,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":93.21,"atrasos":0,"idade":45,"p":0.37,"churn":1},{"meses":42,"chamados":2,"contrato":"bianual","internet":"fibra","pagamento":"boleto","mensalidade":128.39,"atrasos":3,"idade":24,"p":0.3702,"churn":0},{"meses":14,"chamados":2,"contrato":"mensal","internet":"dsl","pagamento":"boleto","mensalidade":85.52,"atrasos":0,"idade":36,"p":0.4349,"churn":0},{"meses":45,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":100.52,"atrasos":1,"idade":31,"p":0.4936,"churn":1},{"meses":7,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":84.73,"atrasos":0,"idade":32,"p":0.2118,"churn":0},{"meses":24,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":97.27,"atrasos":1,"idade":51,"p":0.5096,"churn":1},{"meses":2,"chamados":1,"contrato":"bianual","internet":"sem_internet","pagamento":"pix","mensalidade":30.58,"atrasos":0,"idade":36,"p":0.0186,"churn":0},{"meses":26,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":109.11,"atrasos":1,"idade":28,"p":0.7384,"churn":1},{"meses":64,"chamados":0,"contrato":"anual","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":43.28,"atrasos":0,"idade":25,"p":0.0084,"churn":0},{"meses":71,"chamados":1,"contrato":"bianual","internet":"sem_internet","pagamento":"debito_automatico","mensalidade":50.08,"atrasos":0,"idade":18,"p":0.006,"churn":0},{"meses":2,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":102.3,"atrasos":0,"idade":39,"p":0.3514,"churn":1},{"meses":3,"chamados":0,"contrato":"anual","internet":"dsl","pagamento":"boleto","mensalidade":89.23,"atrasos":1,"idade":62,"p":0.1085,"churn":0},{"meses":4,"chamados":1,"contrato":"bianual","internet":"dsl","pagamento":"boleto","mensalidade":64.72,"atrasos":2,"idade":64,"p":0.0707,"churn":0},{"meses":21,"chamados":0,"contrato":"anual","internet":"dsl","pagamento":"pix","mensalidade":98.64,"atrasos":0,"idade":37,"p":0.0432,"churn":0},{"meses":7,"chamados":0,"contrato":"anual","internet":"sem_internet","pagamento":"pix","mensalidade":48.45,"atrasos":1,"idade":49,"p":0.0372,"churn":0},{"meses":1,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":89.72,"atrasos":0,"idade":18,"p":0.3679,"churn":0},{"meses":10,"chamados":0,"contrato":"mensal","internet":"fibra","pagamento":"pix","mensalidade":90.88,"atrasos":0,"idade":31,"p":0.3085,"churn":0},{"meses":8,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":71.31,"atrasos":0,"idade":43,"p":0.0961,"churn":0},{"meses":39,"chamados":3,"contrato":"bianual","internet":"dsl","pagamento":"cartao_credito","mensalidade":66.47,"atrasos":0,"idade":48,"p":0.034,"churn":0},{"meses":30,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"pix","mensalidade":128.33,"atrasos":0,"idade":44,"p":0.1357,"churn":0},{"meses":1,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":96.21,"atrasos":0,"idade":49,"p":0.4329,"churn":0},{"meses":9,"chamados":2,"contrato":"anual","internet":"dsl","pagamento":"cartao_credito","mensalidade":65.25,"atrasos":0,"idade":47,"p":0.0911,"churn":0},{"meses":13,"chamados":3,"contrato":"mensal","internet":"fibra","pagamento":"debito_automatico","mensalidade":94.05,"atrasos":0,"idade":35,"p":0.4746,"churn":1},{"meses":22,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"cartao_credito","mensalidade":127.77,"atrasos":1,"idade":44,"p":0.7039,"churn":0},{"meses":10,"chamados":0,"contrato":"bianual","internet":"fibra","pagamento":"boleto","mensalidade":133.79,"atrasos":0,"idade":18,"p":0.081,"churn":0},{"meses":6,"chamados":3,"contrato":"mensal","internet":"dsl","pagamento":"debito_automatico","mensalidade":102.56,"atrasos":0,"idade":48,"p":0.3916,"churn":1},{"meses":7,"chamados":2,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":104.28,"atrasos":1,"idade":47,"p":0.5652,"churn":0},{"meses":12,"chamados":1,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":130.7,"atrasos":2,"idade":49,"p":0.7491,"churn":0},{"meses":72,"chamados":0,"contrato":"anual","internet":"sem_internet","pagamento":"boleto","mensalidade":38.5,"atrasos":1,"idade":32,"p":0.0289,"churn":0},{"meses":60,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":108.39,"atrasos":0,"idade":45,"p":0.1631,"churn":0},{"meses":28,"chamados":2,"contrato":"anual","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":40.08,"atrasos":0,"idade":41,"p":0.0459,"churn":0},{"meses":2,"chamados":0,"contrato":"mensal","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":43.46,"atrasos":1,"idade":41,"p":0.2012,"churn":1},{"meses":20,"chamados":1,"contrato":"anual","internet":"fibra","pagamento":"boleto","mensalidade":119.69,"atrasos":1,"idade":36,"p":0.3398,"churn":1},{"meses":6,"chamados":2,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":95.33,"atrasos":0,"idade":57,"p":0.3759,"churn":0},{"meses":8,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":80.39,"atrasos":1,"idade":50,"p":0.2746,"churn":0},{"meses":43,"chamados":1,"contrato":"bianual","internet":"fibra","pagamento":"boleto","mensalidade":120.69,"atrasos":0,"idade":27,"p":0.0825,"churn":0},{"meses":72,"chamados":0,"contrato":"bianual","internet":"sem_internet","pagamento":"cartao_credito","mensalidade":31.88,"atrasos":0,"idade":46,"p":0.0036,"churn":0},{"meses":18,"chamados":0,"contrato":"mensal","internet":"dsl","pagamento":"pix","mensalidade":79.99,"atrasos":2,"idade":39,"p":0.2837,"churn":0},{"meses":9,"chamados":1,"contrato":"mensal","internet":"dsl","pagamento":"cartao_credito","mensalidade":84.84,"atrasos":0,"idade":38,"p":0.2633,"churn":0},{"meses":3,"chamados":2,"contrato":"mensal","internet":"fibra","pagamento":"boleto","mensalidade":124.01,"atrasos":1,"idade":55,"p":0.787,"churn":1}],"superficie":{"meses":[1,4,7,10,13,16,19,22,25,28,31,34,37,40,43,46,49,52,55,58,61,64,67,70],"chamados":[0,1,2,3,4,5,6,7,8],"p":{"mensal":[[0.5118,0.438,0.3689,0.3451,0.3274,0.3135,0.3021,0.2924,0.284,0.2766,0.27,0.2641,0.2587,0.2538,0.2493,0.2451,0.2411,0.2375,0.234,0.2308,0.2277,0.2248,0.2221,0.2194],[0.6329,0.5617,0.4901,0.4642,0.4446,0.4289,0.4158,0.4045,0.3947,0.386,0.3782,0.3711,0.3647,0.3587,0.3532,0.348,0.3432,0.3387,0.3344,0.3304,0.3265,0.3229,0.3194,0.3161],[0.7392,0.6782,0.6125,0.5876,0.5683,0.5525,0.5392,0.5277,0.5175,0.5083,0.5001,0.4925,0.4855,0.4791,0.4731,0.4674,0.4621,0.4571,0.4524,0.4479,0.4436,0.4395,0.4356,0.4318],[0.8234,0.776,0.7222,0.7008,0.684,0.67,0.658,0.6475,0.6381,0.6296,0.6219,0.6148,0.6081,0.602,0.5962,0.5907,0.5855,0.5806,0.576,0.5715,0.5673,0.5632,0.5593,0.5555],[0.8846,0.8507,0.8104,0.7939,0.7807,0.7695,0.7598,0.7513,0.7436,0.7365,0.7301,0.7241,0.7185,0.7132,0.7082,0.7035,0.6991,0.6948,0.6908,0.6869,0.6831,0.6795,0.676,0.6727],[0.9265,0.9035,0.8754,0.8636,0.8541,0.8459,0.8388,0.8324,0.8266,0.8213,0.8164,0.8118,0.8075,0.8035,0.7997,0.796,0.7925,0.7892,0.786,0.7829,0.78,0.7771,0.7743,0.7717],[0.954,0.939,0.9204,0.9124,0.9059,0.9003,0.8953,0.8909,0.8869,0.8832,0.8797,0.8765,0.8734,0.8705,0.8678,0.8652,0.8627,0.8603,0.8579,0.8557,0.8536,0.8515,0.8494,0.8475],[0.9715,0.962,0.95,0.9448,0.9406,0.9369,0.9336,0.9307,0.928,0.9255,0.9232,0.921,0.919,0.917,0.9152,0.9134,0.9117,0.9101,0.9085,0.907,0.9055,0.9041,0.9027,0.9013],[0.9825,0.9766,0.969,0.9657,0.963,0.9606,0.9586,0.9567,0.9549,0.9533,0.9519,0.9504,0.9491,0.9479,0.9467,0.9455,0.9444,0.9433,0.9423,0.9413,0.9403,0.9394,0.9385,0.9376]],"anual":[[0.2201,0.1734,0.136,0.1242,0.1158,0.1095,0.1043,0.1001,0.0964,0.0933,0.0905,0.0881,0.0859,0.0839,0.082,0.0803,0.0788,0.0773,0.076,0.0747,0.0735,0.0724,0.0713,0.0703],[0.3169,0.2564,0.2055,0.1891,0.1773,0.1681,0.1607,0.1546,0.1493,0.1447,0.1407,0.1371,0.1338,0.1308,0.1281,0.1256,0.1233,0.1211,0.1191,0.1172,0.1154,0.1137,0.1122,0.1106],[0.4327,0.3619,0.2984,0.2771,0.2616,0.2494,0.2395,0.2312,0.224,0.2177,0.2121,0.2071,0.2025,0.1984,0.1946,0.1911,0.1878,0.1848,0.1819,0.1792,0.1767,0.1743,0.172,0.1698],[0.5564,0.4825,0.4116,0.3867,0.3681,0.3533,0.3412,0.3308,0.3218,0.3139,0.3068,0.3004,0.2946,0.2893,0.2843,0.2797,0.2755,0.2715,0.2677,0.2642,0.2608,0.2576,0.2546,0.2517],[0.6735,0.6052,0.5349,0.509,0.4892,0.4733,0.4599,0.4484,0.4383,0.4293,0.4212,0.4139,0.4071,0.4009,0.3951,0.3897,0.3847,0.3799,0.3754,0.3712,0.3671,0.3633,0.3596,0.3561],[0.7723,0.716,0.6541,0.6302,0.6116,0.5964,0.5834,0.572,0.562,0.553,0.5448,0.5373,0.5303,0.5239,0.5179,0.5122,0.5069,0.5019,0.4971,0.4925,0.4882,0.4841,0.4801,0.4763],[0.848,0.8057,0.7567,0.737,0.7214,0.7084,0.6972,0.6873,0.6784,0.6704,0.6631,0.6563,0.65,0.6441,0.6385,0.6333,0.6283,0.6236,0.6191,0.6148,0.6107,0.6067,0.6029,0.5993],[0.9017,0.8721,0.8364,0.8217,0.8098,0.7998,0.791,0.7833,0.7762,0.7698,0.7639,0.7584,0.7533,0.7484,0.7439,0.7395,0.7354,0.7315,0.7277,0.7241,0.7206,0.7173,0.714,0.7109],[0.9378,0.9181,0.8937,0.8834,0.875,0.8679,0.8616,0.856,0.8508,0.8461,0.8418,0.8377,0.8339,0.8303,0.8269,0.8236,0.8205,0.8175,0.8146,0.8119,0.8092,0.8066,0.8041,0.8017]],"bianual":[[0.0968,0.0738,0.0564,0.0511,0.0474,0.0446,0.0424,0.0405,0.039,0.0376,0.0365,0.0354,0.0345,0.0336,0.0328,0.0321,0.0315,0.0309,0.0303,0.0298,0.0293,0.0288,0.0284,0.0279],[0.1499,0.1159,0.0895,0.0814,0.0757,0.0713,0.0678,0.065,0.0625,0.0604,0.0586,0.0569,0.0554,0.0541,0.0529,0.0518,0.0507,0.0498,0.0489,0.048,0.0472,0.0465,0.0458,0.0451],[0.2248,0.1773,0.1392,0.1272,0.1187,0.1121,0.1069,0.1025,0.0988,0.0956,0.0928,0.0903,0.088,0.086,0.0841,0.0824,0.0808,0.0793,0.0779,0.0766,0.0754,0.0742,0.0732,0.0721],[0.3228,0.2616,0.21,0.1933,0.1812,0.1719,0.1644,0.1582,0.1528,0.1481,0.144,0.1403,0.137,0.1339,0.1312,0.1286,0.1262,0.124,0.122,0.12,0.1182,0.1165,0.1149,0.1133],[0.4394,0.3681,0.3042,0.2826,0.2669,0.2545,0.2445,0.236,0.2287,0.2223,0.2167,0.2116,0.207,0.2028,0.1989,0.1953,0.192,0.1889,0.186,0.1832,0.1806,0.1782,0.1759,0.1737],[0.5631,0.4893,0.4182,0.3931,0.3744,0.3596,0.3473,0.3368,0.3278,0.3198,0.3126,0.3062,0.3003,0.2949,0.2899,0.2852,0.2809,0.2769,0.2731,0.2695,0.2661,0.2628,0.2598,0.2568],[0.6794,0.6117,0.5417,0.5158,0.496,0.48,0.4666,0.4551,0.445,0.436,0.4279,0.4205,0.4137,0.4074,0.4016,0.3962,0.3911,0.3863,0.3818,0.3775,0.3735,0.3696,0.3659,0.3624],[0.777,0.7215,0.6602,0.6365,0.6181,0.6029,0.5899,0.5787,0.5687,0.5597,0.5515,0.544,0.5371,0.5307,0.5246,0.519,0.5137,0.5086,0.5039,0.4993,0.495,0.4908,0.4869,0.4831],[0.8514,0.8099,0.7616,0.7423,0.7268,0.714,0.7029,0.6931,0.6843,0.6764,0.6691,0.6624,0.6561,0.6502,0.6447,0.6395,0.6346,0.6299,0.6255,0.6212,0.6171,0.6132,0.6094,0.6058]]}},"importancia":{"meses_cliente":0.2234,"contrato":0.1159,"total_gasto":0.11,"chamados_suporte":0.0475,"pagamento":0.0118,"atrasos_pagamento":0.0077,"internet":0.0063,"dependentes":0.0051,"regiao":0.0008,"streaming":0.0007,"idade":0.0006,"mensalidade":0.0001}}</script>
+<script>
+(() => {
+"use strict";
+const D = JSON.parse(document.getElementById("dados").textContent);
+const tela = document.getElementById("tela");
+const ctx = tela.getContext("2d");
+const legenda = document.getElementById("legenda");
+const movimentoReduzido = matchMedia("(prefers-reduced-motion: reduce)");
+
+/* ---------- utilidades ---------- */
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const suave = t => (t = clamp(t, 0, 1), t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const saida = t => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+const fmt = (v, c = 0) => v.toLocaleString("pt-BR", { minimumFractionDigits: c, maximumFractionDigits: c });
+const pct = (v, c = 1) => fmt(v * 100, c) + "%";
+const brl = v => (v < 0 ? "−R$ " : "R$ ") + fmt(Math.abs(v));
+const sinal = (v, c = 2) => (v >= 0 ? "+" : "−") + fmt(Math.abs(v), c);
+const sigmoide = z => 1 / (1 + Math.exp(-z));
+
+const P = {};
+function lerCores() {
+  const cs = getComputedStyle(document.documentElement);
+  for (const k of ["papel", "papel-2", "cartao", "tinta", "tinta-2", "pontilhado", "risco", "fica", "faixa", "realce"]) P[k] = cs.getPropertyValue("--" + k).trim();
+}
+function rgb(hex) { const h = hex.replace("#", ""); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); }
+function rgba(hex, a) { const [r, g, b] = rgb(hex); return `rgba(${r},${g},${b},${a})`; }
+function mistura(a, b, t, alfa = 1) { const A = rgb(a), B = rgb(b); return `rgba(${A.map((v, i) => Math.round(lerp(v, B[i], t))).join(",")},${alfa})`; }
+
+const F = {
+  disp: (p, w = 600) => `${w} ${p}px "Barlow Condensed", "Arial Narrow", sans-serif`,
+  txt: (p, w = 400) => `${w} ${p}px Barlow, "Helvetica Neue", Arial, sans-serif`,
+  mono: (p, w = 400) => `${w} ${p}px "IBM Plex Mono", ui-monospace, Menlo, monospace`,
+};
+function texto(s, x, y, fonte, cor, alinhar = "left", base = "alphabetic") {
+  ctx.font = fonte; ctx.fillStyle = cor; ctx.textAlign = alinhar; ctx.textBaseline = base; ctx.fillText(s, x, y);
+}
+function largura(s, fonte) { ctx.font = fonte; return ctx.measureText(s).width; }
+function linha(x1, y1, x2, y2, cor, w = 1, tracejado) {
+  ctx.beginPath(); ctx.strokeStyle = cor; ctx.lineWidth = w; ctx.setLineDash(tracejado || []);
+  ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.setLineDash([]);
+}
+function pontilhar(x1, x2, y, cor) { ctx.fillStyle = cor; for (let x = x1; x < x2; x += 4) ctx.fillRect(x, y, 1.2, 1.2); }
+function circulo(x, y, r, preenchimento, contorno, w = 1) {
+  ctx.beginPath(); ctx.arc(x, y, Math.max(r, 0), 0, Math.PI * 2);
+  if (preenchimento) { ctx.fillStyle = preenchimento; ctx.fill(); }
+  if (contorno) { ctx.strokeStyle = contorno; ctx.lineWidth = w; ctx.stroke(); }
+}
+function caixa(x, y, w, h, preenchimento, contorno, raio = 3) {
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, raio);
+  if (preenchimento) { ctx.fillStyle = preenchimento; ctx.fill(); }
+  if (contorno) { ctx.strokeStyle = contorno; ctx.lineWidth = 1; ctx.stroke(); }
+}
+
+/* ---------- o modelo, recalculado no navegador ---------- */
+const par = D.parametros;
+const ROTULOS = { meses_cliente: "meses", idade: "idade", dependentes: "dependentes", mensalidade: "mensalidade", total_gasto: "total gasto", chamados_suporte: "chamados", atrasos_pagamento: "atrasos", streaming: "streaming", log_meses_cliente: "log meses", gasto_medio_mensal: "gasto médio", cliente_novo: "cliente novo" };
+const GRUPO = { meses_cliente: "tempo", log_meses_cliente: "tempo", cliente_novo: "tempo", mensalidade: "gasto", total_gasto: "gasto", gasto_medio_mensal: "gasto", chamados_suporte: "chamados", atrasos_pagamento: "atrasos", idade: "idade", dependentes: "dependentes", streaming: "streaming" };
+const BASE = par.intercepto + par.categoricas.reduce((s, c) => s + c.coef.reduce((t, w, i) => t + w * c.freq[i], 0), 0);
+
+function derivar(c) {
+  return { ...c, streaming: c.streaming ? 1 : 0, log_meses_cliente: Math.log1p(c.meses_cliente),
+    gasto_medio_mensal: c.total_gasto / Math.max(c.meses_cliente, 1), cliente_novo: c.meses_cliente <= 6 ? 1 : 0 };
+}
+function avaliarCliente(c) {
+  const f = derivar(c);
+  const numericas = par.numericas.map(n => ({ nome: n.nome, bruto: f[n.nome], z: (f[n.nome] - n.media) / n.escala, coef: n.coef }));
+  const categoricas = par.categoricas.map(k => ({ nome: k.nome, valor: f[k.nome], categorias: k.categorias, ativa: k.categorias.indexOf(f[k.nome]), coef: k.coef, freq: k.freq }));
+  let z = par.intercepto;
+  const itens = {};
+  for (const n of numericas) { z += n.coef * n.z; itens[GRUPO[n.nome]] = (itens[GRUPO[n.nome]] || 0) + n.coef * n.z; }
+  for (const k of categoricas) {
+    k.categorias.forEach((_, i) => { const x = i === k.ativa ? 1 : 0; itens[k.nome] = (itens[k.nome] || 0) + k.coef[i] * (x - k.freq[i]); if (x) z += k.coef[i]; });
+  }
+  return { z, p: sigmoide(z), itens, numericas, categoricas, derivado: f };
+}
+
+/* ---------- estado ---------- */
+const estado = {
+  passo: 0, anterior: -1, tTroca: 0, tAtivo: 0,
+  exemplo: 0, tExemplo: 0,
+  sim: { contrato: "mensal", internet: "fibra", pagamento: "boleto", regiao: "Sudeste", idade: 41, dependentes: 0, streaming: false, meses_cliente: 4, chamados_suporte: 3, atrasos_pagamento: 1, mensalidade: 110, total_gasto: 440 },
+  zMostrado: null,
+  contrato3d: "mensal", corte: 3, corteMostrado: 3,
+  cam: { yaw: -0.72, pitch: 0.52 }, arrasto: null, ultimoArrasto: -1e9,
+  limiar: D.limiar, limiarMostrado: D.limiar,
+};
+let W = 0, H = 0;
+const agora = () => performance.now() / 1000;
+
+/* ---------- textos das legendas ---------- */
+const LEGENDAS = [
+  "420 clientes do conjunto de teste. Vermelho = cancelou.",
+  "Cliente real do teste com risco alto. Os valores de cada etapa são os do pipeline treinado.",
+  "Contribuições em log-chance em relação ao cliente médio do treino (base −1,44).",
+  "Eixo horizontal compartilhado: a barra embaixo é a soma da fatura; a curva a converte em probabilidade.",
+  "Superfície calculada pelo modelo treinado. Pontos cheios cancelaram; vazios ficaram.",
+  "ROC-AUC de cada rodada no treino. Escala do eixo de 0,79 a 0,85.",
+  "Verde: lucro no teste (1.400 clientes). Tracejada: lucro nas previsões fora da amostra do treino, onde o limiar foi escolhido, reescalado para 1.400 clientes.",
+  "Queda da ROC-AUC no teste ao embaralhar cada coluna (média de 5 repetições).",
+  "Resposta calculada com o pipeline do modelo, como a API faria.",
+];
+
+/* =====================================================================
+   CENA 0 · a base de clientes
+   ===================================================================== */
+const clientes = D.clientes;
+const ordemChurn = clientes.map((c, i) => i).filter(i => clientes[i].churn);
+const nChurn = ordemChurn.length;
+function cena0(t) {
+  const compacto = W < 560;
+  const areaW = W * (compacto ? 0.62 : 0.66);
+  // escolhe o número de colunas que deixa os pontos maiores dentro da área
+  let cols = 20, passoG = 0;
+  for (let c = 12; c <= 36; c++) {
+    const g = Math.min(areaW / c, (H - 80) / Math.ceil(clientes.length / c));
+    if (g > passoG) { passoG = g; cols = c; }
+  }
+  const r = Math.max(1.6, passoG * 0.3);
+  const x0 = 8, y0 = 64;
+  const pilhaX = W * (compacto ? 0.7 : 0.72);
+  const pilhaCols = Math.max(3, Math.floor((W - pilhaX) / passoG));
+  let saidas = 0;
+  clientes.forEach((c, i) => {
+    const gx = x0 + (i % cols + .5) * passoG, gy = y0 + (Math.floor(i / cols) + .5) * passoG;
+    const aparece = saida((t - 0.05 - i * 0.0022) / 0.35);
+    if (aparece <= 0) return;
+    let x = gx, y = gy, cor = P["tinta-2"];
+    if (c.churn) {
+      const k = ordemChurn.indexOf(i);
+      const tom = saida((t - 1.0 - k * 0.004) / 0.35);
+      cor = mistura(P["tinta-2"], P.risco, tom);
+      const m = suave((t - 1.7 - k * 0.006) / 0.9);
+      if (m > 0) {
+        const px = pilhaX + (k % pilhaCols + .5) * passoG, py = y0 + (Math.floor(k / pilhaCols) + .5) * passoG;
+        x = lerp(gx, px, m); y = lerp(gy, py, m) - Math.sin(m * Math.PI) * 18;
+        if (m >= 1) saidas++;
+      }
+    }
+    circulo(x, y, r * aparece, cor);
+  });
+  const restantes = clientes.length - saidas;
+  texto("Ficaram", x0, 30, F.mono(12), P["tinta-2"]);
+  texto(fmt(restantes), x0, 54, F.disp(compacto ? 26 : 30, 700), P.tinta);
+  texto("Cancelaram", pilhaX, 30, F.mono(12), P["tinta-2"]);
+  texto(fmt(saidas) + (saidas === nChurn ? `  (${pct(nChurn / clientes.length)})` : ""), pilhaX, 54, F.disp(compacto ? 26 : 30, 700), P.risco);
+}
+
+/* =====================================================================
+   CENA 1 · pipeline
+   ===================================================================== */
+function cena1(t) {
+  const ex = D.exemplos[0];
+  const a = avaliarCliente(ex.cliente);
+  const largo = W >= 720;
+  const etapas = 5;
+  const prog = i => saida((t - 0.2 - i * 0.75) / 0.6);
+  let retangulos;
+  if (largo) {
+    const g = 18, pesos = [1.1, 1, 1.45, 0.85, 1], total = pesos.reduce((s, v) => s + v, 0);
+    const util = W - g * (etapas - 1);
+    let x = 0;
+    retangulos = pesos.map(p => { const r = { x, y: 34, w: util * p / total, h: H - 44 }; x += r.w + g; return r; });
+  } else {
+    const alturas = [0.27, 0.17, 0.12, 0.17, 0.27];
+    let y = 4; retangulos = alturas.map(h => { const r = { x: 0, y, w: W, h: H * h - 8 }; y += H * h; return r; });
+  }
+  const titulos = largo ? ["Campos", "Derivadas", "Escala e 0/1", "Soma", "Sigmoide"] : ["Campos do cliente", "Variáveis derivadas", "Escala comum e 0/1", "Soma ponderada", "Sigmoide"];
+  retangulos.forEach((r, i) => {
+    const k = prog(i);
+    if (k <= 0) return;
+    ctx.globalAlpha *= k;
+    const rotuloY = largo ? r.y - 12 : r.y + 12;
+    texto(`${i + 1}  ${titulos[i]}`, r.x, rotuloY, F.mono(11, 500), P["tinta-2"]);
+    const corpo = largo ? r : { x: r.x + (W < 420 ? 0 : 150), y: r.y + 2, w: r.w - (W < 420 ? 0 : 150), h: r.h };
+    if (!largo && W < 420) { corpo.y += 16; corpo.h -= 16; }
+    [desenharCampos, desenharDerivadas, desenharEscala, desenharSoma, desenharGauge][i](corpo, a, ex, k, largo);
+    ctx.globalAlpha /= k;
+    if (largo && i < etapas - 1) {
+      const kk = prog(i + 1);
+      if (kk > 0) {
+        const xa = r.x + r.w - 26, xb = r.x + r.w + 8, ym = r.y - 16;
+        linha(xa, ym, lerp(xa, xb, kk), ym, P.tinta, 1.5);
+        if (kk > 0.9) { ctx.beginPath(); ctx.moveTo(xb, ym); ctx.lineTo(xb - 5, ym - 4); ctx.lineTo(xb - 5, ym + 4); ctx.closePath(); ctx.fillStyle = P.tinta; ctx.fill(); }
+      }
+    }
+  });
+}
+function desenharCampos(r, a, ex, k, largo) {
+  const c = ex.cliente;
+  const campos = [["contrato", c.contrato], ["internet", c.internet], ["pagamento", c.pagamento === "cartao_credito" ? "cartão" : c.pagamento], ["região", c.regiao], ["meses", c.meses_cliente], ["chamados", c.chamados_suporte], ["atrasos", c.atrasos_pagamento], ["mensalidade", fmt(c.mensalidade, 2)], ["total gasto", fmt(c.total_gasto, 2)], ["idade", c.idade], ["dependentes", c.dependentes], ["streaming", c.streaming ? "sim" : "não"]];
+  const lista = largo ? campos : campos.slice(0, 6);
+  const colunas = largo ? 1 : 2;
+  const porCol = Math.ceil(lista.length / colunas);
+  const lh = Math.min(22, r.h / porCol);
+  const fonte = F.mono(Math.min(12, lh * 0.62));
+  lista.forEach(([n, v], i) => {
+    const col = Math.floor(i / porCol), x = r.x + col * r.w / colunas, y = r.y + (i % porCol + 0.8) * lh, w = r.w / colunas - 8;
+    texto(n, x, y, fonte, P["tinta-2"]);
+    texto(String(v), x + w, y, fonte, P.tinta, "right");
+  });
+}
+function desenharDerivadas(r, a, ex, k, largo) {
+  const f = a.derivado;
+  const linhas = [["log meses", `ln(1 + ${f.meses_cliente})`, fmt(f.log_meses_cliente, 2)], ["gasto médio", "total ÷ meses", fmt(f.gasto_medio_mensal, 1)], ["cliente novo", "meses ≤ 6", String(f.cliente_novo)]];
+  const lh = Math.min(largo ? 64 : 22, r.h / 3);
+  linhas.forEach(([n, regra, v], i) => {
+    const y = r.y + i * lh;
+    if (largo) {
+      caixa(r.x, y + 4, r.w, lh - 10, rgba(P.realce, 0.12), rgba(P.realce, 0.5));
+      texto(n, r.x + 8, y + 22, F.txt(13, 600), P.tinta);
+      texto(regra, r.x + 8, y + 40, F.mono(11), P["tinta-2"]);
+      texto(v, r.x + r.w - 8, y + 22, F.mono(13, 600), P.tinta, "right");
+    } else {
+      texto(`${n} = ${regra} = ${v}`, r.x, y + lh * 0.7, F.mono(Math.min(12, lh * 0.6)), P.tinta);
+    }
+  });
+}
+function desenharEscala(r, a, ex, k, largo) {
+  const nums = a.numericas;
+  if (!largo) {
+    texto(`${nums.length} números padronizados + ${a.categoricas.reduce((s, c) => s + c.categorias.length, 0)} colunas de 0/1`, r.x, r.y + r.h * 0.62, F.mono(11), P.tinta);
+    return;
+  }
+  const itens = nums.length + a.categoricas.length;
+  const lh = Math.min(largo ? 26 : 16, r.h / itens);
+  const inicioDados = r.x + r.w * 0.46;
+  const meio = r.x + r.w * 0.74;
+  const meia = r.w * 0.25;
+  const fonte = F.mono(Math.min(11, lh * 0.66));
+  nums.forEach((n, i) => {
+    const y = r.y + i * lh;
+    const derivada = ["log_meses_cliente", "gasto_medio_mensal", "cliente_novo"].includes(n.nome);
+    texto(ROTULOS[n.nome], r.x, y + lh * 0.72, fonte, derivada ? P.realce : P["tinta-2"]);
+    const zc = clamp(n.z, -3, 3) / 3 * k;
+    ctx.fillStyle = n.z >= 0 ? P.tinta : P["tinta-2"];
+    ctx.fillRect(Math.min(meio, meio + zc * meia), y + lh * 0.25, Math.abs(zc * meia), lh * 0.5);
+  });
+  linha(meio, r.y, meio, r.y + nums.length * lh, P.pontilhado, 1);
+  a.categoricas.forEach((c, j) => {
+    const y = r.y + (nums.length + j) * lh;
+    texto(c.nome === "regiao" ? "região" : c.nome, r.x, y + lh * 0.72, fonte, P["tinta-2"]);
+    const n = c.categorias.length, s = Math.min(lh * 0.62, (r.x + r.w - inicioDados) / n - 3);
+    c.categorias.forEach((_, q) => {
+      const x = inicioDados + q * (s + 3);
+      if (q === c.ativa) { ctx.fillStyle = P.tinta; ctx.fillRect(x, y + lh * 0.2, s, s); }
+      else { ctx.strokeStyle = P.pontilhado; ctx.lineWidth = 1; ctx.strokeRect(x + .5, y + lh * 0.2 + .5, s - 1, s - 1); }
+    });
+  });
+}
+function desenharSoma(r, a, ex, k, largo) {
+  const linhas = [["intercepto", fmt(par.intercepto, 2)], ["Σ peso × valor", sinal(a.z - par.intercepto)], ["total (log-chance)", fmt(a.z, 2)]];
+  if (largo) {
+    [r.y + 14, r.y + 70, r.y + 140].forEach((y, i) => {
+      texto(linhas[i][0], r.x, y, F.mono(11), P["tinta-2"]);
+      texto(linhas[i][1], r.x, y + 26, F.disp(i === 2 ? 34 : 26, i === 2 ? 700 : 600), i === 2 ? P.tinta : P["tinta-2"]);
+    });
+    linha(r.x, r.y + 116, r.x + r.w * k, r.y + 116, P.tinta, 1);
+    texto("pesos aprendidos", r.x, r.y + 210, F.txt(13), P["tinta-2"]);
+    texto("pela regressão logística", r.x, r.y + 228, F.txt(13), P["tinta-2"]);
+  } else {
+    texto(`${linhas[0][1]} ${linhas[1][1]} = ${linhas[2][1]}`, r.x, r.y + r.h * 0.6, F.disp(Math.min(26, r.h * 0.6), 700), P.tinta);
+  }
+}
+function desenharGauge(r, a, ex, k, largo) {
+  const raio = Math.min(r.w * 0.42, largo ? 90 : r.h * 0.8);
+  const cx = r.x + (largo ? r.w / 2 : raio + 4), cy = r.y + (largo ? raio + 40 : r.h - 6);
+  ctx.lineCap = "round";
+  ctx.beginPath(); ctx.arc(cx, cy, raio, Math.PI, 2 * Math.PI); ctx.strokeStyle = P["papel-2"]; ctx.lineWidth = 10; ctx.stroke();
+  const p = a.p * k;
+  ctx.beginPath(); ctx.arc(cx, cy, raio, Math.PI, Math.PI + Math.PI * p); ctx.strokeStyle = P.risco; ctx.lineWidth = 10; ctx.stroke();
+  ctx.lineCap = "butt";
+  const lim = Math.PI + Math.PI * D.limiar;
+  linha(cx + Math.cos(lim) * (raio - 9), cy + Math.sin(lim) * (raio - 9), cx + Math.cos(lim) * (raio + 9), cy + Math.sin(lim) * (raio + 9), P.tinta, 2);
+  const tx = largo ? cx : cx + raio + 16;
+  texto(pct(p), tx, largo ? cy + 8 : cy - raio * 0.2, F.disp(largo ? 40 : 30, 700), P.risco, largo ? "center" : "left");
+  texto("chance de cancelar", tx, largo ? cy + 30 : cy - raio * 0.2 + 18, F.mono(11), P["tinta-2"], largo ? "center" : "left");
+  if (largo) {
+    texto(`traço = limiar ${fmt(D.limiar, 2)}`, cx, cy + 56, F.mono(11), P["tinta-2"], "center");
+    texto(ex.churn ? "Na vida real: cancelou." : "Na vida real: ficou.", cx, cy + 92, F.txt(14, 600), ex.churn ? P.risco : P.fica, "center");
+  }
+}
+
+/* =====================================================================
+   CENA 2 · a fatura de risco
+   ===================================================================== */
+const NOMES_ITENS = {
+  tempo: c => `Tempo de casa (${c.meses_cliente} ${c.meses_cliente === 1 ? "mês" : "meses"})`,
+  gasto: c => `Mensalidade e total gasto (R$ ${fmt(c.mensalidade, 0)}/mês)`,
+  chamados: c => `Chamados no suporte (${c.chamados_suporte})`,
+  atrasos: c => `Atrasos de pagamento (${c.atrasos_pagamento})`,
+  contrato: c => `Contrato ${c.contrato}`,
+  internet: c => `Internet ${c.internet === "sem_internet" ? "ausente" : c.internet === "dsl" ? "DSL" : c.internet}`,
+  pagamento: c => `Pagamento ${({ boleto: "boleto", cartao_credito: "cartão", pix: "pix", debito_automatico: "débito automático" })[c.pagamento]}`,
+  regiao: c => `Região ${c.regiao}`,
+  idade: c => `Idade (${c.idade})`,
+  dependentes: c => `Dependentes (${c.dependentes})`,
+  streaming: c => `Streaming (${c.streaming ? "sim" : "não"})`,
+};
+function cena2(t) {
+  const ex = D.exemplos[estado.exemplo];
+  const te = agora() - estado.tExemplo;
+  const tt = Math.min(t, te);
+  const compacto = H < 520 || W < 460;
+  let itens = Object.entries(ex.itens).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+  const total = D.base_logito + itens.reduce((s, [, v]) => s + v, 0);
+  if (compacto) itens = [...itens.slice(0, 5), ["outros", itens.slice(5).reduce((s, [, v]) => s + v, 0)]];
+  const w = Math.min(W - 4, 560), x = (W - w) / 2;
+  const lh = compacto ? Math.min(18, (H - 170) / (itens.length + 4)) : 24;
+  const alturaPapel = 74 + (itens.length + 1) * lh + (compacto ? 112 : 158);
+  const y = Math.max(4, (H - alturaPapel) / 2);
+  // papel com picote
+  ctx.save();
+  ctx.shadowColor = rgba(P.tinta, 0.12); ctx.shadowBlur = 18; ctx.shadowOffsetY = 6;
+  ctx.fillStyle = P.cartao; ctx.fillRect(x, y, w, alturaPapel);
+  ctx.restore();
+  ctx.fillStyle = P.papel;
+  for (let px = x + 10; px < x + w; px += 16) { ctx.beginPath(); ctx.arc(px, y, 4, 0, Math.PI); ctx.fill(); }
+  ctx.fillStyle = P.faixa; ctx.fillRect(x, y + 10, w, 34);
+  texto("FATURA DE RISCO", x + 14, y + 33, F.disp(18, 700), P.cartao);
+  texto(compacto ? ["risco alto", "risco médio", "risco baixo"][estado.exemplo] : `cliente real do teste · ${["risco alto", "risco médio", "risco baixo"][estado.exemplo]}`, x + w - 14, y + 32, F.mono(11), P.cartao, "right");
+  const fonte = F.mono(compacto ? 11 : 12.5), fonteNome = F.txt(compacto ? 12.5 : 14.5);
+  const colValor = x + w - 14, colBarra = x + w - 132, meiaBarra = 44;
+  let yy = y + 62 + lh;
+  const ap = i => saida((tt - 0.15 - i * 0.12) / 0.3);
+  // linha base
+  ctx.globalAlpha *= ap(0) || 0.0001;
+  texto("Cliente médio do treino (base)", x + 14, yy, fonteNome, P["tinta-2"]);
+  texto(sinal(D.base_logito), colValor, yy, fonte, P["tinta-2"], "right");
+  ctx.globalAlpha /= ap(0) || 0.0001;
+  linha(x + 14, yy + lh * 0.45, x + w - 14, yy + lh * 0.45, P["papel-2"], 1);
+  yy += lh;
+  itens.forEach(([g, v], i) => {
+    const k = ap(i + 1);
+    if (k <= 0) { yy += lh; return; }
+    ctx.globalAlpha *= k;
+    const nome = g === "outros" ? "Outros itens" : NOMES_ITENS[g](ex.cliente);
+    texto(nome, x + 14, yy, fonteNome, P.tinta);
+    const fim = largura(nome, fonteNome) + x + 22;
+    pontilhar(fim, colBarra - meiaBarra - 8, yy - 3, P.pontilhado);
+    const bw = clamp(v / 1.6, -1, 1) * meiaBarra * k;
+    ctx.fillStyle = v >= 0 ? P.risco : P.fica;
+    ctx.fillRect(Math.min(colBarra, colBarra + bw), yy - lh * 0.42, Math.abs(bw), lh * 0.42);
+    linha(colBarra, yy - lh * 0.55, colBarra, yy + 2, P.pontilhado, 1);
+    texto(sinal(v), colValor, yy, fonte, v >= 0 ? P.risco : P.fica, "right");
+    ctx.globalAlpha /= k;
+    yy += lh;
+  });
+  const kt = ap(itens.length + 2);
+  if (kt > 0) {
+    ctx.globalAlpha *= kt;
+    linha(x + 14, yy - lh * 0.55, x + w - 14, yy - lh * 0.55, P.tinta, 1.5);
+    yy += 6;
+    texto("Total em log-chance", x + 14, yy, F.txt(compacto ? 13 : 15, 600), P.tinta);
+    texto(fmt(total, 2), colValor, yy, F.mono(compacto ? 12 : 14, 600), P.tinta, "right");
+    yy += compacto ? 28 : 44;
+    texto("Chance de cancelar  σ(total)", x + 14, yy, F.txt(compacto ? 13 : 15), P["tinta-2"]);
+    texto(pct(sigmoide(total)), colValor, yy + 4, F.disp(compacto ? 28 : 38, 700), P.risco, "right");
+    ctx.globalAlpha /= kt;
+    // código de barras do "boleto"
+    let bx = x + 14; const by = y + alturaPapel - 30;
+    const semente = Math.round(ex.p * 1e4) + ex.cliente.meses_cliente * 97;
+    for (let i = 0; !compacto && bx < x + w * 0.55; i++) {
+      const larg = 1 + ((semente * (i + 3) * 7919) % 3);
+      if (i % 2 === 0) { ctx.fillStyle = rgba(P.tinta, 0.75 * kt); ctx.fillRect(bx, by, larg, 18); }
+      bx += larg + 1;
+    }
+  }
+  // carimbo com o que aconteceu
+  const kc = saida((tt - 0.6 - (itens.length + 3) * 0.12) / 0.25);
+  if (kc > 0) {
+    const cor = ex.churn ? P.risco : P.fica;
+    ctx.save();
+    ctx.translate(compacto ? x + 90 : x + w - 96, y + alturaPapel - (compacto ? 26 : 30));
+    ctx.rotate(-0.1);
+    const esc = lerp(1.6, 1, kc) * (compacto ? 0.8 : 1);
+    ctx.scale(esc, esc);
+    ctx.globalAlpha *= kc;
+    ctx.strokeStyle = cor; ctx.lineWidth = 2.5;
+    ctx.strokeRect(-70, -18, 140, 34);
+    texto(ex.churn ? "CANCELOU" : "FICOU", 0, 8, F.disp(22, 700), cor, "center");
+    ctx.restore();
+  }
+}
+
+/* =====================================================================
+   CENA 3 · simulador na curva sigmoide
+   ===================================================================== */
+const Z_MIN = -6, Z_MAX = 6;
+function cena3(t) {
+  const a = avaliarCliente(estado.sim);
+  if (estado.zMostrado === null) estado.zMostrado = a.z;
+  estado.zMostrado = movimentoReduzido.matches ? a.z : lerp(estado.zMostrado, a.z, 0.14);
+  const z = estado.zMostrado, p = sigmoide(z);
+  const compacto = W < 560;
+  const m = { l: compacto ? 34 : 48, r: 12, t: compacto ? 66 : 84, b: 0 };
+  const alturaBarras = compacto ? 96 : 150;
+  const gx = m.l, gw = W - m.l - m.r, gy = m.t, gh = H - m.t - alturaBarras - 48;
+  const X = v => gx + (clamp(v, Z_MIN, Z_MAX) - Z_MIN) / (Z_MAX - Z_MIN) * gw;
+  const Y = v => gy + (1 - v) * gh;
+  const k = saida(t / 0.8);
+  // eixos
+  for (const v of [0, 0.25, 0.5, 0.75, 1]) {
+    linha(gx, Y(v), gx + gw, Y(v), P["papel-2"], 1);
+    texto(fmt(v * 100, 0) + "%", gx - 6, Y(v) + 4, F.mono(10), P["tinta-2"], "right");
+  }
+  for (let v = Z_MIN; v <= Z_MAX; v += 2) texto(sinal(v, 0).replace("+0", "0").replace("−0", "0"), X(v), gy + gh + 16, F.mono(10), P["tinta-2"], "center");
+  texto("log-chance (total da fatura)", gx + gw, gy + gh + 32, F.mono(10.5), P["tinta-2"], "right");
+  // limiar
+  linha(gx, Y(D.limiar), gx + gw, Y(D.limiar), P.realce, 1.2, [5, 4]);
+  texto(`limiar ${fmt(D.limiar, 2)}: acima disso, oferta de retenção`, gx + 6, Y(D.limiar) - 6, F.mono(10.5), P.realce);
+  // curva
+  ctx.beginPath();
+  for (let i = 0; i <= 200 * k; i++) { const v = Z_MIN + (Z_MAX - Z_MIN) * i / 200; const px = X(v), py = Y(sigmoide(v)); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+  ctx.strokeStyle = P.tinta; ctx.lineWidth = 2; ctx.stroke();
+  // cliente médio
+  circulo(X(BASE), Y(sigmoide(BASE)), 5, P.cartao, P["tinta-2"], 1.5);
+  texto("cliente médio", X(BASE) + 9, Y(sigmoide(BASE)) + 14, F.mono(10.5), P["tinta-2"]);
+  // cliente simulado
+  const cor = p >= D.limiar ? P.risco : P.fica;
+  linha(X(z), Y(p), X(z), gy + gh, rgba(cor, 0.6), 1, [3, 3]);
+  linha(gx, Y(p), X(z), Y(p), rgba(cor, 0.6), 1, [3, 3]);
+  circulo(X(z), Y(p), 7 * k, cor);
+  circulo(X(z), Y(p), 12 * k, null, rgba(cor, 0.35), 2);
+  texto(pct(p), W - m.r, compacto ? 34 : 44, F.disp(compacto ? 34 : 50, 700), cor, "right");
+  texto(p >= D.limiar ? "aciona retenção" : "não aciona", W - m.r, compacto ? 52 : 66, F.mono(11, 600), cor, "right");
+  texto("Chance de cancelar", gx, compacto ? 22 : 30, F.mono(11), P["tinta-2"]);
+  // cascata das contribuições no mesmo eixo
+  const itens = Object.entries(a.itens).sort((x, y) => Math.abs(y[1]) - Math.abs(x[1]));
+  const by0 = gy + gh + 46, bh = Math.max(5, (alturaBarras - 6) / itens.length - 2);
+  let acumulado = BASE;
+  linha(X(BASE), by0 - 4, X(BASE), by0 + itens.length * (bh + 2), P.pontilhado, 1, [2, 3]);
+  itens.forEach(([g, v], i) => {
+    const y = by0 + i * (bh + 2);
+    const x1 = X(acumulado), x2 = X(acumulado + v * k);
+    ctx.fillStyle = v >= 0 ? P.risco : P.fica;
+    ctx.fillRect(Math.min(x1, x2), y, Math.max(1, Math.abs(x2 - x1)), bh);
+    if (!compacto && Math.abs(v) > 0.08) {
+      const nome = NOMES_ITENS[g](estado.sim).replace(/\s*\(.*\)/, "");
+      texto(nome, v >= 0 ? Math.max(x1, x2) + 5 : Math.min(x1, x2) - 5, y + bh - 1, F.mono(9.5), P["tinta-2"], v >= 0 ? "left" : "right");
+    }
+    acumulado += v;
+  });
+}
+
+/* =====================================================================
+   CENA 4 · superfície 3D com corte
+   ===================================================================== */
+const S = D.superficie;
+function projetor(cx, cy, escala) {
+  const { yaw, pitch } = estado.cam;
+  const cyw = Math.cos(yaw), syw = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  return (x, y, z) => {
+    const X = x * cyw - z * syw, Z1 = x * syw + z * cyw;
+    const Y = y * cp - Z1 * sp, Z = y * sp + Z1 * cp;
+    const f = 8 / (8 - Z);
+    return { x: cx + X * escala * f, y: cy - Y * escala * f, d: Z };
+  };
+}
+function cena4(t) {
+  const ocioso = agora() - estado.ultimoArrasto > 2.5 && !estado.arrasto;
+  if (ocioso && !movimentoReduzido.matches) estado.cam.yaw = -0.72 + Math.sin(agora() * 0.25) * 0.35;
+  estado.corteMostrado = lerp(estado.corteMostrado, estado.corte, movimentoReduzido.matches ? 1 : 0.15);
+  const compacto = W < 560;
+  const insetH = compacto || H < 560 ? 0 : Math.min(150, H * 0.24);
+  const areaH = H - insetH;
+  const escala = Math.min(W * (compacto ? 0.24 : 0.3), areaH * 0.33);
+  const pr = projetor(W / 2, areaH * 0.6, escala);
+  const grade = S.p[estado.contrato3d];
+  const nm = S.meses.length, nc = S.chamados.length;
+  const mx = i => -1 + 2 * i / (nm - 1), cz = j => -1 + 2 * j / (nc - 1);
+  const subida = saida(t / 1.1);
+  const ALT = 1.2;
+  const cor = p => mistura(P["papel-2"], P.risco, clamp(p * 1.1, 0, 1), 0.92);
+  const poligono = pts => { ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.closePath(); };
+
+  // chão: a mesma probabilidade como mapa plano, como num mapa de cobertura
+  for (let j = 0; j < nc - 1; j++) for (let i = 0; i < nm - 1; i++) {
+    poligono([[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]].map(([a, b]) => pr(mx(a), 0, cz(b))));
+    ctx.fillStyle = mistura(P["papel-2"], P.risco, clamp(grade[j][i] * 1.1, 0, 1), 0.32 * subida); ctx.fill();
+  }
+  poligono([[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([x, z]) => pr(x, 0, z)));
+  ctx.strokeStyle = P.pontilhado; ctx.lineWidth = 1; ctx.stroke();
+  // paredes do fundo: as duas mais distantes da câmera
+  const xFundo = pr(-1, 0, 0).d < pr(1, 0, 0).d ? -1 : 1;
+  const zFundo = pr(0, 0, -1).d < pr(0, 0, 1).d ? -1 : 1;
+  poligono([pr(-1, 0, zFundo), pr(1, 0, zFundo), pr(1, ALT, zFundo), pr(-1, ALT, zFundo)]);
+  ctx.fillStyle = rgba(P.tinta, 0.025); ctx.fill();
+  poligono([pr(xFundo, 0, -1), pr(xFundo, 0, 1), pr(xFundo, ALT, 1), pr(xFundo, ALT, -1)]);
+  ctx.fill();
+  for (let v = 0; v <= 1.001; v += 0.25) {
+    const y = v * ALT;
+    const a = pr(-1, y, zFundo), b = pr(1, y, zFundo), c = pr(xFundo, y, -1), d = pr(xFundo, y, 1);
+    linha(a.x, a.y, b.x, b.y, rgba(P["tinta-2"], v === 0 ? 0.5 : 0.22), 1);
+    linha(c.x, c.y, d.x, d.y, rgba(P["tinta-2"], v === 0 ? 0.5 : 0.22), 1);
+    const quina = pr(xFundo, y, -zFundo);
+    texto(fmt(v * 100, 0) + "%", quina.x + (quina.x < W / 2 ? -6 : 6), quina.y + 3, F.mono(10), P["tinta-2"], quina.x < W / 2 ? "right" : "left");
+  }
+
+  const lista = [];
+  const alt = (i, j) => grade[j][i] * ALT * subida;
+  for (let j = 0; j < nc - 1; j++) for (let i = 0; i < nm - 1; i++) {
+    const pts = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]].map(([a, b]) => pr(mx(a), alt(a, b), cz(b)));
+    const pm = (grade[j][i] + grade[j][i + 1] + grade[j + 1][i] + grade[j + 1][i + 1]) / 4;
+    lista.push({ d: pts.reduce((s, p) => s + p.d, 0) / 4, tipo: "q", pts, pm });
+  }
+  // hastes nos quatro cantos ligam a superfície ao mapa do chão
+  for (const [i, j] of [[0, 0], [nm - 1, 0], [0, nc - 1], [nm - 1, nc - 1]]) {
+    const a = pr(mx(i), 0, cz(j)), b = pr(mx(i), alt(i, j), cz(j));
+    lista.push({ d: Math.min(a.d, b.d) - 0.02, tipo: "h", a, b });
+  }
+  for (const c of clientes) {
+    if (c.contrato !== estado.contrato3d) continue;
+    const x = -1 + 2 * (c.meses - 1) / 69, z = -1 + 2 * Math.min(c.chamados, 8) / 8;
+    const p = pr(clamp(x, -1, 1), c.p * ALT * subida, z);
+    lista.push({ d: p.d + 0.004, tipo: "c", p, churn: c.churn });
+  }
+  lista.sort((a, b) => a.d - b.d);
+  for (const it of lista) {
+    if (it.tipo === "q") { poligono(it.pts); ctx.fillStyle = cor(it.pm); ctx.fill(); ctx.strokeStyle = rgba(P.tinta, 0.2); ctx.lineWidth = 0.6; ctx.stroke(); }
+    else if (it.tipo === "h") linha(it.a.x, it.a.y, it.b.x, it.b.y, rgba(P.tinta, 0.45), 1, [2, 3]);
+    else circulo(it.p.x, it.p.y, 2.8, it.churn ? P.tinta : P.cartao, P.tinta, 1);
+  }
+  // plano e curva de corte
+  const jc = estado.corteMostrado, zc = -1 + 2 * jc / 8;
+  const j0 = Math.floor(jc), j1 = Math.min(j0 + 1, nc - 1), fr = jc - j0;
+  poligono([pr(-1, 0, zc), pr(1, 0, zc), pr(1, ALT, zc), pr(-1, ALT, zc)]);
+  ctx.fillStyle = rgba(P.realce, 0.1); ctx.fill(); ctx.strokeStyle = rgba(P.realce, 0.75); ctx.lineWidth = 1; ctx.stroke();
+  const fatia = S.meses.map((_, i) => lerp(grade[j0][i], grade[j1][i], fr));
+  ctx.beginPath();
+  fatia.forEach((v, i) => { const p = pr(mx(i), v * ALT * subida, zc); i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); });
+  ctx.strokeStyle = P.realce; ctx.lineWidth = 3; ctx.stroke();
+  // eixos do chão
+  const zFrente = -zFundo, xFrente = -xFundo;
+  [1, 37, 70].forEach(mv => { const p = pr(-1 + 2 * (mv - 1) / 69, 0, zFrente * 1.12); texto(String(mv), p.x, p.y + 4, F.mono(10), P["tinta-2"], "center"); });
+  [0, 4, 8].forEach(cv => { const p = pr(xFrente * 1.12, 0, -1 + 2 * cv / 8); texto(String(cv), p.x, p.y + 4, F.mono(10), P["tinta-2"], "center"); });
+  const e1 = pr(0, 0, zFrente * 1.32), e2 = pr(xFrente * 1.34, 0, 0);
+  texto("tempo de casa (meses)", e1.x, e1.y + 6, F.mono(11, 500), P.tinta, "center");
+  texto("chamados", e2.x, e2.y + 6, F.mono(11, 500), P.tinta, "center");
+  texto(`contrato ${estado.contrato3d}`, 4, 22, F.disp(24, 600), P.tinta);
+  texto("arraste para girar", 4, 40, F.mono(10.5), P["tinta-2"]);
+  // gráfico 2D do corte
+  if (insetH > 0) {
+    const ix = 44, iy = H - insetH + 22, iw = Math.min(W - 64, 440), ih = insetH - 46;
+    caixa(ix - 40, iy - 26, iw + 52, insetH + 4, P.cartao, P["papel-2"]);
+    texto(`Corte em ${Math.round(estado.corte)} chamado${Math.round(estado.corte) === 1 ? "" : "s"}: a mesma curva, em 2D`, ix, iy - 8, F.mono(11, 600), P.realce);
+    for (const v of [0, 0.5, 1]) { linha(ix, iy + ih * (1 - v), ix + iw, iy + ih * (1 - v), P["papel-2"], 1); texto(fmt(v * 100, 0) + "%", ix - 5, iy + ih * (1 - v) + 3, F.mono(9.5), P["tinta-2"], "right"); }
+    ctx.beginPath();
+    fatia.forEach((v, i) => { const x = ix + iw * i / (nm - 1), y = iy + ih * (1 - v); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.strokeStyle = P.realce; ctx.lineWidth = 2; ctx.stroke();
+    for (const c of clientes) {
+      if (c.contrato !== estado.contrato3d || c.chamados !== Math.round(estado.corte)) continue;
+      circulo(ix + iw * (c.meses - 1) / 69, iy + ih * (1 - c.p), 2.6, c.churn ? P.tinta : P.cartao, P.tinta, 1);
+    }
+    texto("1 mês", ix, iy + ih + 13, F.mono(9.5), P["tinta-2"]);
+    texto("70 meses", ix + iw, iy + ih + 13, F.mono(9.5), P["tinta-2"], "right");
+  }
+}
+
+/* =====================================================================
+   CENA 5 · validação cruzada
+   ===================================================================== */
+function cena5(t) {
+  const [lr, gb] = D.validacao;
+  const compacto = W < 560;
+  const bx = 0, bw = W, by = compacto ? 46 : 70, bh = compacto ? 34 : 46;
+  const DUR = 1.5;
+  const rodada = Math.min(4, Math.floor(Math.max(0, t - 0.4) / DUR));
+  const fim = t > 0.4 + DUR * 5;
+  texto("Treino: 5.600 clientes em 5 partes de 1.120", bx, by - 16, F.mono(11), P["tinta-2"]);
+  for (let i = 0; i < 5; i++) {
+    const x = bx + i * bw / 5, w = bw / 5 - 4;
+    const val = !fim && i === rodada;
+    caixa(x, by, w, bh, val ? rgba(P.realce, 0.22) : rgba(P.tinta, 0.08), val ? P.realce : null, 2);
+    if (val) {
+      ctx.save(); ctx.beginPath(); ctx.rect(x, by, w, bh); ctx.clip();
+      for (let s = -bh; s < w; s += 7) linha(x + s, by + bh, x + s + bh, by, rgba(P.realce, 0.5), 1);
+      ctx.restore();
+    }
+    texto(val ? "validação" : "treino", x + w / 2, by + bh / 2 + 4, F.mono(compacto ? 10 : 11, val ? 600 : 400), val ? P.tinta : P["tinta-2"], "center");
+  }
+  // tabela de resultados por rodada
+  const ty = by + bh + (compacto ? 40 : 60);
+  const linhaH = clamp((H - ty - 96) / 2 - 12, 60, 150);
+  const colW = (W - (compacto ? 64 : 120)) / 6, x0 = compacto ? 64 : 120;
+  const escalaY = v => (v - 0.79) / (0.85 - 0.79);
+  texto("rodada", 0, ty - 10, F.mono(10.5), P["tinta-2"]);
+  for (let i = 0; i < 5; i++) texto(String(i + 1), x0 + colW * (i + 0.5), ty - 10, F.mono(11, i === rodada && !fim ? 600 : 400), P.tinta, "center");
+  texto("média", x0 + colW * 5.5, ty - 10, F.mono(11, 600), P.tinta, "center");
+  [[lr, "Regressão logística", P.fica], [gb, "Gradient boosting", P["tinta-2"]]].forEach(([m, nome, cor], r) => {
+    const y = ty + r * (linhaH + 12);
+    texto(nome, 0, y + 14, F.txt(compacto ? 12 : 14, 600), P.tinta);
+    linha(x0, y + linhaH, W, y + linhaH, P["papel-2"], 1);
+    m.folds.forEach((v, i) => {
+      const visivel = t > 0.4 + DUR * i + DUR * 0.55;
+      if (!visivel) return;
+      const k = saida((t - (0.4 + DUR * i + DUR * 0.55)) / 0.4);
+      const h = escalaY(v) * (linhaH - 26) * k, cx = x0 + colW * (i + 0.5);
+      ctx.fillStyle = cor; ctx.fillRect(cx - colW * 0.22, y + linhaH - h, colW * 0.44, h);
+      texto(fmt(v, 3), cx, y + linhaH - h - 5, F.mono(compacto ? 9.5 : 11), P.tinta, "center");
+    });
+    if (fim) {
+      const k = saida((t - 0.4 - DUR * 5) / 0.5), cx = x0 + colW * 5.5, h = escalaY(m.roc_auc) * (linhaH - 26) * k;
+      ctx.fillStyle = cor; ctx.fillRect(cx - colW * 0.26, y + linhaH - h, colW * 0.52, h);
+      texto(fmt(m.roc_auc, 3), cx, y + linhaH - h - 5, F.mono(compacto ? 10 : 12, 600), P.tinta, "center");
+    }
+  });
+  if (fim) {
+    const k = saida((t - 0.9 - DUR * 5) / 0.5);
+    ctx.globalAlpha *= k;
+    const y = ty + 2 * (linhaH + 12) + 18;
+    texto("Vence a regressão logística em todas as rodadas.", 0, y, F.txt(compacto ? 14 : 16, 600), P.fica);
+    texto(`No teste, que ficou de fora até agora: ROC-AUC ${fmt(D.teste.roc_auc, 3)}.`, 0, y + 22, F.txt(compacto ? 13 : 15), P["tinta-2"]);
+    ctx.globalAlpha /= k;
+  } else {
+    texto(`rodada ${rodada + 1} de 5: treina em 4.480, valida em 1.120`, 0, by + bh + 22, F.mono(11), P["tinta-2"]);
+  }
+}
+
+/* =====================================================================
+   CENA 6 · limiar e lucro
+   ===================================================================== */
+const ordenados = clientes.map(c => c).sort((a, b) => a.p - b.p);
+function pontoCurva(tl) { return D.curva.reduce((m, c) => Math.abs(c.t - tl) < Math.abs(m.t - tl) ? c : m, D.curva[0]); }
+function cena6(t) {
+  estado.limiarMostrado = lerp(estado.limiarMostrado, estado.limiar, movimentoReduzido.matches ? 1 : 0.2);
+  const lim = estado.limiarMostrado;
+  const compacto = W < 560;
+  const gx = compacto ? 46 : 64, gw = W - gx - 8, gy = compacto ? 64 : 92, gh = H * (compacto ? 0.42 : 0.46);
+  const curva = D.curva;
+  const yMin = -25000, yMax = 55000;
+  const X = v => gx + (v - 0.02) / 0.96 * gw, Y = v => gy + (1 - (v - yMin) / (yMax - yMin)) * gh;
+  const k = saida(t / 1.0);
+  for (let v = -20000; v <= 50000; v += 10000) {
+    linha(gx, Y(v), gx + gw, Y(v), v === 0 ? P["tinta-2"] : P["papel-2"], 1);
+    texto((v / 1000).toLocaleString("pt-BR") + " mil", gx - 6, Y(v) + 3, F.mono(9.5), P["tinta-2"], "right");
+  }
+  texto("sem campanha", gx + gw, Y(0) + 13, F.mono(10), P["tinta-2"], "right");
+  for (const v of [0.1, 0.3, 0.5, 0.7, 0.9]) texto(fmt(v, 1), X(v), gy + gh + 15, F.mono(10), P["tinta-2"], "center");
+  texto("limiar", gx + gw, gy + gh + 30, F.mono(10.5), P["tinta-2"], "right");
+  // área de lucro positivo
+  ctx.beginPath(); ctx.moveTo(X(curva[0].t), Y(0));
+  const n = Math.max(2, Math.floor(curva.length * k));
+  for (let i = 0; i < n; i++) ctx.lineTo(X(curva[i].t), Y(Math.max(0, curva[i].lucro)));
+  ctx.lineTo(X(curva[n - 1].t), Y(0)); ctx.closePath(); ctx.fillStyle = rgba(P.fica, 0.12); ctx.fill();
+  // curva fora da amostra (onde o limiar foi escolhido)
+  ctx.beginPath(); for (let i = 0; i < n; i++) { const px = X(curva[i].t), py = Y(curva[i].lucro_oof * 1400 / 5600); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+  ctx.strokeStyle = P["tinta-2"]; ctx.lineWidth = 1.2; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.setLineDash([]);
+  ctx.beginPath(); for (let i = 0; i < n; i++) { const px = X(curva[i].t), py = Y(curva[i].lucro); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+  ctx.strokeStyle = P.fica; ctx.lineWidth = 2.4; ctx.stroke();
+  // ponto atual
+  const pc = pontoCurva(lim);
+  const cor = pc.lucro >= 0 ? P.fica : P.risco;
+  linha(X(lim), gy, X(lim), gy + gh, P.tinta, 1, [3, 3]);
+  circulo(X(lim), Y(pc.lucro), 6, cor);
+  texto(brl(pc.lucro), X(lim) + (lim > 0.7 ? -10 : 10), Y(pc.lucro) - 10, F.disp(compacto ? 20 : 24, 700), cor, lim > 0.7 ? "right" : "left");
+  texto("Lucro da campanha no teste", gx, compacto ? 24 : 34, F.mono(11), P["tinta-2"]);
+  const resumo = `${fmt(pc.acionados)} de 1.400 recebem oferta · ${fmt(pc.churn_acionados)} iam cancelar`;
+  texto(resumo, gx, compacto ? 44 : 58, F.txt(compacto ? 12.5 : 15, 600), P.tinta);
+  // tira de clientes ordenados pela probabilidade
+  const sy = gy + gh + 52, sh = H - sy - 30;
+  if (sh > 30) {
+    const larg = gw / ordenados.length;
+    const corteI = ordenados.findIndex(c => c.p >= lim);
+    const xc = gx + (corteI < 0 ? ordenados.length : corteI) * larg;
+    ctx.fillStyle = rgba(P.realce, 0.12); ctx.fillRect(xc, sy - 4, gx + gw - xc, sh + 8);
+    ordenados.forEach((c, i) => {
+      const h = Math.max(2, c.p * sh);
+      ctx.fillStyle = c.churn ? P.risco : rgba(P["tinta-2"], 0.55);
+      ctx.fillRect(gx + i * larg, sy + sh - h, Math.max(1, larg - 0.6), h);
+    });
+    linha(xc, sy - 8, xc, sy + sh + 4, P.tinta, 1.5);
+    texto("recebem oferta →", xc + 6, sy + 8, F.mono(10.5, 600), P.tinta);
+    texto("420 clientes da amostra, ordenados pela chance prevista (vermelho = cancelou)", gx, sy + sh + 18, F.mono(10), P["tinta-2"]);
+  }
+}
+
+/* =====================================================================
+   CENA 7 · importância por permutação
+   ===================================================================== */
+const NOMES_IMP = { meses_cliente: "tempo de casa", contrato: "contrato", total_gasto: "total gasto", chamados_suporte: "chamados", pagamento: "pagamento", atrasos_pagamento: "atrasos", internet: "internet", dependentes: "dependentes", regiao: "região", streaming: "streaming", idade: "idade", mensalidade: "mensalidade" };
+function cena7(t) {
+  const imp = Object.entries(D.importancia).slice(0, 8);
+  const compacto = W < 640;
+  const ciclo = 3.2, foco = Math.floor(t / ciclo) % 3, tc = t % ciclo;
+  // mini tabela com a coluna embaralhada
+  const amostra = clientes.slice(0, 7);
+  const tw = compacto ? W : W * 0.4, th = compacto ? H * 0.36 : H * 0.6;
+  const cols = [["meses", c => String(c.meses)], ["contrato", c => c.contrato], ["chamados", c => String(c.chamados)]];
+  const cw = tw / 3, rh = Math.min(38, (th - 40) / amostra.length);
+  texto("amostra do teste", 0, 18, F.mono(10.5), P["tinta-2"]);
+  cols.forEach(([nome, f], ci) => {
+    const destaque = ci === foco;
+    texto(nome, ci * cw + 6, 44, F.mono(11, 600), destaque ? P.realce : P.tinta);
+    amostra.forEach((c, ri) => {
+      let rr = ri;
+      if (destaque) {
+        const fase = suave((tc - 0.4) / 1.1) * (1 - suave((tc - 2.5) / 0.6));
+        const destino = (ri * 3 + 2) % amostra.length;
+        rr = lerp(ri, destino, fase);
+      }
+      const y = 52 + rr * rh;
+      if (destaque) caixa(ci * cw + 2, y + 2, cw - 6, rh - 4, rgba(P.realce, 0.14));
+      texto(f(c), ci * cw + 6, y + rh * 0.68, F.mono(Math.min(12, rh * 0.5)), P.tinta);
+    });
+  });
+  const nomeFoco = ["meses_cliente", "contrato", "chamados_suporte"][foco];
+  const queda = D.importancia[nomeFoco];
+  const fase = suave((tc - 1.2) / 0.8) * (1 - suave((tc - 2.6) / 0.5));
+  const auc = D.teste.roc_auc - queda * fase;
+  texto(`ROC-AUC ${fmt(auc, 3)}`, 0, 52 + amostra.length * rh + 30, F.disp(compacto ? 24 : 30, 700), fase > 0.05 ? P.risco : P.tinta);
+  texto(`embaralhando "${NOMES_IMP[nomeFoco]}"`, 0, 52 + amostra.length * rh + 48, F.mono(10.5), P["tinta-2"]);
+  // barras de importância
+  const bx = compacto ? 0 : W * 0.48, bw = compacto ? W : W * 0.52, by = compacto ? th + 70 : 30;
+  const bh = Math.min(46, ((compacto ? H - by : H - 60) - 10) / imp.length);
+  const maxV = imp[0][1];
+  const rotW = 104;
+  imp.forEach(([nome, v], i) => {
+    const y = by + i * bh;
+    const k = saida((t - 0.1 - i * 0.08) / 0.6);
+    const ativo = nome === nomeFoco;
+    texto(NOMES_IMP[nome] || nome, bx + rotW - 8, y + bh * 0.62, F.txt(13, ativo ? 600 : 400), ativo ? P.realce : P.tinta, "right");
+    const w = Math.max(1.5, (v / maxV) * (bw - rotW - 60) * k);
+    ctx.fillStyle = ativo ? P.realce : P.faixa;
+    ctx.fillRect(bx + rotW, y + bh * 0.22, w, bh * 0.56);
+    texto("−" + fmt(v, 3), bx + rotW + w + 6, y + bh * 0.64, F.mono(10.5), P["tinta-2"]);
+  });
+}
+
+/* =====================================================================
+   CENA 8 · API
+   ===================================================================== */
+function cena8(t) {
+  const c = estado.sim;
+  const a = avaliarCliente(c);
+  const compacto = W < 640;
+  const ciclo = 4.2, tc = movimentoReduzido.matches ? 3.5 : t % ciclo;
+  const req = [
+    "POST /prever", "{",
+    `  "contrato": "${c.contrato}",`, `  "internet": "${c.internet}",`, `  "pagamento": "${c.pagamento}",`,
+    `  "meses_cliente": ${c.meses_cliente},`, `  "chamados_suporte": ${c.chamados_suporte},`,
+    `  "atrasos_pagamento": ${c.atrasos_pagamento},`, `  "mensalidade": ${c.mensalidade.toFixed(1)},`,
+    `  "total_gasto": ${c.total_gasto.toFixed(1)},`, "  ...", "}"];
+  if (compacto) req.splice(3, 2), req.splice(5, 2);
+  const resp = ["200 OK", "{", `  "probabilidade_churn": ${a.p.toFixed(4)},`, `  "acionar_retencao": ${a.p >= D.limiar},`, `  "limiar": ${D.limiar}`, "}"];
+  const lh = compacto ? 15 : 18, fonte = F.mono(compacto ? 10.5 : 12);
+  const cardW = compacto ? W : W * 0.36;
+  const reqX = 0, reqY = 10, reqH = req.length * lh + 18;
+  caixa(reqX, reqY, cardW, reqH, P.cartao, P["papel-2"]);
+  req.forEach((l, i) => texto(l, reqX + 12, reqY + 20 + i * lh, i === 0 ? F.mono(compacto ? 10.5 : 12, 600) : fonte, i === 0 ? P.faixa : P.tinta));
+  const etapas = ["features", "escala + 0/1", "regressão logística"];
+  let ex, ey, ew, eh, eg;
+  if (compacto) { ew = (W - 16) / 3; eh = 38; eg = 8; ex = 0; ey = reqY + reqH + 20; }
+  else { ew = W * 0.2; eh = 50; eg = 14; ex = W * 0.42; ey = reqY + 20; }
+  const caixas = etapas.map((_, i) => compacto ? { x: ex + i * (ew + eg), y: ey, w: ew, h: eh } : { x: ex, y: ey + i * (eh + eg + 18), w: ew, h: eh });
+  caixas.forEach((b, i) => {
+    const n = etapas[i];
+    const ativo = tc > 0.8 + i * 0.55 && tc < 0.8 + (i + 1) * 0.55 + 0.2;
+    caixa(b.x, b.y, b.w, b.h, ativo ? rgba(P.faixa, 0.16) : P.cartao, ativo ? P.faixa : P["papel-2"]);
+    texto(n, b.x + b.w / 2, b.y + b.h / 2 + 4, F.mono(compacto ? 10 : 12, 600), P.tinta, "center");
+    if (i < 2) {
+      if (compacto) linha(b.x + b.w + 1, b.y + b.h / 2, b.x + b.w + eg - 1, b.y + b.h / 2, P.pontilhado, 1.5);
+      else linha(b.x + b.w / 2, b.y + b.h + 2, b.x + b.w / 2, b.y + b.h + eg + 16, P.pontilhado, 1.5);
+    }
+  });
+  const ultimo = caixas[2];
+  const respX = compacto ? 0 : W * 0.66, respY = compacto ? ultimo.y + ultimo.h + 20 : ultimo.y - 10;
+  const rk = saida((tc - 2.6) / 0.4);
+  // pacote viajando
+  const trajeto = compacto
+    ? [[cardW / 2, reqY + reqH], [caixas[0].x + caixas[0].w / 2, caixas[0].y], [caixas[2].x + caixas[2].w / 2, caixas[2].y + caixas[2].h], [W * 0.3, respY]]
+    : [[cardW, reqY + reqH / 2], [caixas[0].x, caixas[0].y + caixas[0].h / 2], [caixas[2].x + caixas[2].w / 2, caixas[2].y + caixas[2].h / 2], [respX, respY + 20]];
+  const tp = clamp((tc - 0.2) / 2.4, 0, 1);
+  const seg = Math.min(2, Math.floor(tp * 3)), fr = tp * 3 - seg;
+  const [x1, y1] = trajeto[seg], [x2, y2] = trajeto[seg + 1];
+  if (tp > 0 && tp < 1) circulo(lerp(x1, x2, suave(fr)), lerp(y1, y2, suave(fr)), 6, P.realce);
+  if (rk > 0) {
+    ctx.globalAlpha *= rk;
+    const rw = compacto ? W - 2 : W * 0.34 - 2;
+    caixa(respX, respY, rw, resp.length * lh + 18, P.cartao, a.p >= D.limiar ? P.risco : P.fica);
+    resp.forEach((l, i) => texto(l, respX + 12, respY + 20 + i * lh, i === 0 ? F.mono(compacto ? 10.5 : 12, 600) : fonte, i === 0 ? (a.p >= D.limiar ? P.risco : P.fica) : P.tinta));
+    ctx.globalAlpha /= rk;
+  }
+}
+
+// cada cena com a altura máxima do seu conteúdo; a sobra vira margem e a cena fica centrada
+const CENAS = [[cena0, 700], [cena1, 480], [cena2, 1e4], [cena3, 1e4], [cena4, 1e4], [cena5, 560], [cena6, 1e4], [cena7, 540], [cena8, 440]];
+let erroMostrado = false;
+function desenharCena(i, t) {
+  const [fn, max] = CENAS[i], Hreal = H, h = Math.min(H, max);
+  ctx.save(); ctx.translate(0, (Hreal - h) / 2); H = h;
+  try { fn(t); } catch (e) { if (!erroMostrado) { erroMostrado = true; console.error(e); } }
+  H = Hreal; ctx.restore();
+}
+
+/* ---------- laço de desenho ---------- */
+function redimensionar() {
+  const r = tela.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = Math.max(1, r.width); H = Math.max(1, r.height);
+  tela.width = Math.round(W * dpr); tela.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function quadro() {
+  requestAnimationFrame(quadro);
+  const t = agora();
+  ctx.clearRect(0, 0, W, H);
+  const trans = movimentoReduzido.matches ? 1 : saida((t - estado.tTroca) / 0.45);
+  const tAtivo = movimentoReduzido.matches ? 99 : t - estado.tAtivo;
+  if (trans < 1 && estado.anterior >= 0) {
+    ctx.globalAlpha = 1 - trans;
+    desenharCena(estado.anterior, t - estado.tAtivoAnterior);
+  }
+  ctx.globalAlpha = trans;
+  desenharCena(estado.passo, tAtivo);
+  ctx.globalAlpha = 1;
+}
+function ativar(i) {
+  if (i === estado.passo) return;
+  estado.anterior = estado.passo; estado.tAtivoAnterior = estado.tAtivo;
+  estado.passo = i; estado.tTroca = agora(); estado.tAtivo = agora();
+  if (i === 2) estado.tExemplo = agora();
+  passos.forEach(p => p.classList.toggle("ativo", +p.dataset.passo === i));
+  legenda.textContent = LEGENDAS[i];
+  tela.classList.toggle("giravel", i === 4);
+}
+
+/* ---------- rolagem: qual passo está na linha de leitura ---------- */
+const passos = [...document.querySelectorAll(".passo")];
+const celular = matchMedia("(max-width: 900px)");
+let pendente = false;
+function verificarPasso() {
+  pendente = false;
+  const linhaLeitura = innerHeight * (celular.matches ? 0.72 : 0.5);
+  let escolhido = 0;
+  passos.forEach((p, i) => { if (p.getBoundingClientRect().top <= linhaLeitura) escolhido = i; });
+  ativar(escolhido);
+}
+addEventListener("scroll", () => { if (!pendente) { pendente = true; requestAnimationFrame(verificarPasso); } }, { passive: true });
+
+/* ---------- controles ---------- */
+function escolherChip(grupo, botao) { grupo.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b === botao))); }
+document.getElementById("exemplos").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  escolherChip(e.currentTarget, b); estado.exemplo = +b.dataset.ex; estado.tExemplo = agora();
+});
+document.querySelectorAll("#simulador .chips").forEach(g => g.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  escolherChip(g, b); estado.sim[g.dataset.campo] = b.dataset.valor;
+}));
+function atualizarSim() {
+  const s = estado.sim;
+  s.meses_cliente = +document.getElementById("s-meses").value;
+  s.chamados_suporte = +document.getElementById("s-chamados").value;
+  s.atrasos_pagamento = +document.getElementById("s-atrasos").value;
+  s.mensalidade = +document.getElementById("s-mensalidade").value;
+  s.total_gasto = s.mensalidade * s.meses_cliente;
+  document.getElementById("o-meses").textContent = `${s.meses_cliente} ${s.meses_cliente === 1 ? "mês" : "meses"}`;
+  document.getElementById("o-chamados").textContent = s.chamados_suporte;
+  document.getElementById("o-atrasos").textContent = s.atrasos_pagamento;
+  document.getElementById("o-mensalidade").textContent = `R$ ${s.mensalidade}`;
+}
+["s-meses", "s-chamados", "s-atrasos", "s-mensalidade"].forEach(id => document.getElementById(id).addEventListener("input", atualizarSim));
+document.getElementById("contrato3d").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  escolherChip(e.currentTarget, b); estado.contrato3d = b.dataset.valor; estado.tAtivo = agora();
+});
+document.getElementById("corte").addEventListener("input", e => {
+  estado.corte = +e.target.value;
+  document.getElementById("o-corte").textContent = `${estado.corte} chamado${estado.corte === 1 ? "" : "s"}`;
+});
+document.getElementById("limiar").addEventListener("input", e => {
+  estado.limiar = +e.target.value;
+  document.getElementById("o-limiar").textContent = fmt(estado.limiar, 2);
+});
+
+/* ---------- girar a superfície ---------- */
+tela.addEventListener("pointerdown", e => {
+  if (estado.passo !== 4) return;
+  estado.arrasto = { x: e.clientX, y: e.clientY, yaw: estado.cam.yaw, pitch: estado.cam.pitch, tipo: e.pointerType };
+  tela.setPointerCapture(e.pointerId);
+});
+tela.addEventListener("pointermove", e => {
+  const a = estado.arrasto; if (!a) return;
+  estado.cam.yaw = a.yaw + (e.clientX - a.x) * 0.008;
+  if (a.tipo === "mouse") estado.cam.pitch = clamp(a.pitch + (e.clientY - a.y) * 0.006, 0.12, 1.25);
+  estado.ultimoArrasto = agora();
+});
+const soltar = () => { estado.arrasto = null; estado.ultimoArrasto = agora(); };
+tela.addEventListener("pointerup", soltar);
+tela.addEventListener("pointercancel", soltar);
+
+/* ---------- tema ---------- */
+const reler = () => lerCores();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", reler);
+new MutationObserver(reler).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+lerCores();
+new ResizeObserver(redimensionar).observe(tela);
+redimensionar();
+atualizarSim();
+legenda.textContent = LEGENDAS[0];
+estado.tAtivo = agora();
+verificarPasso();
+requestAnimationFrame(quadro);
+})();
+</script>
+</body>
+</html>
