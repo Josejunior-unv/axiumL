@@ -5,13 +5,13 @@ testes, README com os resultados e roda com um comando. Todos geram os próprios
 dados sintéticos com semente fixa: não precisa baixar nada e os números do
 README se reproduzem.
 
-| # | Projeto | O que faz | Técnicas |
-|---|---|---|---|
-| 1 | [Previsão de churn](01-previsao-churn/) | Prevê cancelamento de clientes de telecom e escolhe para quem oferecer retenção | scikit-learn, validação cruzada, limiar ótimo por lucro, importância por permutação, API FastAPI |
-| 2 | [Previsão de demanda](02-previsao-demanda/) | Prevê 4 semanas de vendas diárias de 50 séries de varejo, com intervalo de 80% | gradient boosting global, perda Poisson e quantílica, features sem vazamento, backtest com origem móvel |
-| 3 | [Detecção de fraude](03-deteccao-fraude/) | Pontua o risco de transações de cartão com orçamento limitado de alertas | features comportamentais causais, Isolation Forest, gradient boosting, PR-AUC, validação temporal |
-| 4 | [Sistema de recomendação](04-sistema-recomendacao/) | Recomenda filmes a partir do histórico de visualização | ALS implícito do zero em NumPy, ItemKNN, Recall@k, NDCG@k, ajuste em validação |
-| 5 | [Agente text-to-SQL](05-agente-text-to-sql/) | Responde perguntas em português consultando um banco SQLite | Claude com tool use, SQL somente leitura em três camadas, acurácia de execução |
+| # | Projeto | O que faz | Técnicas | Animação |
+|---|---|---|---|---|
+| 1 | [Previsão de churn](01-previsao-churn/) | Prevê cancelamento de clientes de telecom e escolhe para quem oferecer retenção | scikit-learn, validação cruzada, limiar ótimo por lucro, importância por permutação, API FastAPI | [Fatura de Risco](01-previsao-churn/animacao/index.html) |
+| 2 | [Previsão de demanda](02-previsao-demanda/) | Prevê 4 semanas de vendas diárias de 50 séries de varejo, com intervalo de 80% | gradient boosting global, perda Poisson e quantílica, features sem vazamento, backtest com origem móvel | [Quadro de Demanda](02-previsao-demanda/animacao/index.html) |
+| 3 | [Detecção de fraude](03-deteccao-fraude/) | Pontua o risco de transações de cartão com orçamento limitado de alertas | features comportamentais causais, Isolation Forest, gradient boosting, PR-AUC, validação temporal | [Mesa Antifraude](03-deteccao-fraude/animacao/index.html) |
+| 4 | [Sistema de recomendação](04-sistema-recomendacao/) | Recomenda filmes a partir do histórico de visualização | ALS implícito do zero em NumPy, ItemKNN, Recall@k, NDCG@k, ajuste em validação | [Gosto em Duas Tintas](04-sistema-recomendacao/animacao/index.html) |
+| 5 | [Agente text-to-SQL](05-agente-text-to-sql/) | Responde perguntas em português consultando um banco SQLite | Claude com tool use, SQL somente leitura em três camadas, acurácia de execução | [Cofre de Consultas](05-agente-text-to-sql/animacao/index.html) |
 
 ## Destaques
 
@@ -26,6 +26,10 @@ README se reproduzem.
 - **Text-to-SQL**: o agente não consegue escrever no banco. Os testes tentam
   `DROP`, `UPDATE`, `ATTACH` e outras escritas e conferem que o arquivo fica
   intacto.
+
+## Animações
+
+Cada projeto tem uma animação interativa em `animacao/index.html`, com identidade visual própria e os números reais do projeto: uma fatura de operadora, um quadro de horários de loja, um dossiê impresso como papel-moeda, um cartaz em risografia e um diorama isométrico em corte. Elas combinam 2D e 3D (superfícies, calendários e nuvens de pontos que giram com o mouse ou o dedo), funcionam no celular e respeitam a preferência por menos movimento. Quatro delas seguem o tema claro ou escuro do sistema; o cartaz em risografia é sempre claro, porque a sobreposição de tintas só funciona sobre papel. Basta abrir o arquivo no navegador.
 
 ## Como rodar
 
