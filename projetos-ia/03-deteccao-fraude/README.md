@@ -64,6 +64,12 @@ python -m fraude.avaliar --orcamento 0.01  # 1% de alertas
 pytest
 ```
 
+## Animação
+
+`animacao/index.html` explica o projeto de forma visual e interativa, com os números reais desta pasta. Um dossiê em seis peças segue um cartão real com 7 fraudes (o modelo pega 5), mostra as janelas de tempo que só olham para trás e o truque do `searchsorted`, o Isolation Forest isolando pontos com cortes aleatórios, a nuvem de variáveis em 3D e a posição de cada uma das 119 fraudes no ranking de cada detector.
+
+Abra o arquivo no navegador; não precisa de servidor. Depois de mudar o código, refaça os dados embutidos na página com `python animacao/exportar_dados.py`.
+
 ## Estrutura
 
 ```
