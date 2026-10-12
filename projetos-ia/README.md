@@ -42,6 +42,31 @@ node projetos-ia/video/gravar.js                              # tudo; ou: churn,
 
 Os arquivos saem em `media/videos/projetos-ia/`, pasta que o git ignora.
 
+### Reels para o Instagram
+
+`video/reels.js` grava as mesmas animações em pé (1080 × 1920), no layout de celular, com uma cartela de abertura que serve de capa e uma de encerramento. O topo e a base do quadro ficam lisos, porque é ali que o Instagram desenha título, legenda e botões.
+
+Cada reel tem trilha própria, composta por `video/trilhas/compor.py` no tamanho exato do vídeo:
+
+| Projeto | Trilha |
+|---|---|
+| Fatura de Risco | 96 bpm, ré menor: pulso eletrônico limpo, arpejo com eco |
+| Quadro de Demanda | 120 bpm: nu-disco, baixo em oitavas, guitarra funk e cordas |
+| Mesa Antifraude | 84 bpm com swing: jazz noir, vassourinha, contrabaixo andando e vibrafone |
+| Gosto em Duas Tintas | 90 bpm: lo-fi com chiado de disco; marimba e flauta se respondem, uma tinta cada |
+| Cofre de Consultas | 110 bpm: synthwave, arpejo que abre o filtro e cliques de fechadura |
+
+O roteiro de cada reel é medido em compassos da sua trilha, então as trocas de cena caem na cabeça do compasso, com prato ou virada. A introdução e o respiro do meio ficam mais baixos, e a mixagem sai em −14 LUFS com pico abaixo de −1 dBTP, o nível que o Instagram usa. Os timbres eletrônicos são sintetizados em NumPy; os acústicos vêm do banco FluidR3_GM (licença MIT), tocado pelo FluidSynth.
+
+```bash
+sudo apt install fluidsynth fluid-soundfont-gm ffmpeg               # uma vez
+pip install -r projetos-ia/video/trilhas/requirements.txt          # uma vez
+node projetos-ia/video/reels.js                                      # os cinco; ou um nome, como no gravar.js
+node projetos-ia/video/reels.js --previa cofre                       # só JPEGs a cada 0,5 s, para ajustar o quadro
+```
+
+Saem em `media/videos/projetos-ia/reels/`, com a trilha também separada em `.m4a`. Se o Python com as bibliotecas não for o `python3` do sistema, aponte a variável `PYTHON` para ele.
+
 ## Como rodar
 
 Cada pasta é autocontida (Python 3.10+):

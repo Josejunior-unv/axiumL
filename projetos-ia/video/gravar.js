@@ -18,8 +18,8 @@ const { chromium } = require("playwright");
 const RAIZ = path.resolve(__dirname, "..");
 const SAIDA = path.resolve(RAIZ, "..", "media", "videos", "projetos-ia");
 const FPS = 30;
-const VIEWPORT = { width: 1280, height: 720 };
-const ESCALA = 1.5; // 1280 × 720 com escala 1,5 = vídeo 1920 × 1080, com texto grande o bastante para ler
+// 1280 × 720 com escala 1,5 = vídeo 1920 × 1080, com texto grande o bastante para ler
+const PAISAGEM = { viewport: { width: 1280, height: 720 }, escala: 1.5 };
 const EXECUTAVEL = process.env.CHROMIUM || undefined;
 
 // relógio controlado: performance.now e requestAnimationFrame passam a obedecer ao script
@@ -124,10 +124,9 @@ const ROTEIROS = {
 
 /* ---------------- gravação ---------------- */
 
-async function gravar(navegador, nome) {
-  const r = ROTEIROS[nome];
-  const destino = path.join(SAIDA, `${r.titulo}.mp4`);
-  const pagina = await navegador.newPage({ viewport: VIEWPORT, deviceScaleFactor: ESCALA, colorScheme: "light", reducedMotion: "no-preference" });
+// grava o roteiro `r` em `destino`; com `previa` (uma pasta), só salva um JPEG a cada `cada` quadros, sem gerar vídeo
+async function gravar(navegador, r, destino, formato = PAISAGEM, { previa = null, cada = 15 } = {}) {
+  const pagina = await navegador.newPage({ viewport: formato.viewport, deviceScaleFactor: formato.escala, colorScheme: "light", reducedMotion: "no-preference" });
   const erros = [];
   pagina.on("pageerror", e => erros.push(e.message));
   pagina.on("console", m => { if (m.type() === "error") erros.push(m.text()); });
@@ -136,11 +135,16 @@ async function gravar(navegador, nome) {
   await pagina.evaluate(() => document.fonts.ready);
   await pagina.waitForTimeout(400);
   await pagina.addStyleTag({ content: CSS_BASE + (r.css || "") });
+  if (r.preparar) await pagina.evaluate(r.preparar.js, r.preparar.arg);
   await pagina.evaluate(() => window.__avancar(0));
 
-  const ffmpeg = spawn("ffmpeg", ["-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", String(FPS), "-i", "-",
-    "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-movflags", "+faststart", destino]);
-  const fimDoFfmpeg = new Promise((ok, falha) => ffmpeg.on("close", c => c === 0 ? ok() : falha(new Error(`ffmpeg saiu com ${c}`))));
+  let ffmpeg = null, fimDoFfmpeg = Promise.resolve();
+  if (previa) fs.mkdirSync(previa, { recursive: true });
+  else {
+    ffmpeg = spawn("ffmpeg", ["-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", String(FPS), "-i", "-",
+      "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-movflags", "+faststart", destino]);
+    fimDoFfmpeg = new Promise((ok, falha) => ffmpeg.on("close", c => c === 0 ? ok() : falha(new Error(`ffmpeg saiu com ${c}`))));
+  }
   const escrever = buf => new Promise(ok => { if (ffmpeg.stdin.write(buf)) ok(); else ffmpeg.stdin.once("drain", ok); });
 
   let quadros = 0;
@@ -158,16 +162,19 @@ async function gravar(navegador, nome) {
       for (const [k, a] of (seg.acoes || []).entries()) if (!feitas.has(k) && ts >= a.t) { feitas.add(k); await pagina.evaluate(a.js, a.arg); }
       for (const v of seg.varreduras || []) if (ts >= v.t0 && ts <= v.t1 + 1 / FPS) { const a = v.quadro(ts); await pagina.evaluate(a.js, a.arg); }
       await pagina.evaluate(ms => window.__avancar(ms), 1000 / FPS);
-      await escrever(await pagina.screenshot({ type: "jpeg", quality: 95 }));
+      if (!previa) await escrever(await pagina.screenshot({ type: "jpeg", quality: 95 }));
+      else if (quadros % cada === 0) await pagina.screenshot({ type: "jpeg", quality: 80, path: path.join(previa, `${String(quadros).padStart(5, "0")}.jpg`) });
       quadros++;
     }
   }
-  ffmpeg.stdin.end();
+  if (ffmpeg) ffmpeg.stdin.end();
   await fimDoFfmpeg;
   await pagina.close();
-  console.log(`${r.titulo}: ${quadros} quadros (${(quadros / FPS).toFixed(1)} s)${erros.length ? " · erros: " + erros.join(" | ") : ""}`);
+  console.log(`${path.basename(destino)}: ${quadros} quadros (${(quadros / FPS).toFixed(1)} s)${erros.length ? " · erros: " + erros.join(" | ") : ""}`);
   return destino;
 }
+
+const abrirNavegador = () => chromium.launch({ executablePath: EXECUTAVEL, proxy: process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined, args: ["--ignore-certificate-errors"] });
 
 function duracao(arq) {
   return parseFloat(execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", arq]).toString());
@@ -188,12 +195,14 @@ function juntar(arquivos, destino, fusao = 0.6) {
   console.log(`${path.basename(destino)}: ${duracao(destino).toFixed(1)} s`);
 }
 
-(async () => {
+module.exports = { FPS, SAIDA, CSS_BASE, suave, clicar, faixa, varrer, topoDe, gravar, duracao, abrirNavegador };
+
+if (require.main === module) (async () => {
   fs.mkdirSync(SAIDA, { recursive: true });
   const pedidos = process.argv.slice(2);
   const nomes = pedidos.length ? pedidos.filter(n => ROTEIROS[n]) : Object.keys(ROTEIROS);
-  const navegador = await chromium.launch({ executablePath: EXECUTAVEL, proxy: process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined, args: ["--ignore-certificate-errors"] });
-  for (const nome of nomes) await gravar(navegador, nome);
+  const navegador = await abrirNavegador();
+  for (const nome of nomes) await gravar(navegador, ROTEIROS[nome], path.join(SAIDA, `${ROTEIROS[nome].titulo}.mp4`));
   await navegador.close();
   if (!pedidos.length || pedidos.includes("completo")) {
     const ordem = ["abertura", "churn", "demanda", "fraude", "recomendacao", "cofre", "encerramento"].map(n => path.join(SAIDA, `${ROTEIROS[n].titulo}.mp4`));
