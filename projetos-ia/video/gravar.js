@@ -44,13 +44,16 @@ const varrer = (id, de, ate, t0, t1, passo = 1) => ({ t0, t1, quadro: t => { con
 
 const CSS_BASE = `html { scrollbar-width: none; } ::-webkit-scrollbar { display: none; } * { caret-color: transparent; }`;
 
+// posição de rolagem que deixa um elemento a `margem` px do topo da tela
+const topoDe = (seletor, margem) => ({ js: ([s, m]) => document.querySelector(s).getBoundingClientRect().top + scrollY - m, arg: [seletor, margem] });
+
 // posição de rolagem que centraliza um passo da história do churn
 const centroDoPasso = i => ({ js: i => { const el = document.querySelector(`.passo[data-passo='${i}']`); const r = el.getBoundingClientRect(); return Math.max(0, r.top + scrollY - (innerHeight - r.height) / 2); }, arg: i });
 
 const ROTEIROS = {
   churn: {
     titulo: "01-fatura-de-risco", pagina: "01-previsao-churn/animacao/index.html",
-    css: `.pagina { max-width: none; } .passo { transition: none !important; }`,
+    css: `.pagina { max-width: none; } .passo { transition: none !important; } .historia { grid-template-columns: minmax(0, 22rem) minmax(0, 1fr) !important; }`,
     segmentos: [
       { dur: 5 },
       { rolarPara: centroDoPasso(1), dur: 6.5 },
@@ -67,9 +70,10 @@ const ROTEIROS = {
   demanda: {
     titulo: "02-quadro-de-demanda", pagina: "02-previsao-demanda/animacao/index.html",
     // o player troca de capítulo sozinho; no vídeo, só os títulos dos outros capítulos aparecem
-    css: `.barra, .notas { display: none !important; } #tela { height: 520px !important; }
+    css: `.barra, .notas { display: none !important; } #tela { height: 676px !important; } body { padding-bottom: 400px; }
           .capitulos li button:not([aria-current]) .d { display: none; } .capitulos li button { padding-block: 9px 10px; }`,
-    segmentos: [{ dur: 99.5, acoes: [{ t: 68, ...clicar("op-4-1") }] }],
+    // a página toca sozinha desde o carregamento: os instantes abaixo contam a partir do fim da rolagem (4,4 s)
+    segmentos: [{ dur: 3 }, { rolarPara: topoDe(".player", 12), dur: 96.5, acoes: [{ t: 63.6, ...clicar("op-4-1") }] }],
   },
   fraude: {
     titulo: "03-mesa-antifraude", pagina: "03-deteccao-fraude/animacao/index.html",
@@ -87,9 +91,10 @@ const ROTEIROS = {
   },
   recomendacao: {
     titulo: "04-gosto-em-duas-tintas", pagina: "04-sistema-recomendacao/animacao/index.html",
-    css: `.navega, .pontos, .notas, .rodape { display: none !important; } #tela { height: 540px !important; }`,
+    css: `.navega, .pontos, .notas, .rodape { display: none !important; } #tela { height: 690px !important; } body { padding-bottom: 400px; }`,
     segmentos: [
-      { dur: 7 },
+      { dur: 3 },
+      { rolarPara: topoDe(".lamina", 14), dur: 4.5 },
       { dur: 9.5, acoes: [{ t: 0, ...clicar("lamina-2") }] },
       { dur: 18.5, acoes: [{ t: 0, ...clicar("lamina-3") }] },
       { dur: 13, acoes: [{ t: 0, ...clicar("lamina-4") }, { t: 6.5, ...clicar("op-3-1") }] },
@@ -99,10 +104,12 @@ const ROTEIROS = {
   },
   cofre: {
     titulo: "05-cofre-de-consultas", pagina: "05-agente-text-to-sql/animacao/index.html",
-    css: `#anterior, #proximo, #repetir, .resumo, .rodape { display: none !important; } #tela { height: 470px !important; }
-          .roteiro { max-height: 520px !important; } .controles { min-height: 0; padding-block: 8px; }`,
+    css: `#anterior, #proximo, #repetir, .resumo, .rodape { display: none !important; } #tela { height: 600px !important; }
+          .roteiro { max-height: 690px !important; } .controles { min-height: 0; padding-block: 8px; } .controles:has(.lab[hidden]) { display: none; }
+          body { padding-bottom: 400px; }`,
     segmentos: [
-      { dur: 5 },
+      { dur: 3 },
+      { rolarPara: topoDe(".palco", 10), dur: 3 },
       { dur: 7, acoes: [{ t: 0, ...clicar("passo-2") }] },
       { dur: 7.5, acoes: [{ t: 0, ...clicar("passo-3") }] },
       { dur: 12, acoes: [{ t: 0, ...clicar("passo-4") }] },
