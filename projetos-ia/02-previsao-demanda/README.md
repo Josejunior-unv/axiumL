@@ -57,6 +57,12 @@ pytest
 Para incluir promoções planejadas na previsão, passe um DataFrame com
 `data, loja, produto, promocao` para `prever_futuro(vendas, promocoes=plano)`.
 
+## Animação
+
+`animacao/index.html` explica o projeto de forma visual e interativa, com os números reais desta pasta. Um player em sete capítulos mostra as camadas do sinal em vista explodida (refeitas com o próprio gerador), três anos de vendas da rede como um calendário 3D, a regra dos 28 dias, a perda quantílica achando o p10 e o p90 nos erros reais, o backtest com origem móvel e a previsão de janeiro num painel de embarque.
+
+Abra o arquivo no navegador; não precisa de servidor. Depois de mudar o código, refaça os dados embutidos na página com `python animacao/exportar_dados.py`.
+
 ## Estrutura
 
 ```
